@@ -383,8 +383,10 @@ int main(int argc, char** argv) {
     const int NUM_OF_VERTICES = 1258;
     const int NUM_OF_VTEXTURES = 1339;
     const int NUM_OF_FACES = 2492;
+    const int NUM_OF_NORMALES = NUM_OF_VERTICES;
     
     Point3Df obj_vrt  [NUM_OF_VERTICES];
+    Point3Df obj_norm [NUM_OF_NORMALES];
     Point2Df obj_text [NUM_OF_VTEXTURES];
     Face     obj_face [NUM_OF_FACES];
         
@@ -409,6 +411,31 @@ int main(int argc, char** argv) {
         Point3Df w1 = obj_vrt[f.v2idx];
         Point3Df w2 = obj_vrt[f.v3idx];
         Vertex   s0, s1, s2;
+        
+        float orig_z;
+        float camera = 1000;
+        float div_coef;
+        
+        orig_z = w0.z;
+        div_coef = 1.0f - orig_z/camera;
+        w0.x = w0.x / div_coef;
+        w0.y = w0.y / div_coef;
+        w0.z = w0.z / div_coef;
+        
+        orig_z = w1.z;
+        div_coef = 1.0f - orig_z/camera;
+        w1.x = w1.x / div_coef;
+        w1.y = w1.y / div_coef;
+        w1.z = w1.z / div_coef;
+        
+        orig_z = w2.z;
+        div_coef = 1.0f - orig_z/camera;
+        w2.x = w2.x / div_coef;
+        w2.y = w2.y / div_coef;
+        w2.z = w2.z / div_coef;
+        
+        
+        
         s0.coord = world2screen(w0);
         s0.texture = obj_text[f.t1idx];
         s1.coord = world2screen(w1);
