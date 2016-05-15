@@ -156,14 +156,53 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 
 
 
-void init_viewport (fmat4 &vp, int x, int y, int w, int h, int d) {
-	vp[0][0] = w / 2.0f;
-	vp[0][3] = x + w / 2.0f;
-	vp[1][1] = h / 2.0f;
-	vp[1][3] = y + h / 2.0f;
-	vp[2][2] = d / 2.0f;
-	vp[2][3] = d / 2.0f;
-	vp[3][3] = 1.0f;
+void init_viewport (fmat4 &m, int x, int y, int w, int h, int d) {
+	fmat4_set (m, 0, 0, w / 2.0f);
+	fmat4_set (m, 0, 3, x + w / 2.0f);
+	fmat4_set (m, 1, 1, h / 2.0f);
+	fmat4_set (m, 1, 3, y + h / 2.0f);
+	fmat4_set (m, 2, 2, d / 2.0f);
+	fmat4_set (m, 2, 3, d / 2.0f);
+	fmat4_set (m, 3, 3, 1.0f);
+}
+
+void init_projection (fmat4 &m, const float val) {
+	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
+	fmat4_set (m, 3, 2, val);
+}
+
+void init_view (fmat4 &m, float3 &eye, float3 &center, float3 &up) {
+	float3 z, x, y;
+	
+	float3_float3_sub(eye, center, z);
+	float3_normalize (z);
+	float3_float3_crossprod(up, z, x);
+	float3_normalize (x);
+	float3_float3_crossprod(z, x, y);
+	float3_normalize (y);
+	
+	for (int i = 0; i < 3; i++)	{
+		fmat4_set (m, 0, i, x[i]);
+		fmat4_set (m, 1, i, y[i]);
+		fmat4_set (m, 2, i, z[i]);
+		fmat4_set (m, i, 3, -center[i]);
+	}
+	fmat4_set (m, 3, 3, 1.0f);
+}
+
+void float3_float3_sub (const float3 &a, const float3 &b, float3 &c) {
+	for (int i = 0; i < 3; i++) c[i] = a[i] - b[i];
+}
+
+void float3_normalize (float3 &v) {
+	float length = (float) sqrt(pow(v[0], 2) + pow(v[1], 2) + pow(v[2], 2));
+	for (int i = 0; i < 3; i++) v[i] = v[i] / length;
+}
+
+void float3_float3_crossprod(const float3 &a, const float3 &b, float3 &c) {
+	c[0] = a[1]*b[2] - a[2]*b[1];
+	c[1] = a[2]*b[0] - a[0]*b[2]; 
+	c[2] = a[0]*b[1] - a[1]*b[0];
 }
 
 int main(int argc, char** argv) {
@@ -190,8 +229,16 @@ int main(int argc, char** argv) {
     for (int i = 0; i < zbuffer_size; i++)
 		zbuffer[i] = 0;
     
-    float3 light_dir = { 0.0f,  0.0f, -1.0f};
-    float3 camera    = { 0.0f,  0.0f,  5.0f};
+    float3 light_dir = { 1.0f,  1.0f,  1.0f};
+    float3 eye       = { 0.0f, -1.0f,  3.0f};
+    float3 center    = { 0.0f,  0.0f,  5.0f};
+    float3 up        = { 0.0f,  1.0f,  0.0f};
+	
+	float3_normalize (light_dir);
+        
+	float3 camera;	
+	float3_float3_sub(eye, center, camera);
+	float3_normalize (camera);
 	
 	// 0. Read local vertex coords
 	// 1. Model - transform local coords to global
@@ -201,24 +248,16 @@ int main(int argc, char** argv) {
 	
 	
 	
-	fmat4 mod      = {0};
-	fmat4 view     = {0};
-	fmat4 proj     = {0};
-	fmat4 viewport = {0};
-	fmat4 tmp      = {0};
-	fmat4 tmp2     = {0};
+	//fmat4 model      = {0};
+	fmat4 view       = {0};
+	fmat4 projection = {0};
+	fmat4 viewport   = {0};
+	fmat4 tmp        = {0};
 	
-	float4 tmp3 = {0};
-	float4 tmp4 = {0};
-	for (int i = 0; i < 4; i++)	{
-		//fmat4_set (mod,      1.0f, i, i);
-		//fmat4_set (view,     i, i, 2.0f);
-		fmat4_set (proj,     i, i, 1.0f);
-		//fmat4_set (viewport, i, i, 1.0f);
-	}
-	
-	fmat4_set (proj, 3, 2, -1.0f / camera[Z]);
-	init_viewport (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+	init_projection (projection, -1.0f/camera[Z]);
+	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+	init_view       (view, eye, center, up);
+    
     
     for (int i = 0; i < NUM_OF_FACES; i++) {
 	//for (int i = 13; i < 35; i++) {
@@ -237,7 +276,7 @@ int main(int argc, char** argv) {
 			}
 			wc[j][W] = 1.0f; // W component
 			
-			fmat4_fmat4_mult  (viewport, proj, tmp);
+			fmat4_fmat4_mult  (viewport, projection, tmp);
 			fmat4_float4_mult (tmp, wc[j], sc[j]);
 			//fmat4_float4_mult (viewport, wc[j], sc[j]);
 			
@@ -261,41 +300,24 @@ int main(int argc, char** argv) {
 
        /*
         if (0) {
-			//vect3d_scal_prod(tri_normal, light_dir);
-			
+			// flat shading
+			 
 			// move two sides of the triangle to (0,0,0) each
         
 			float3 f0;
 			float3 f1;
-			float3 tri_norm;
-			for (int j = 0; j < 3; j++) {
-				tri_norm[j] = f0[j] * f1[]
-			}
-			* 
-			f0.x = w2.x - w0.x;
-			f0.y = w2.y - w0.y;
-			f0.z = w2.z - w0.z;
-			Point3Df f1;
-			f1.x = w1.x - w0.x;
-			f1.y = w1.y - w0.y;
-			f1.z = w1.z - w0.z;
+			float3_float3_sub (w2, w0, f0); 
+			float3_float3_sub (w1, w0, f1); 
 			
 			// cross product of two sides
-			Point3Df tri_normal;
-			tri_normal.x = f0.y*f1.z - f0.z*f1.y;
-			tri_normal.y = f0.z*f1.x - f0.x*f1.z; 
-			tri_normal.z = f0.x*f1.y - f0.y*f1.x;
+			float3 tri_normal, tmp;
+			float3_float3_crossprod (f0, f1, tmp);
 			
 			// normalize the cross product: divide each vector coordinate by the vector length
-			float tri_normal_length = (float) sqrt(tri_normal.x*tri_normal.x + tri_normal.y*tri_normal.y + tri_normal.z*tri_normal.z);
-			tri_normal.x = tri_normal.x/tri_normal_length;
-			tri_normal.y = tri_normal.y/tri_normal_length;
-			tri_normal.z = tri_normal.z/tri_normal_length;
+			float3_normalize (tmp, tri_normal);
 		
 			// scalar product, gives zero when normal is perpendicular to light vector
-			float intensity = tri_normal.x*light_dir.x + tri_normal.y*light_dir.y + tri_normal.z*light_dir.z;
-			//draw_triangle (p0, p1, p2, image, TGAColor(i%255, i%255, i%255, 255));
-			//if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, TGAColor(intensity*255, intensity*255, intensity*255, 255));
+			float intensity = float3_float3_smult (tri_normal, light_dir);
 			if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, texture, intensity);
 		}
 		*/
