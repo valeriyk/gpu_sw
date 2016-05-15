@@ -1,15 +1,331 @@
 #include "tgaimage.h"
-//#include "model.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "main.h"
+#include "wavefront_obj.h"
+
 #include <math.h>
 #include <stdint.h>
 
-const TGAColor white = TGAColor(255, 255, 255, 255);
-const TGAColor red   = TGAColor(255, 0,   0,   255);
-//Model *model = NULL;
-const int width  = 800;
-const int height = 800;
+const int width  = 800;//1280;
+const int height = 800;//720;
+const int depth  = 1024;
+const int SCREEN_SIZE[3] = {width, height, depth};
+
+#define TEXTURE_U_SIZE 1024
+#define TEXTURE_V_SIZE 1024
+
+
+void world2screen(const float4 &in, Screen_coords &out) {
+	
+	out.x =  (screenx_t) ((in[X] + 1.0f) * width  / 2.0f + 0.5f); // X
+	out.y =  (screeny_t) ((in[Y] + 1.0f) * height / 2.0f + 0.5f); // Y
+	out.z =  (screenz_t) ((in[Z] + 1.0f) * depth  / 2.0f + 0.5f); // Z
+}
+void  world2screen2 (const float4 &w, Screen_coords &s) {
+	s.x = (screenx_t) w[X] / w[W];
+	s.y = (screeny_t) w[Y] / w[W];
+	s.z = (screenz_t) w[Z] / w[W];
+}
+
+void fmat4_set (fmat4& mat, int row, int col, float val) {
+	mat[row][col] = val;
+}
+
+float fmat4_get (fmat4& mat, int row, int col) {
+	return mat[row][col];
+}
+
+void  fmat4_fmat4_mult (const fmat4& a, const fmat4& b, fmat4& c) {
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++) {
+			c[i][j] = 0;
+			for (int k = 0; k < 4; k++)
+				c[i][j] += a[i][k]*b[k][j];
+		}
+}
+
+void  fmat4_float4_mult (const fmat4 &a, const float4 &b, float4 &c) {
+	for (int i = 0; i < 4; i++) {
+		c[i] = 0;
+		for (int j = 0; j < 4; j++)
+			c[i] += a[i][j]*b[j];
+	}
+}
+
+void  float4_float3_conv (const float4& in, float3& out) {
+	for (int i = 0; i < 3; i++) {
+		out[i] = in[i]/in[W];
+	}
+}
+
+void  float4_int3_conv (const float4 &in, int3 &out) {
+	for (int i = 0; i < 3; i++) {
+		out[i] = (int) (in[i]/in[W]);
+	}
+}
+
+
+
+
+int orient2d(const Screen_coords &a, const Screen_coords &b, const Screen_coords &c)
+{
+    return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
+}
+
+//void ()
+
+void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, Point3Df light_dir)
+{
+    // Compute triangle bounding box
+    /*
+    int2 min; // [0] = X, [1] = Y;
+    int2 max; // [0] = X, [1] = Y;
+    for (int i = 0; i < 2; i++) {
+		min[i] = v[0].coords[i];
+		max[i] = v[0].coords[i];
+		for (int j = 1; j < 3; j++) {
+			if (v[j].coords[i] > max[i]) max[i] = v[j].coords[i];
+			if (v[j].coords[i] < min[i]) min[i] = v[j].coords[i];
+		}
+		if (max[i] >= SCREEN_SIZE[i])  max[i] = SCREEN_SIZE[i] - 1;
+		if (min[i] < 0) min[i] = 0;
+	}*/
+	
+	int2 min, max;
+	min[0] = 0;
+	min[1] = 0;
+	max[0] = width;
+	max[1] = height;
+	// Rasterize
+    Screen_coords p;
+    p.z = 0;
+    for (p.y = min[Y]; p.y < max[Y]; p.y++) {
+        //printf("L\n");
+        for (p.x = min[X]; p.x < max[X]; p.x++) {
+            //printf("M\n");
+            // Determine whether a point is to the left,
+            // to the right, or on an edge of a triangle.
+            // Repeat for all edges.
+            int w0 = orient2d(v[1].coords, v[2].coords, p);
+            int w1 = orient2d(v[2].coords, v[0].coords, p);
+            int w2 = orient2d(v[0].coords, v[1].coords, p);
+			// If p is on or inside all edges, render pixel.
+            if ((w0 == 0) && (w1 == 0) && (w2 == 0)) continue;
+			else if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                //printf ("orient2d: w0=%d, w1=%d, w2=%d, Z0=%d, Z1=%d, Z2=%d\n", w0, w1, w2, v[0].coords.z, v[1].coords.z, v[2].coords.z);
+                int z = (v[0].coords.z*w0 + v[1].coords.z*w1 + v[2].coords.z*w2) / (w0 + w1 + w2);
+                //if (z != 0) printf ("new Z = %d\n", z);
+                //printf("N\n");
+                if (zbuffer[p.x + p.y*width] < z) {
+					zbuffer[p.x + p.y*width] = (screenz_t) z;
+					
+					int uu = (int) (TEXTURE_U_SIZE * (v[0].txt_uv.u*w0 + v[1].txt_uv.u*w1 + v[2].txt_uv.u*w2) / (w0 + w1 + w2));
+					int vv = (int) (TEXTURE_V_SIZE * (v[0].txt_uv.v*w0 + v[1].txt_uv.v*w1 + v[2].txt_uv.v*w2) / (w0 + w1 + w2));
+			
+					if (uu < 0 || vv < 0 ) printf ("A");
+					else if (uu >= TEXTURE_U_SIZE || vv >= TEXTURE_V_SIZE) printf ("B");
+			
+					TGAColor color = texture.get(uu, vv);
+					
+					// interpolate normals
+					float intensity;
+					bool phong = 0;
+					bool gouraud = !phong;
+					
+					if (phong) {
+						Point3Df intnorm;
+						intnorm.x = (v[0].norm.x*w0 + v[1].norm.x*w1 + v[2].norm.x*w2) / (w0 + w1 + w2);
+						intnorm.y = (v[0].norm.y*w0 + v[1].norm.y*w1 + v[2].norm.y*w2) / (w0 + w1 + w2);
+						intnorm.z = (v[0].norm.z*w0 + v[1].norm.z*w1 + v[2].norm.z*w2) / (w0 + w1 + w2);
+						intensity = (intnorm.x*light_dir.x + intnorm.y*light_dir.y + intnorm.z*light_dir.z) / (light_dir.x + light_dir.y + light_dir.z);
+					}
+					else if (gouraud) {
+						float v0int = v[0].norm.x*light_dir.x + v[0].norm.y*light_dir.y + v[0].norm.z*light_dir.z;
+						float v1int = v[1].norm.x*light_dir.x + v[1].norm.y*light_dir.y + v[1].norm.z*light_dir.z;
+						float v2int = v[2].norm.x*light_dir.x + v[2].norm.y*light_dir.y + v[2].norm.z*light_dir.z;
+						intensity = (v0int*w0 + v1int*w1 + v2int*w2) / (w0 + w1 + w2);
+						intensity = -intensity;
+					}
+					if (intensity > 0) {
+						color.r = color.r * intensity;
+						color.g = color.g * intensity;
+						color.b = color.b * intensity;
+						image.set(p.x, p.y, color);
+					}
+					//image.set(p.x, p.y, TGAColor(255,255,255,255));
+				}
+			}
+        }
+    }
+}
+
+
+
+
+void init_viewport (fmat4 &vp, int x, int y, int w, int h, int d) {
+	vp[0][0] = w / 2.0f;
+	vp[0][3] = x + w / 2.0f;
+	vp[1][1] = h / 2.0f;
+	vp[1][3] = y + h / 2.0f;
+	vp[2][2] = d / 2.0f;
+	vp[2][3] = d / 2.0f;
+	vp[3][3] = 1.0f;
+}
+
+int main(int argc, char** argv) {
+    
+    const int NUM_OF_VERTICES = 1258;
+    const int NUM_OF_VTEXTURES = 1339;
+    const int NUM_OF_FACES = 2492;
+    const int NUM_OF_NORMALES = NUM_OF_VERTICES;
+    
+    float3   obj_vtx  [NUM_OF_VERTICES];
+    Point3Df obj_norm [NUM_OF_NORMALES];
+    Point2Df obj_text [NUM_OF_VTEXTURES];
+    Face     obj_face [NUM_OF_FACES];
+        
+	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
+    TGAImage image(width, height, TGAImage::RGB);
+    
+    TGAImage texture(1024, 1024, TGAImage::RGB);
+    texture.read_tga_file("obj/african_head_diffuse.tga");
+    texture.flip_vertically();
+    
+    size_t    zbuffer_size = width*height;
+    screenz_t zbuffer[zbuffer_size];
+    for (int i = 0; i < zbuffer_size; i++)
+		zbuffer[i] = 0;
+    
+    Point3Df light_dir = { 0.0f,  0.0f, -1.0f};
+    float3   camera    = { 0.0f,  0.0f,  5.0f};
+	
+	// 0. Read local vertex coords
+	// 1. Model - transform local coords to global
+	// 2. View - transform global coords to adjust for camera position
+	// 3. Projection - perspective correction
+	// 4. Viewport - move to screen coords
+	
+	
+	
+	fmat4 mod      = {0};
+	fmat4 view     = {0};
+	fmat4 proj     = {0};
+	fmat4 viewport = {0};
+	fmat4 tmp      = {0};
+	fmat4 tmp2     = {0};
+	/*
+	float4 tmp3 = {0};
+	float4 tmp4 = {0};
+	for (int i = 0; i < 4; i++)	{
+		//fmat4_set (mod,      1.0f, i, i);
+		//fmat4_set (view,     i, i, 2.0f);
+		fmat4_set (proj,     i, i, 1.0f);
+		//fmat4_set (viewport, i, i, 1.0f);
+	}
+	
+	
+	fmat4_set (proj, 3, 2, -1.0f / camera[Z]);
+	init_viewport (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+    */
+    for (int i = 0; i < NUM_OF_FACES; i++) {
+	//for (int i = 13; i < 35; i++) {
+        Face face = obj_face[i];
+        
+        // Fetch coords of vertices into three float[4] arrays
+        Vertex vtx[3];
+        float4 wc[3];
+		float4 sc[3];
+        bool matrix = 0;
+        if (matrix) {
+		   // for each vertex j of a triangle
+			for (int j = 0; j < 3; j++) {
+				
+			
+				// for each coord of vertex j
+				for (int k = 0; k < 3; k++) {
+					wc[j][k] = obj_vtx[face.vtx_idx[j]][k];	
+				}
+				wc[j][W] = 1.0f; // W component
+				
+				fmat4_fmat4_mult  (viewport, proj, tmp);
+				fmat4_float4_mult (tmp, wc[j], sc[j]);
+				//fmat4_float4_mult (viewport, wc[j], sc[j]);
+				
+				world2screen2 (sc[j], vtx[j].coords);
+				//vtx[j].coords = sc[j];
+				vtx[j].txt_uv = obj_text[face.txt_idx[j]];
+				vtx[j].norm   = obj_norm[face.vtx_idx[j]];
+			}
+		}
+		else {	
+			for (int j = 0; j < 3; j++) {
+				for (int k = 0; k < 3; k++) {
+					wc[j][k] = obj_vtx[face.vtx_idx[j]][k];			
+				}
+			}
+			for (int j = 0; j < 3; j++) {
+				float div_coef = 1.0f - wc[j][Z] / camera[Z];
+				for (int k = 0; k < 3; k++) {	
+					wc[j][k] /= div_coef;
+				}
+			}
+			for (int j = 0; j < 3; j++) {
+				world2screen (wc[j], vtx[j].coords);
+				vtx[j].txt_uv = obj_text[face.txt_idx[j]];
+				vtx[j].norm   = obj_norm[face.vtx_idx[j]];
+			}
+		}
+        draw_triangle (vtx, zbuffer, image, texture, light_dir);        
+    }
+
+    image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    image.write_tga_file("output.tga");
+
+    return 0;
+}
+
+
+
+       /*
+        if (0) {
+			//vect3d_scal_prod(tri_normal, light_dir);
+			
+			// move two sides of the triangle to (0,0,0) each
+        
+			float3 f0;
+			float3 f1;
+			float3 tri_norm;
+			for (int j = 0; j < 3; j++) {
+				tri_norm[j] = f0[j] * f1[]
+			}
+			* 
+			f0.x = w2.x - w0.x;
+			f0.y = w2.y - w0.y;
+			f0.z = w2.z - w0.z;
+			Point3Df f1;
+			f1.x = w1.x - w0.x;
+			f1.y = w1.y - w0.y;
+			f1.z = w1.z - w0.z;
+			
+			// cross product of two sides
+			Point3Df tri_normal;
+			tri_normal.x = f0.y*f1.z - f0.z*f1.y;
+			tri_normal.y = f0.z*f1.x - f0.x*f1.z; 
+			tri_normal.z = f0.x*f1.y - f0.y*f1.x;
+			
+			// normalize the cross product: divide each vector coordinate by the vector length
+			float tri_normal_length = (float) sqrt(tri_normal.x*tri_normal.x + tri_normal.y*tri_normal.y + tri_normal.z*tri_normal.z);
+			tri_normal.x = tri_normal.x/tri_normal_length;
+			tri_normal.y = tri_normal.y/tri_normal_length;
+			tri_normal.z = tri_normal.z/tri_normal_length;
+		
+			// scalar product, gives zero when normal is perpendicular to light vector
+			float intensity = tri_normal.x*light_dir.x + tri_normal.y*light_dir.y + tri_normal.z*light_dir.z;
+			//draw_triangle (p0, p1, p2, image, TGAColor(i%255, i%255, i%255, 255));
+			//if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, TGAColor(intensity*255, intensity*255, intensity*255, 255));
+			if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, texture, intensity);
+		}
+		*/
+
 
 /*
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
@@ -47,436 +363,4 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, Vec3f P) {
         return Vec3f(1.f-(u.x+u.y)/u.z, u.y/u.z, u.x/u.z);
     return Vec3f(-1,1,1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
-
-void triangle(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color) {
-    Vec2f bboxmin( std::numeric_limits<float>::max(),  std::numeric_limits<float>::max());
-    Vec2f bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
-    Vec2f clamp(image.get_width()-1, image.get_height()-1);
-    for (int i=0; i<3; i++) {
-        for (int j=0; j<2; j++) {
-            bboxmin[j] = std::max(0.f,      std::min(bboxmin[j], pts[i][j]));
-            bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], pts[i][j]));
-        }
-    }
-    Vec3f P;
-    for (P.x=bboxmin.x; P.x<=bboxmax.x; P.x++) {
-        for (P.y=bboxmin.y; P.y<=bboxmax.y; P.y++) {
-            Vec3f bc_screen  = barycentric(pts[0], pts[1], pts[2], P);
-            if (bc_screen.x<0 || bc_screen.y<0 || bc_screen.z<0) continue;
-            P.z = 0;
-            for (int i=0; i<3; i++) P.z += pts[i][2]*bc_screen[i];
-            if (zbuffer[int(P.x+P.y*width)]<P.z) {
-                zbuffer[int(P.x+P.y*width)] = P.z;
-                image.set(P.x, P.y, color);
-            }
-        }
-    }
-}
-
-Vec3f world2screen(Vec3f v) {
-    return Vec3f(int((v.x+1.)*width/2.+.5), int((v.y+1.)*height/2.+.5), v.z);
-}
-
-
-void draw_line ();
-
-
-
 */
-
-typedef struct Point2D {
-    int x, y;
-} Point2D;
-
-typedef struct Point2Df {
-    float u, v;
-} Point2Df;
-
-typedef struct ScreenPt {
-    int x;
-    int y;
-    int z;
-} ScreenPt;
-
-typedef struct Point3Df {
-	float x, y, z;
-} Point3Df;
-
-typedef struct Vect2D {
-	Point2D a, b;
-} Vec2D;
-
-typedef struct Vect3Df {
-	Point3Df a, b;
-} Vect3Df;
-
-typedef struct Face {
-	int v1idx, v2idx, v3idx; // vertex indices
-	int t1idx, t2idx, t3idx; // texture indices
-} Face;
-
-typedef struct Vertex {
-	ScreenPt coord;
-	Point2Df texture;
-} Vertex;
-
-int min3 (int a, int b, int c) {
-	int min = a;
-	if (  a > b) min = b;
-	if (min > c) min = c;
-	return min;
-}
-
-int max3 (int a, int b, int c) {
-	int max = a;
-	if (  a < b) max = b;
-	if (max < c) max = c;
-	return max;
-}
-
-/*float vect2d_scal_prod (Vect2D  Point2D x, Point2D y) {
-}*/
-/*
-float vect3d_scal_prod (Vect3Df a, Vect3Df b) {
-	return a.x*b.x + a.y*b.y + a.z*b.z;
-}
-*/
-
-
-int read_obj_file (const char *filename, Point3Df *obj_vrt, Point2Df *obj_text, Face *obj_face) {
-	// Parse Wavefront OBJ format
-	
-	//const int NUM_OF_VERTICES = 1258;
-    //const int NUM_OF_FACES = 2492;
-    const int ALPHA_SIZE = 16;
-    
-    int       vrt_idx = 0;
-    int      text_idx = 0;
-    int      face_idx = 0;
-    typedef enum {V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
-    typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;  
-    typedef enum {VERTEX_IDX, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
-      
-    
-    char alpha_num [ALPHA_SIZE];
-    for (int i = 0; i < ALPHA_SIZE; i++) alpha_num[i] = '\0';
-    int  alpha_idx = 0;
-    
-    obj_line_type     line_type  = EMPTY;
-    obj_line_field    line_field = LINE_TYPE;
-    obj_face_elem     face_elem  = VERTEX_IDX;
-    
-    FILE *fp = fopen (filename, "r");
-    if (!fp) return 1;
-    
-    int ch;
-    while ((ch = fgetc(fp)) != EOF) {
-    	char c = (char) ch;
-		
-		// for any line that is a comment we check only for end of line:
-		if (COMMENT == line_type) {
-			if (c == '\n') line_type = EMPTY;
-		}
-		else {
-			// First detect line type
-			if (LINE_TYPE == line_field) {
-				if (V_DATA != line_type) {
-					switch (c) {
-						case '\n':
-						case '\r':
-						case '\t':
-						case ' ':     line_type =   EMPTY; break;
-						case 'g':
-						case 's':
-						case '#':     line_type = COMMENT; break;
-						case 'f':     line_type =  F_DATA; break;
-						case 'v':     line_type =  V_DATA; break;
-						default:      return 2;
-					}
-					// Assuming that the line is not a comment,
-					// we keep parsing the line type until we detect that:
-					// - line is F_DATA
-					// Detecting V_DATA is not sufficient to stop parsing
-					// because it may turn into VT_DATA, VN_DATA or VP_DATA,
-					// but we can know this only after looking at the
-					// next character
-					if (F_DATA == line_type) line_field = VALUE1; 
-				}
-				else {
-					// here we finally can find out if our line type
-					// was V_DATA, or it is VT_DATA/VN_DATA/VP_DATA
-					switch (c) {
-						case '\t':    line_type =  V_DATA; break;
-						case ' ':     line_type =  V_DATA; break;
-						case 't':     line_type = VT_DATA; break;
-						case 'n':     line_type = VN_DATA; break;
-						case 'p':     line_type = VP_DATA; break;
-						default:      return 2;
-					}
-					// No need to further parse the line type, move
-					// to parsing first value
-					line_field = VALUE1;
-				}
-			}
-			// After line type detected, read values VALUE1...VALUE4
-			// accordingly
-			else {
-				if (((c >= '0') && (c <= '9')) || (c == '.') || (c == '-') || (c == 'e')) {
-					alpha_num[alpha_idx++] = c;	
-				}
-				else if ((c == ' ') || (c == '\t') || (c == '\n') || (c == '/') || (c == '\r')) {
-					if (alpha_num[0] == '\0') {
-						 // skip heading white spaces
-						 // if unexpected delimeter is found then fail
-						 if ((c != ' ') && (c != '\t')) return 2;
-					}
-					else {
-						// convert string to number and save it
-						if (V_DATA == line_type) {
-							float af = (float) atof (alpha_num);
-							if      (line_field == VALUE1) obj_vrt[vrt_idx].x = af;
-							else if (line_field == VALUE2) obj_vrt[vrt_idx].y = af;
-							else if (line_field == VALUE3) obj_vrt[vrt_idx].z = af;
-						}
-						else if (F_DATA == line_type) {
-							int ai = atoi (alpha_num);
-							ai--; // decrement all indices because in OBJ they start at 1
-							if (VERTEX_IDX == face_elem) {							
-								if      (line_field == VALUE1) obj_face[face_idx].v1idx = ai;
-								else if (line_field == VALUE2) obj_face[face_idx].v2idx = ai;
-								else if (line_field == VALUE3) obj_face[face_idx].v3idx = ai;
-							}
-							else if (TEXTURE_IDX == face_elem) {							
-								if      (line_field == VALUE1) obj_face[face_idx].t1idx = ai;
-								else if (line_field == VALUE2) obj_face[face_idx].t2idx = ai;
-								else if (line_field == VALUE3) obj_face[face_idx].t3idx = ai;
-							}
-						}
-						else if (VT_DATA == line_type) {
-							float af = (float) atof (alpha_num);
-							if      (line_field == VALUE1) obj_text[text_idx].u = af;
-							else if (line_field == VALUE2) obj_text[text_idx].v = af;
-						}
-						
-						if (c == '/') {
-							switch (face_elem) {
-								case VERTEX_IDX:  face_elem = TEXTURE_IDX; break;
-								case TEXTURE_IDX: face_elem =  NORMAL_IDX; break;
-								case NORMAL_IDX:  return 2;
-							}
-						}
-						else {
-							switch (line_field) {
-								case VALUE1:    line_field = VALUE2; break;
-								case VALUE2:    line_field = VALUE3; break;
-								case VALUE3:    line_field = VALUE4; break;
-								case VALUE4:    break;
-								case LINE_TYPE: return 2;
-							}
-							// reset face elem before moving to the next value
-							face_elem = VERTEX_IDX;
-						}
-											
-						// cleanup before moving on to the next value
-						for (int i = 0; i < ALPHA_SIZE; i++) alpha_num[i] = '\0';
-						alpha_idx = 0;
-						
-						if (c == '\n') {
-							if      (V_DATA == line_type)  vrt_idx++;
-							else if (VT_DATA == line_type) text_idx++;
-							else if (F_DATA == line_type) face_idx++;
-							line_type  = EMPTY;
-							line_field = LINE_TYPE;	
-						}
-					}
-				}
-				else return 2;
-			}
-		}
-    }
-    
-    fclose (fp);
-    return 0;
-}
-
-
-/*  
-    Point2D world2screen(Point3Df in) {
-	Point2D out;
-	out.x = ((in.x + 1.0) * width / 2.0 + 0.5);
-	out.y = ((in.y + 1.0) * height / 2.0 + 0.5);
-	return out;
-}
-*/
-ScreenPt world2screen(Point3Df in) {
-	ScreenPt out;
-	out.x = (int) ((in.x + 1.0) * width / 2.0 + 0.5);
-	out.y = (int) ((in.y + 1.0) * height / 2.0 + 0.5);
-	out.z = (int) in.z;
-	return out;
-}
-
-//int orient2d(const Point2D& a, const Point2D& b, const Point2D& c)
-int orient2d(const ScreenPt& a, const ScreenPt& b, const ScreenPt& c)
-{
-    return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
-}
-
-
-
-//void draw_triangle (const Point2D& v0, const Point2D& v1, const Point2D& v2, TGAImage &image, TGAColor color)
-//void draw_triangle (const ScreenPt& v0, const ScreenPt& v1, const ScreenPt& v2, int8_t *zbuffer, TGAImage &image, TGAColor color)
-void draw_triangle (const Vertex& v0, const Vertex& v1, const Vertex& v2, int8_t *zbuffer, TGAImage &image, TGAImage &texture, float intensity)
-{
-    // Compute triangle bounding box
-    int minX = min3(v0.coord.x, v1.coord.x, v2.coord.x);
-    int minY = min3(v0.coord.y, v1.coord.y, v2.coord.y);
-    int maxX = max3(v0.coord.x, v1.coord.x, v2.coord.x);
-    int maxY = max3(v0.coord.y, v1.coord.y, v2.coord.y);
-
-    // Clip against screen bounds
-    minX = max3(minX, 0, 0);
-    minY = max3(minY, 0, 0);
-    maxX = min3(maxX, width - 1, width);
-    maxY = min3(maxY, height - 1, height);
-
-    // Rasterize
-    ScreenPt p;
-    p.z = 0;
-    for (p.y = minY; p.y <= maxY; p.y++) {
-        for (p.x = minX; p.x <= maxX; p.x++) {
-            // Determine whether a point is to the left,
-            // to the right, or on an edge of a triangle.
-            // Repeat for all edges.
-            int w0 = orient2d(v1.coord, v2.coord, p);
-            int w1 = orient2d(v2.coord, v0.coord, p);
-            int w2 = orient2d(v0.coord, v1.coord, p);
-
-            // If p is on or inside all edges, render pixel.
-            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                int z = (v0.coord.z*w0 + v1.coord.z*w1 + v2.coord.z*w2);
-                if (zbuffer[p.x + p.y*width] < z) {
-					zbuffer[p.x + p.y*width] = z;
-					
-					int u = (int) 1024 * (v0.texture.u*w0 + v1.texture.u*w1 + v2.texture.u*w2) / (w0 + w1 + w2);
-					int v = (int) 1024 * (v0.texture.v*w0 + v1.texture.v*w1 + v2.texture.v*w2) / (w0 + w1 + w2);
-					//printf ("u = %d, v = %d", u, v);
-					//int u = 1024; int v = 1024;
-					if (u < 0 || v < 0 ) printf ("A");
-					else if (u >= 1024 || v >= 1024) printf ("B");
-					//renderPixel(p, w0, w1, w2);
-					TGAColor color = texture.get(u, v);
-					color.r = color.r * intensity;
-					color.g = color.g * intensity;
-					color.b = color.b * intensity;
-					image.set(p.x, p.y, color);
-					//image.set(p.x, p.y, red);
-				}
-			}
-        }
-    }
-}
-
-
-int main(int argc, char** argv) {
-    
-    const int NUM_OF_VERTICES = 1258;
-    const int NUM_OF_VTEXTURES = 1339;
-    const int NUM_OF_FACES = 2492;
-    const int NUM_OF_NORMALES = NUM_OF_VERTICES;
-    
-    Point3Df obj_vrt  [NUM_OF_VERTICES];
-    Point3Df obj_norm [NUM_OF_NORMALES];
-    Point2Df obj_text [NUM_OF_VTEXTURES];
-    Face     obj_face [NUM_OF_FACES];
-        
-	read_obj_file ("obj/african_head.obj", obj_vrt, obj_text, obj_face);
-    
-    TGAImage image(width, height, TGAImage::RGB);
-    
-    TGAImage texture(1024, 1024, TGAImage::RGB);
-    texture.read_tga_file("obj/african_head_diffuse.tga");
-    texture.flip_vertically();
-    
-    int8_t zbuffer[width*height];
-    for (int i = 0; i < width*height; i++)
-		zbuffer [i] = INT8_MIN;
-    
-    Point3Df light_dir = {0, 0, -1.0};
-    Point3Df tri_normal;
-    
-    for (int i = 0; i < NUM_OF_FACES; i++) {
-        Face f = obj_face[i];
-        Point3Df w0 = obj_vrt[f.v1idx];
-        Point3Df w1 = obj_vrt[f.v2idx];
-        Point3Df w2 = obj_vrt[f.v3idx];
-        Vertex   s0, s1, s2;
-        
-        float orig_z;
-        float camera = 1000;
-        float div_coef;
-        
-        orig_z = w0.z;
-        div_coef = 1.0f - orig_z/camera;
-        w0.x = w0.x / div_coef;
-        w0.y = w0.y / div_coef;
-        w0.z = w0.z / div_coef;
-        
-        orig_z = w1.z;
-        div_coef = 1.0f - orig_z/camera;
-        w1.x = w1.x / div_coef;
-        w1.y = w1.y / div_coef;
-        w1.z = w1.z / div_coef;
-        
-        orig_z = w2.z;
-        div_coef = 1.0f - orig_z/camera;
-        w2.x = w2.x / div_coef;
-        w2.y = w2.y / div_coef;
-        w2.z = w2.z / div_coef;
-        
-        
-        
-        s0.coord = world2screen(w0);
-        s0.texture = obj_text[f.t1idx];
-        s1.coord = world2screen(w1);
-        s1.texture = obj_text[f.t2idx];
-        s2.coord = world2screen(w2);
-        s2.texture = obj_text[f.t3idx];
-        
-        //vect3d_scal_prod(tri_normal, light_dir);
-        // move two sides of the triangle to (0,0,0) each
-        Point3Df f0;
-        f0.x = w2.x - w0.x;
-        f0.y = w2.y - w0.y;
-        f0.z = w2.z - w0.z;
-        Point3Df f1;
-        f1.x = w1.x - w0.x;
-        f1.y = w1.y - w0.y;
-        f1.z = w1.z - w0.z;
-        
-        // cross product of two sides
-        tri_normal.x = f0.y*f1.z - f0.z*f1.y;
-        tri_normal.y = f0.z*f1.x - f0.x*f1.z; 
-        tri_normal.z = f0.x*f1.y - f0.y*f1.x;
-        
-        // normalize the cross product: divide each vector coordinate by the vector length
-        float tri_normal_length = (float) sqrt(tri_normal.x*tri_normal.x + tri_normal.y*tri_normal.y + tri_normal.z*tri_normal.z);
-        tri_normal.x = tri_normal.x/tri_normal_length;
-        tri_normal.y = tri_normal.y/tri_normal_length;
-        tri_normal.z = tri_normal.z/tri_normal_length;
-        
-        // scalar product, gives zero when normal is perpendicular to light vector
-        float intensity = tri_normal.x*light_dir.x + tri_normal.y*light_dir.y + tri_normal.z*light_dir.z;
-        
-        //draw_triangle (p0, p1, p2, image, TGAColor(i%255, i%255, i%255, 255));
-        //if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, TGAColor(intensity*255, intensity*255, intensity*255, 255));
-        if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, texture, intensity);
-    }
-
-
-    image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    image.write_tga_file("output.tga");
-
-    //delete model;
-    return 0;
-}
