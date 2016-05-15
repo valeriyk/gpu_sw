@@ -5,19 +5,19 @@
 #include <math.h>
 #include <stdint.h>
 
-const int width  = 800;//1280;
-const int height = 800;//720;
-const int depth  = 1024;
+const int width  = 1280;
+const int height = 720;
+const int depth  = 65536;
 const int SCREEN_SIZE[3] = {width, height, depth};
 
 #define TEXTURE_U_SIZE 1024
 #define TEXTURE_V_SIZE 1024
 
 
-void  world2screen2 (const float4 &w, Screen_coords &s) {
-	s.x = (screenx_t) w[X] / w[W];
-	s.y = (screeny_t) w[Y] / w[W];
-	s.z = (screenz_t) w[Z] / w[W];
+void  world2screen (const float4 &w, ScreenPt &s) {
+	s.x = (screenxy_t) w[X] / w[W];
+	s.y = (screenxy_t) w[Y] / w[W];
+	s.z = (screenz_t)  w[Z] / w[W];
 }
 
 void fmat4_set (fmat4& mat, int row, int col, float val) {
@@ -61,46 +61,41 @@ void  float4_int3_conv (const float4 &in, int3 &out) {
 
 
 
-int orient2d(const Screen_coords &a, const Screen_coords &b, const Screen_coords &c)
+int orient2d(const ScreenPt &a, const ScreenPt &b, const ScreenPt &c)
 {
     return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
 }
 
-//void ()
+screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
+	int min = a;
+	if (b < min) min = b;
+	if (c < min) min = c;
+	if (min < cutoff) min = cutoff;
+	return min;
+}
 
+screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
+	int max = a;
+	if (b > max) max = b;
+	if (c > max) max = c;
+	if (max > cutoff) max = cutoff;
+	return max;
+}
 
-
-//void min (max)
-
-void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, Point3Df light_dir)
+void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir)
 {
     // Compute triangle bounding box
-    /*
-    int2 min; // [0] = X, [1] = Y;
-    int2 max; // [0] = X, [1] = Y;
-    for (int i = 0; i < 2; i++) {
-		min[i] = v[0].coords[i];
-		max[i] = v[0].coords[i];
-		for (int j = 1; j < 3; j++) {
-			if (v[j].coords[i] > max[i]) max[i] = v[j].coords[i];
-			if (v[j].coords[i] < min[i]) min[i] = v[j].coords[i];
-		}
-		if (max[i] >= SCREEN_SIZE[i])  max[i] = SCREEN_SIZE[i] - 1;
-		if (min[i] < 0) min[i] = 0;
-	}*/
-	
-	int2 min, max;
-	min[0] = 0;
-	min[1] = 0;
-	max[0] = width;
-	max[1] = height;
-	// Rasterize
-    Screen_coords p;
+    screenxy_t min_x = tri_min_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, 0);
+    screenxy_t max_x = tri_max_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, SCREEN_SIZE[0]);
+    
+    screenxy_t min_y = tri_min_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, 0);
+    screenxy_t max_y = tri_max_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, SCREEN_SIZE[1]);
+    
+    // Rasterize
+    ScreenPt p;
     p.z = 0;
-    for (p.y = min[Y]; p.y < max[Y]; p.y++) {
-        //printf("L\n");
-        for (p.x = min[X]; p.x < max[X]; p.x++) {
-            //printf("M\n");
+    for (p.y = min_y; p.y < max_y; p.y++) {
+        for (p.x = min_x; p.x < max_x; p.x++) {
             // Determine whether a point is to the left,
             // to the right, or on an edge of a triangle.
             // Repeat for all edges.
@@ -110,10 +105,7 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 			// If p is on or inside all edges, render pixel.
             if ((w0 == 0) && (w1 == 0) && (w2 == 0)) continue;
 			else if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                //printf ("orient2d: w0=%d, w1=%d, w2=%d, Z0=%d, Z1=%d, Z2=%d\n", w0, w1, w2, v[0].coords.z, v[1].coords.z, v[2].coords.z);
-                int z = (v[0].coords.z*w0 + v[1].coords.z*w1 + v[2].coords.z*w2) / (w0 + w1 + w2);
-                //if (z != 0) printf ("new Z = %d\n", z);
-                //printf("N\n");
+                int z = (v[0].coords.z*w0 + v[1].coords.z*w1 + v[2].coords.z*w2) / (w0 + w1 + w2); // TBD change to screenz_t or use p.z;
                 if (zbuffer[p.x + p.y*width] < z) {
 					zbuffer[p.x + p.y*width] = (screenz_t) z;
 					
@@ -126,23 +118,28 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 					TGAColor color = texture.get(uu, vv);
 					
 					// interpolate normals
-					float intensity;
-					bool phong = 0;
+					float intensity = 0.0f;
+					bool phong = 1;
 					bool gouraud = !phong;
 					
 					if (phong) {
-						Point3Df intnorm;
-						intnorm.x = (v[0].norm.x*w0 + v[1].norm.x*w1 + v[2].norm.x*w2) / (w0 + w1 + w2);
-						intnorm.y = (v[0].norm.y*w0 + v[1].norm.y*w1 + v[2].norm.y*w2) / (w0 + w1 + w2);
-						intnorm.z = (v[0].norm.z*w0 + v[1].norm.z*w1 + v[2].norm.z*w2) / (w0 + w1 + w2);
-						intensity = (intnorm.x*light_dir.x + intnorm.y*light_dir.y + intnorm.z*light_dir.z) / (light_dir.x + light_dir.y + light_dir.z);
+						float3 intnorm;
+						for (int i = 0; i < 3; i++)
+							intnorm[i] = (v[0].norm[i]*w0 + v[1].norm[i]*w1 + v[2].norm[i]*w2) / (w0 + w1 + w2);
+						//intnorm.y = (v[0].norm.y*w0 + v[1].norm.y*w1 + v[2].norm.y*w2) / (w0 + w1 + w2);
+						//intnorm.z = (v[0].norm.z*w0 + v[1].norm.z*w1 + v[2].norm.z*w2) / (w0 + w1 + w2);
+						
+						for (int i = 0; i < 3; i++)
+							intensity += (intnorm[i]*light_dir[i]);
+						intensity /= (light_dir[0] + light_dir[1] + light_dir[2]);
 					}
 					else if (gouraud) {
-						float v0int = v[0].norm.x*light_dir.x + v[0].norm.y*light_dir.y + v[0].norm.z*light_dir.z;
-						float v1int = v[1].norm.x*light_dir.x + v[1].norm.y*light_dir.y + v[1].norm.z*light_dir.z;
-						float v2int = v[2].norm.x*light_dir.x + v[2].norm.y*light_dir.y + v[2].norm.z*light_dir.z;
-						intensity = (v0int*w0 + v1int*w1 + v2int*w2) / (w0 + w1 + w2);
-						intensity = -intensity;
+						float3 intnorm;
+						for (int i = 0; i < 3; i++)
+							intnorm[i] = v[i].norm[0]*light_dir[0] + v[i].norm[1]*light_dir[1] + v[0].norm[2]*light_dir[2];
+						//float v1int = v[1].norm.x*light_dir.x + v[1].norm.y*light_dir.y + v[1].norm.z*light_dir.z;
+						//float v2int = v[2].norm.x*light_dir.x + v[2].norm.y*light_dir.y + v[2].norm.z*light_dir.z;
+						intensity = -(intnorm[0]*w0 + intnorm[1]*w1 + intnorm[2]*w2) / (w0 + w1 + w2);
 					}
 					if (intensity > 0) {
 						color.r = color.r * intensity;
@@ -150,7 +147,6 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 						color.b = color.b * intensity;
 						image.set(p.x, p.y, color);
 					}
-					//image.set(p.x, p.y, TGAColor(255,255,255,255));
 				}
 			}
         }
@@ -178,7 +174,7 @@ int main(int argc, char** argv) {
     const int NUM_OF_NORMALES = NUM_OF_VERTICES;
     
     float3   obj_vtx  [NUM_OF_VERTICES];
-    Point3Df obj_norm [NUM_OF_NORMALES];
+    float3   obj_norm [NUM_OF_NORMALES];
     Point2Df obj_text [NUM_OF_VTEXTURES];
     Face     obj_face [NUM_OF_FACES];
         
@@ -194,8 +190,8 @@ int main(int argc, char** argv) {
     for (int i = 0; i < zbuffer_size; i++)
 		zbuffer[i] = 0;
     
-    Point3Df light_dir = { 0.0f,  0.0f, -1.0f};
-    float3   camera    = { 0.0f,  0.0f,  5.0f};
+    float3 light_dir = { 0.0f,  0.0f, -1.0f};
+    float3 camera    = { 0.0f,  0.0f,  5.0f};
 	
 	// 0. Read local vertex coords
 	// 1. Model - transform local coords to global
@@ -221,7 +217,6 @@ int main(int argc, char** argv) {
 		//fmat4_set (viewport, i, i, 1.0f);
 	}
 	
-	
 	fmat4_set (proj, 3, 2, -1.0f / camera[Z]);
 	init_viewport (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     
@@ -246,10 +241,12 @@ int main(int argc, char** argv) {
 			fmat4_float4_mult (tmp, wc[j], sc[j]);
 			//fmat4_float4_mult (viewport, wc[j], sc[j]);
 			
-			world2screen2 (sc[j], vtx[j].coords);
-			//vtx[j].coords = sc[j];
+			world2screen (sc[j], vtx[j].coords);
 			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
-			vtx[j].norm   = obj_norm[face.vtx_idx[j]];
+			for (int k = 0; k < 3; k++) {
+				vtx[j].norm[k]   = obj_norm[face.vtx_idx[j]][k];
+			}
+			
 		}
 		draw_triangle (vtx, zbuffer, image, texture, light_dir);        
     }
