@@ -14,12 +14,6 @@ const int SCREEN_SIZE[3] = {width, height, depth};
 #define TEXTURE_V_SIZE 1024
 
 
-void world2screen(const float4 &in, Screen_coords &out) {
-	
-	out.x =  (screenx_t) ((in[X] + 1.0f) * width  / 2.0f + 0.5f); // X
-	out.y =  (screeny_t) ((in[Y] + 1.0f) * height / 2.0f + 0.5f); // Y
-	out.z =  (screenz_t) ((in[Z] + 1.0f) * depth  / 2.0f + 0.5f); // Z
-}
 void  world2screen2 (const float4 &w, Screen_coords &s) {
 	s.x = (screenx_t) w[X] / w[W];
 	s.y = (screeny_t) w[Y] / w[W];
@@ -51,6 +45,7 @@ void  fmat4_float4_mult (const fmat4 &a, const float4 &b, float4 &c) {
 	}
 }
 
+/*
 void  float4_float3_conv (const float4& in, float3& out) {
 	for (int i = 0; i < 3; i++) {
 		out[i] = in[i]/in[W];
@@ -62,7 +57,7 @@ void  float4_int3_conv (const float4 &in, int3 &out) {
 		out[i] = (int) (in[i]/in[W]);
 	}
 }
-
+*/
 
 
 
@@ -72,6 +67,10 @@ int orient2d(const Screen_coords &a, const Screen_coords &b, const Screen_coords
 }
 
 //void ()
+
+
+
+//void min (max)
 
 void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, Point3Df light_dir)
 {
@@ -212,7 +211,7 @@ int main(int argc, char** argv) {
 	fmat4 viewport = {0};
 	fmat4 tmp      = {0};
 	fmat4 tmp2     = {0};
-	/*
+	
 	float4 tmp3 = {0};
 	float4 tmp4 = {0};
 	for (int i = 0; i < 4; i++)	{
@@ -225,7 +224,7 @@ int main(int argc, char** argv) {
 	
 	fmat4_set (proj, 3, 2, -1.0f / camera[Z]);
 	init_viewport (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
-    */
+    
     for (int i = 0; i < NUM_OF_FACES; i++) {
 	//for (int i = 13; i < 35; i++) {
         Face face = obj_face[i];
@@ -234,47 +233,25 @@ int main(int argc, char** argv) {
         Vertex vtx[3];
         float4 wc[3];
 		float4 sc[3];
-        bool matrix = 0;
-        if (matrix) {
-		   // for each vertex j of a triangle
-			for (int j = 0; j < 3; j++) {
-				
+        
+		// for each vertex j of a triangle
+		for (int j = 0; j < 3; j++) {
+			// for each coord of vertex j
+			for (int k = 0; k < 3; k++) {
+				wc[j][k] = obj_vtx[face.vtx_idx[j]][k];	
+			}
+			wc[j][W] = 1.0f; // W component
 			
-				// for each coord of vertex j
-				for (int k = 0; k < 3; k++) {
-					wc[j][k] = obj_vtx[face.vtx_idx[j]][k];	
-				}
-				wc[j][W] = 1.0f; // W component
-				
-				fmat4_fmat4_mult  (viewport, proj, tmp);
-				fmat4_float4_mult (tmp, wc[j], sc[j]);
-				//fmat4_float4_mult (viewport, wc[j], sc[j]);
-				
-				world2screen2 (sc[j], vtx[j].coords);
-				//vtx[j].coords = sc[j];
-				vtx[j].txt_uv = obj_text[face.txt_idx[j]];
-				vtx[j].norm   = obj_norm[face.vtx_idx[j]];
-			}
+			fmat4_fmat4_mult  (viewport, proj, tmp);
+			fmat4_float4_mult (tmp, wc[j], sc[j]);
+			//fmat4_float4_mult (viewport, wc[j], sc[j]);
+			
+			world2screen2 (sc[j], vtx[j].coords);
+			//vtx[j].coords = sc[j];
+			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
+			vtx[j].norm   = obj_norm[face.vtx_idx[j]];
 		}
-		else {	
-			for (int j = 0; j < 3; j++) {
-				for (int k = 0; k < 3; k++) {
-					wc[j][k] = obj_vtx[face.vtx_idx[j]][k];			
-				}
-			}
-			for (int j = 0; j < 3; j++) {
-				float div_coef = 1.0f - wc[j][Z] / camera[Z];
-				for (int k = 0; k < 3; k++) {	
-					wc[j][k] /= div_coef;
-				}
-			}
-			for (int j = 0; j < 3; j++) {
-				world2screen (wc[j], vtx[j].coords);
-				vtx[j].txt_uv = obj_text[face.txt_idx[j]];
-				vtx[j].norm   = obj_norm[face.vtx_idx[j]];
-			}
-		}
-        draw_triangle (vtx, zbuffer, image, texture, light_dir);        
+		draw_triangle (vtx, zbuffer, image, texture, light_dir);        
     }
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
