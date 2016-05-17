@@ -1,6 +1,7 @@
 #include "tgaimage.h"
 #include "main.h"
 #include "wavefront_obj.h"
+
 #include <math.h>
 #include <stdint.h>
 
@@ -12,6 +13,7 @@ const int SCREEN_SIZE[3] = {width, height, depth};
 #define TEXTURE_U_SIZE 1024
 #define TEXTURE_V_SIZE 1024
 
+#define Pi 3.141592
 
 void  world2screen (const float4 &w, ScreenPt &s) {
 	s.x = (screenxy_t) w[X] / w[W];
@@ -176,6 +178,7 @@ void init_projection (fmat4 &m, const float val) {
 }
 
 void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 &up) {
+	
 	float3 z, x, y;
 	
 	float3_float3_sub(eye, center, z);
@@ -185,8 +188,8 @@ void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 
 	float3_float3_crossprod(z, x, y);
 	float3_normalize (y);
 	
-	fmat4 Minv;
-	fmat4 Tr;
+	fmat4 Minv = {0};
+	fmat4 Tr = {0};
 	for (int i = 0; i < 4; i++)	{
 		fmat4_set (Minv, i, i, 1.0f);
 		fmat4_set (Tr, i, i, 1.0f);
@@ -199,28 +202,63 @@ void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 
 		fmat4_set (Tr, i, 3, -center[i]);
 	}
 	fmat4_fmat4_mult(Minv, Tr, m);
+	//fmat4_fmat4_mult(Tr, Minv, m);
+	
 	
 	//for (int i = 0; i < 4; i++)	
 	//	fmat4_set (m, i, i, 1.0f);
 	
 }
 
+void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis) {
+	float rad = alpha_deg * 0.01745f; // degrees to rad conversion
+	float sin_alpha = sin(rad);
+	float cos_alpha = cos(rad);
+	
+	fmat4 r = {0};
+	
+	fmat4_set (r, 0, 0, (axis == X) ? 1.0f : cos_alpha);
+	fmat4_set (r, 1, 1, (axis == Y) ? 1.0f : cos_alpha);
+	fmat4_set (r, 2, 2, (axis == Z) ? 1.0f : cos_alpha);
+	fmat4_set (r, 3, 3,  1.0f);
+	
+	fmat4_set (r, 0, 1, (axis == Z) ? -sin_alpha : 0.0f);
+	fmat4_set (r, 0, 2, (axis == Y) ? -sin_alpha : 0.0f);
+	fmat4_set (r, 1, 2, (axis == X) ? -sin_alpha : 0.0f);
+	
+	fmat4_set (r, 1, 0, (axis == Z) ?  sin_alpha : 0.0f);
+	fmat4_set (r, 2, 0, (axis == Y) ?  sin_alpha : 0.0f);
+	fmat4_set (r, 2, 1, (axis == X) ?  sin_alpha : 0.0f);
+	
+	fmat4_fmat4_mult (in, r, out);
+}
 
-void init_model (fmat4 &m, const float3 &scale, const float3 &tran) {
+void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const float3 &tran) {
 	
 	// scale - rotate - translate
 	
 	// 1. scale	
-	fmat4_set (m, 0, 0, scale[X]);
-	fmat4_set (m, 1, 1, scale[Y]);
-	fmat4_set (m, 2, 2, scale[Z]);
-	fmat4_set (m, 3, 3, 1.0f);
+	fmat4 s = {0};
+	fmat4_set (s, 0, 0, scale[X]);
+	fmat4_set (s, 1, 1, scale[Y]);
+	fmat4_set (s, 2, 2, scale[Z]);
+	fmat4_set (s, 3, 3, 1.0f);
 	
+	// 2. rotate
+	fmat4 tmp1, tmp2, r;
+	rotate_coords (   s, tmp1, rotate[X], X);
+	rotate_coords (tmp1, tmp2, rotate[Y], Y);
+	rotate_coords (tmp2,    r, rotate[Z], Z);
+		
 	// 3. translate	
-	fmat4_set (m, 0, 3, tran[X]);
-	fmat4_set (m, 1, 3, tran[Y]);
-	fmat4_set (m, 2, 3, tran[Z]);
-	fmat4_set (m, 3, 3, 1.0f);
+	fmat4 t = {0};
+	for (int i = 0; i < 4; i++)	
+		fmat4_set (t, i, i, 1.0f);
+	fmat4_set (t, 0, 3, tran[X]);
+	fmat4_set (t, 1, 3, tran[Y]);
+	fmat4_set (t, 2, 3, tran[Z]);
+	
+	fmat4_fmat4_mult (r, t, m);
 }
 	
 void float3_float3_sub (const float3 &a, const float3 &b, float3 &c) {
@@ -270,17 +308,20 @@ int main(int argc, char** argv) {
     for (int i = 0; i < zbuffer_size; i++)
 		zbuffer[i] = 0;
     
-    float3 light_dir = { 0.0f,  0.0f, -1.0f};
-    float3 eye       = { 0.0f,  0.0f,  5.0f};
-    float3 center    = { 0.0f,  0.0f,  0.0f};
-    float3 up        = { 0.0f, -1.0f,  0.0f};
+    float3 light_dir  = { 0.0f,   0.0f,  -1.0f};
+    float3 eye        = { 0.0f,   0.0f,   5.0f};
+    float3 center     = { 0.0f,   0.0f,   0.0f};
+    float3 up         = { 0.0f,  -0.2f,   0.0f};
+	float3 obj_scale  = { 0.5f,   0.5f,   0.5f};
+	float3 obj_rotate = {15.0f,  15.0f,  15.0f};
+	float3 obj_tran   = { 0.25f, -0.25f,  0.0f};
 	
 	float3_normalize (light_dir);
         
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
 	printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
-	//float3_normalize (camera);
+	float3_normalize (camera);
 	printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
 	
 	
@@ -300,13 +341,13 @@ int main(int argc, char** argv) {
 	fmat4 tmp        = {0};
 	fmat4 tmp2       = {0};
 	
-	float3 scale = {0.5f , 0.5f, 0.5f};
-	float3 tran  = {0.25f, 0.0f, 0.0f};
 	
-	init_model      (model, scale, tran);
+	
+	init_model      (model, obj_scale, obj_rotate, obj_tran);
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
 	init_projection (projection, -1.0f/camera[Z]);
 	init_view       (view, eye, center, up);
+    
     
     for (int i = 0; i < NUM_OF_FACES; i++) {
 	//for (int i = 13; i < 35; i++) {
@@ -331,7 +372,7 @@ int main(int argc, char** argv) {
 			
 			fmat4_float4_mult (model, mc[j], wc[j]);
 			fmat4_float4_mult (view, wc[j], vc[j]);
-			fmat4_float4_mult (projection, wc[j], pc[j]);
+			fmat4_float4_mult (projection, vc[j], pc[j]);
 			fmat4_float4_mult (viewport, pc[j], sc[j]);
 			
 			world2screen (sc[j], vtx[j].coords);

@@ -3,10 +3,14 @@
 #include "tgaimage.h"
 #include <stdint.h>
 
+/*
 #define X 0
 #define Y 1
 #define Z 2
 #define W 3
+*/
+
+typedef enum {X = 0, Y, Z, W} axis;
 
 typedef int32_t int2 [2];
 typedef int32_t int3 [3];
