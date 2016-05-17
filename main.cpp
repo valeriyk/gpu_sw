@@ -1,12 +1,11 @@
 #include "tgaimage.h"
 #include "main.h"
 #include "wavefront_obj.h"
-
 #include <math.h>
 #include <stdint.h>
 
-const int width  = 1280;
-const int height = 720;
+const int width  = 800;//1280;
+const int height = 800;//720;
 const int depth  = 65536;
 const int SCREEN_SIZE[3] = {width, height, depth};
 
@@ -82,7 +81,7 @@ screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy
 	return max;
 }
 
-void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir)
+void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
 {
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, 0);
@@ -118,9 +117,10 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 					TGAColor color = texture.get(uu, vv);
 					
 					// interpolate normals
-					float intensity = 0.0f;
-					bool phong = 1;
-					bool gouraud = !phong;
+					float pix_intensity = 0.0f;
+					bool phong = 0;
+					bool gouraud = 0;
+					bool flat = 1;
 					
 					if (phong) {
 						float3 intnorm;
@@ -130,8 +130,8 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 						//intnorm.z = (v[0].norm.z*w0 + v[1].norm.z*w1 + v[2].norm.z*w2) / (w0 + w1 + w2);
 						
 						for (int i = 0; i < 3; i++)
-							intensity += (intnorm[i]*light_dir[i]);
-						intensity /= (light_dir[0] + light_dir[1] + light_dir[2]);
+							pix_intensity += (intnorm[i]*light_dir[i]);
+						//intensity /= (light_dir[0] + light_dir[1] + light_dir[2]);
 					}
 					else if (gouraud) {
 						float3 intnorm;
@@ -139,8 +139,12 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
 							intnorm[i] = v[i].norm[0]*light_dir[0] + v[i].norm[1]*light_dir[1] + v[0].norm[2]*light_dir[2];
 						//float v1int = v[1].norm.x*light_dir.x + v[1].norm.y*light_dir.y + v[1].norm.z*light_dir.z;
 						//float v2int = v[2].norm.x*light_dir.x + v[2].norm.y*light_dir.y + v[2].norm.z*light_dir.z;
-						intensity = -(intnorm[0]*w0 + intnorm[1]*w1 + intnorm[2]*w2) / (w0 + w1 + w2);
+						pix_intensity = -(intnorm[0]*w0 + intnorm[1]*w1 + intnorm[2]*w2) / (w0 + w1 + w2);
 					}
+					float intensity;
+					if (flat) intensity = tri_intensity;
+					else intensity = pix_intensity;
+					
 					if (intensity > 0) {
 						color.r = color.r * intensity;
 						color.g = color.g * intensity;
@@ -171,7 +175,7 @@ void init_projection (fmat4 &m, const float val) {
 	fmat4_set (m, 3, 2, val);
 }
 
-void init_view (fmat4 &m, float3 &eye, float3 &center, float3 &up) {
+void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 &up) {
 	float3 z, x, y;
 	
 	float3_float3_sub(eye, center, z);
@@ -181,17 +185,51 @@ void init_view (fmat4 &m, float3 &eye, float3 &center, float3 &up) {
 	float3_float3_crossprod(z, x, y);
 	float3_normalize (y);
 	
-	for (int i = 0; i < 3; i++)	{
-		fmat4_set (m, 0, i, x[i]);
-		fmat4_set (m, 1, i, y[i]);
-		fmat4_set (m, 2, i, z[i]);
-		fmat4_set (m, i, 3, -center[i]);
+	fmat4 Minv;
+	fmat4 Tr;
+	for (int i = 0; i < 4; i++)	{
+		fmat4_set (Minv, i, i, 1.0f);
+		fmat4_set (Tr, i, i, 1.0f);
 	}
-	fmat4_set (m, 3, 3, 1.0f);
+	
+	for (int i = 0; i < 3; i++)	{
+		fmat4_set (Minv, 0, i, x[i]);
+		fmat4_set (Minv, 1, i, y[i]);
+		fmat4_set (Minv, 2, i, z[i]);
+		fmat4_set (Tr, i, 3, -center[i]);
+	}
+	fmat4_fmat4_mult(Minv, Tr, m);
+	
+	//for (int i = 0; i < 4; i++)	
+	//	fmat4_set (m, i, i, 1.0f);
+	
 }
 
+
+void init_model (fmat4 &m, const float3 &scale, const float3 &tran) {
+	
+	// scale - rotate - translate
+	
+	// 1. scale	
+	fmat4_set (m, 0, 0, scale[X]);
+	fmat4_set (m, 1, 1, scale[Y]);
+	fmat4_set (m, 2, 2, scale[Z]);
+	fmat4_set (m, 3, 3, 1.0f);
+	
+	// 3. translate	
+	fmat4_set (m, 0, 3, tran[X]);
+	fmat4_set (m, 1, 3, tran[Y]);
+	fmat4_set (m, 2, 3, tran[Z]);
+	fmat4_set (m, 3, 3, 1.0f);
+}
+	
 void float3_float3_sub (const float3 &a, const float3 &b, float3 &c) {
 	for (int i = 0; i < 3; i++) c[i] = a[i] - b[i];
+}
+float float3_float3_smult (const float3 &a, const float3 &b) {
+	float smult = 0;
+	for (int i = 0; i < 3; i++ ) smult += a[i]*b[i];
+	return smult;
 }
 
 void float3_normalize (float3 &v) {
@@ -207,17 +245,20 @@ void float3_float3_crossprod(const float3 &a, const float3 &b, float3 &c) {
 
 int main(int argc, char** argv) {
     
-    const int NUM_OF_VERTICES = 1258;
-    const int NUM_OF_VTEXTURES = 1339;
-    const int NUM_OF_FACES = 2492;
-    const int NUM_OF_NORMALES = NUM_OF_VERTICES;
     
-    float3   obj_vtx  [NUM_OF_VERTICES];
-    float3   obj_norm [NUM_OF_NORMALES];
-    Point2Df obj_text [NUM_OF_VTEXTURES];
-    Face     obj_face [NUM_OF_FACES];
+    const int NUM_OF_VERTICES  = 1258;
+    const int NUM_OF_VTEXTURES = 1339;
+    const int NUM_OF_FACES     = 2492;
+    const int NUM_OF_NORMALES  = NUM_OF_VERTICES;
+   
+    
+    float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
+    float3   obj_norm [NUM_OF_NORMALES]  = {0};
+    Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
+    Face     obj_face [NUM_OF_FACES]     = {0};
         
 	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
+	//read_obj_file ("obj/cube.obj", obj_vtx, obj_norm, obj_text, obj_face);
     TGAImage image(width, height, TGAImage::RGB);
     
     TGAImage texture(1024, 1024, TGAImage::RGB);
@@ -229,16 +270,20 @@ int main(int argc, char** argv) {
     for (int i = 0; i < zbuffer_size; i++)
 		zbuffer[i] = 0;
     
-    float3 light_dir = { 1.0f,  1.0f,  1.0f};
-    float3 eye       = { 0.0f, -1.0f,  3.0f};
-    float3 center    = { 0.0f,  0.0f,  5.0f};
-    float3 up        = { 0.0f,  1.0f,  0.0f};
+    float3 light_dir = { 0.0f,  0.0f, -1.0f};
+    float3 eye       = { 0.0f,  0.0f,  5.0f};
+    float3 center    = { 0.0f,  0.0f,  0.0f};
+    float3 up        = { 0.0f, -1.0f,  0.0f};
 	
 	float3_normalize (light_dir);
         
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
-	float3_normalize (camera);
+	printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
+	//float3_normalize (camera);
+	printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
+	
+	
 	
 	// 0. Read local vertex coords
 	// 1. Model - transform local coords to global
@@ -248,16 +293,20 @@ int main(int argc, char** argv) {
 	
 	
 	
-	//fmat4 model      = {0};
+	fmat4 model      = {0};
 	fmat4 view       = {0};
 	fmat4 projection = {0};
 	fmat4 viewport   = {0};
 	fmat4 tmp        = {0};
+	fmat4 tmp2       = {0};
 	
-	init_projection (projection, -1.0f/camera[Z]);
+	float3 scale = {0.5f , 0.5f, 0.5f};
+	float3 tran  = {0.25f, 0.0f, 0.0f};
+	
+	init_model      (model, scale, tran);
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+	init_projection (projection, -1.0f/camera[Z]);
 	init_view       (view, eye, center, up);
-    
     
     for (int i = 0; i < NUM_OF_FACES; i++) {
 	//for (int i = 13; i < 35; i++) {
@@ -265,20 +314,25 @@ int main(int argc, char** argv) {
         
         // Fetch coords of vertices into three float[4] arrays
         Vertex vtx[3];
-        float4 wc[3];
-		float4 sc[3];
+        float4 mc[3]; // model coordinates
+        float4 wc[3]; // world coordinates
+        float4 vc[3]; // view coordinates
+        float4 pc[3]; // projection coordinates
+		float4 sc[3]; // screen coordinates
+		
         
 		// for each vertex j of a triangle
 		for (int j = 0; j < 3; j++) {
 			// for each coord of vertex j
 			for (int k = 0; k < 3; k++) {
-				wc[j][k] = obj_vtx[face.vtx_idx[j]][k];	
+				mc[j][k] = obj_vtx[face.vtx_idx[j]][k];	
 			}
-			wc[j][W] = 1.0f; // W component
+			mc[j][W] = 1.0f; // W component
 			
-			fmat4_fmat4_mult  (viewport, projection, tmp);
-			fmat4_float4_mult (tmp, wc[j], sc[j]);
-			//fmat4_float4_mult (viewport, wc[j], sc[j]);
+			fmat4_float4_mult (model, mc[j], wc[j]);
+			fmat4_float4_mult (view, wc[j], vc[j]);
+			fmat4_float4_mult (projection, wc[j], pc[j]);
+			fmat4_float4_mult (viewport, pc[j], sc[j]);
 			
 			world2screen (sc[j], vtx[j].coords);
 			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
@@ -287,7 +341,36 @@ int main(int argc, char** argv) {
 			}
 			
 		}
-		draw_triangle (vtx, zbuffer, image, texture, light_dir);        
+		
+		float tri_intensity = 0;
+		bool flat = 1;
+		if (flat) {
+			// flat shading
+			 
+			// move two sides of the triangle to (0,0,0) each
+			
+			float3 w[3];
+			for (int k = 0; k < 3; k++)
+				for (int m = 0; m < 3; m++)
+					w[k][m] = wc[k][m];
+				
+			float3 f0;
+			float3 f1;
+			float3_float3_sub (w[2], w[0], f0); 
+			float3_float3_sub (w[1], w[0], f1); 
+			
+			// cross product of two sides
+			float3 tri_normal;
+			float3_float3_crossprod (f0, f1, tri_normal);
+			
+			// normalize the cross product: divide each vector coordinate by the vector length
+			float3_normalize (tri_normal);
+		
+			// scalar product, gives zero when normal is perpendicular to light vector
+			//tri_intensity = float3_float3_smult (tri_normal, light_dir);
+			tri_intensity = float3_float3_smult (tri_normal, light_dir);
+		}
+		draw_triangle (vtx, zbuffer, image, texture, light_dir, tri_intensity);        
     }
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
@@ -295,32 +378,6 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
-
-
-       /*
-        if (0) {
-			// flat shading
-			 
-			// move two sides of the triangle to (0,0,0) each
-        
-			float3 f0;
-			float3 f1;
-			float3_float3_sub (w2, w0, f0); 
-			float3_float3_sub (w1, w0, f1); 
-			
-			// cross product of two sides
-			float3 tri_normal, tmp;
-			float3_float3_crossprod (f0, f1, tmp);
-			
-			// normalize the cross product: divide each vector coordinate by the vector length
-			float3_normalize (tmp, tri_normal);
-		
-			// scalar product, gives zero when normal is perpendicular to light vector
-			float intensity = float3_float3_smult (tri_normal, light_dir);
-			if (intensity > 0) draw_triangle (s0, s1, s2, zbuffer, image, texture, intensity);
-		}
-		*/
 
 
 /*

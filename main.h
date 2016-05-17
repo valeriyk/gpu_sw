@@ -25,9 +25,9 @@ void  fmat4_fmat4_mult  (const fmat4 &a, const  fmat4& b,  fmat4& c);
 void  fmat4_float4_mult (const fmat4 &a, const float4& b, float4& c);
 
 
-void init_viewport (fmat4 &m, int x, int y, int w, int h, int d);
+void init_viewport (fmat4 &m, const int x, const int y, const int w, const int h, const int d);
 void init_projection (fmat4 &m, const float val);
-void init_view (fmat4 &m, float3 &eye, float3 &center, float3 &up);
+void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 &up);
 
 void float3_float3_sub (const float3 &a, const float3 &b, float3 &c);
 void float3_normalize (float3 &v);
