@@ -131,7 +131,7 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (r, t, m);
 }
 
-void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
+void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
 {
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, 0);
@@ -146,61 +146,29 @@ void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAIma
     for (p.y = min_y; p.y < max_y; p.y++) {
         for (p.x = min_x; p.x < max_x; p.x++) {
             // Determine whether a point is to the left,
-            // to the right, or on an edge of a triangle.
+            // to the right, or on the edge of a triangle.
             // Repeat for all edges.
-            int w0 = orient2d(v[1].coords, v[2].coords, p);
-            int w1 = orient2d(v[2].coords, v[0].coords, p);
-            int w2 = orient2d(v[0].coords, v[1].coords, p);
-			// If p is on or inside all edges, render pixel.
-            if ((w0 == 0) && (w1 == 0) && (w2 == 0)) continue;
-			else if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                int z = (v[0].coords.z*w0 + v[1].coords.z*w1 + v[2].coords.z*w2) / (w0 + w1 + w2); // TBD change to screenz_t or use p.z;
+            int3 barc;
+            barc[0] = orient2d(v[1].coords, v[2].coords, p);
+            barc[1] = orient2d(v[2].coords, v[0].coords, p);
+            barc[2] = orient2d(v[0].coords, v[1].coords, p);
+            
+            int barc_sum = 0;
+            for (int i = 0; i < 3; i++) barc_sum += barc[i];
+            // If p is on or inside all edges, render pixel.
+            //if ((barc[0] == 0) && (barc[1] == 0) && (barc[2] == 0)) continue;
+			if (barc_sum == 0) continue;
+			else if (barc[0] >= 0 && barc[1] >= 0 && barc[2] >= 0) {
+                int z = 0; // TBD change to screenz_t or use p.z;
+                for (int i = 0; i < 3; i++) z += v[i].coords.z*barc[i];
+                z /= barc_sum;
+                
                 if (zbuffer[p.x + p.y*width] < z) {
 					zbuffer[p.x + p.y*width] = (screenz_t) z;
 					
-					int uu = (int) (TEXTURE_U_SIZE * (v[0].txt_uv.u*w0 + v[1].txt_uv.u*w1 + v[2].txt_uv.u*w2) / (w0 + w1 + w2));
-					int vv = (int) (TEXTURE_V_SIZE * (v[0].txt_uv.v*w0 + v[1].txt_uv.v*w1 + v[2].txt_uv.v*w2) / (w0 + w1 + w2));
-			
-					if (uu < 0 || vv < 0 ) printf ("A");
-					else if (uu >= TEXTURE_U_SIZE || vv >= TEXTURE_V_SIZE) printf ("B");
-			
-					TGAColor color = texture.get(uu, vv);
-					
-					// interpolate normals
-					float pix_intensity = 0.0f;
-					bool phong = 0;
-					bool gouraud = 0;
-					bool flat = 1;
-					
-					if (phong) {
-						float3 intnorm;
-						for (int i = 0; i < 3; i++)
-							intnorm[i] = (v[0].norm[i]*w0 + v[1].norm[i]*w1 + v[2].norm[i]*w2) / (w0 + w1 + w2);
-						//intnorm.y = (v[0].norm.y*w0 + v[1].norm.y*w1 + v[2].norm.y*w2) / (w0 + w1 + w2);
-						//intnorm.z = (v[0].norm.z*w0 + v[1].norm.z*w1 + v[2].norm.z*w2) / (w0 + w1 + w2);
-						
-						for (int i = 0; i < 3; i++)
-							pix_intensity += (intnorm[i]*light_dir[i]);
-						//intensity /= (light_dir[0] + light_dir[1] + light_dir[2]);
-					}
-					else if (gouraud) {
-						float3 intnorm;
-						for (int i = 0; i < 3; i++)
-							intnorm[i] = v[i].norm[0]*light_dir[0] + v[i].norm[1]*light_dir[1] + v[0].norm[2]*light_dir[2];
-						//float v1int = v[1].norm.x*light_dir.x + v[1].norm.y*light_dir.y + v[1].norm.z*light_dir.z;
-						//float v2int = v[2].norm.x*light_dir.x + v[2].norm.y*light_dir.y + v[2].norm.z*light_dir.z;
-						pix_intensity = -(intnorm[0]*w0 + intnorm[1]*w1 + intnorm[2]*w2) / (w0 + w1 + w2);
-					}
-					float intensity;
-					if (flat) intensity = tri_intensity;
-					else intensity = pix_intensity;
-					
-					if (intensity > 0) {
-						color.r = color.r * intensity;
-						color.g = color.g * intensity;
-						color.b = color.b * intensity;
-						image.set(p.x, p.y, color);
-					}
+					TGAColor color;
+					bool draw = shader (v, barc, color);
+					if (draw) image.set (p.x, p.y, color);
 				}
 			}
         }

@@ -29,6 +29,7 @@ void  fmat4_float4_mult (const fmat4 &a, const float4 &b, float4 &c) {
 void float3_float3_sub (const float3 &a, const float3 &b, float3 &c) {
 	for (int i = 0; i < 3; i++) c[i] = a[i] - b[i];
 }
+
 float float3_float3_smult (const float3 &a, const float3 &b) {
 	float smult = 0;
 	for (int i = 0; i < 3; i++ ) smult += a[i]*b[i];

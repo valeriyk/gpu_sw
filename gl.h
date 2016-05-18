@@ -35,14 +35,7 @@ typedef struct Vertex {
 	ScreenPt coords;
 } Vertex;
 
-/*
-void init_viewport (fmat4 &m, const int x, const int y, const int w, const int h, const int d);
-void init_projection (fmat4 &m, const float val);
-void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 &up);
-
-void draw_triangle (const Vertex v[3], screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir);
-*/
-
+typedef bool (*pixel_shader) (const Vertex *v, const int3 &barc, TGAColor &color);
 
 int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 
@@ -58,4 +51,4 @@ void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int
 
 void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis);
 
-void draw_triangle (const Vertex *v, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity);
+void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity);
