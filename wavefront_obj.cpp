@@ -1,4 +1,3 @@
-#include "main.h"
 #include "wavefront_obj.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,7 @@
 #pragma once 
 
-#include "main.h"
+#include "geometry.h"
+#include "gl.h"
 
 typedef enum {V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
 typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;  
