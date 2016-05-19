@@ -22,7 +22,7 @@ Face     obj_face [NUM_OF_FACES]     = {0};
 TGAImage texture(1024, 1024, TGAImage::RGB);
 
 
-void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, const int vtx_idx, ScreenPt &sp) {
+void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, const float3 &vtx3d, ScreenPt &sp) {
 	
 	float4 mc; // model coordinates
     float4 wc; // world coordinates
@@ -32,7 +32,7 @@ void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &proje
 		
 	// for each coord of vertex j
 	for (int k = 0; k < 3; k++) {
-		mc[k] = obj_vtx[vtx_idx][k];	
+		mc[k] = vtx3d[k];	
 	}
 	mc[W] = 1.0f; // W component
 	
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
         // for each vertex j of a triangle
         Vertex vtx[3];     
 		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (model, view, projection, viewport, face.vtx_idx[j], vtx[j].coords);
+			my_vertex_shader (model, view, projection, viewport, obj_vtx[face.vtx_idx[j]], vtx[j].coords);
 			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
 			for (int k = 0; k < 3; k++) {
 				vtx[j].norm[k]   = obj_norm[face.vtx_idx[j]][k];
