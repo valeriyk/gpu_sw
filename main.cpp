@@ -164,7 +164,8 @@ int main(int argc, char** argv) {
     
     
     int face[3][3]; // 3 vertices and 3 indices for each (coordinate, texture, normal)
-    for (int i = 0; i < NUM_OF_FACES; i++) {
+    //for (int i = 0; i < NUM_OF_FACES; i++) {
+    for (int i = 0; i < (obj_face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         //Face face = obj_face[i];
         for (int j = 0; j < 3; j++) {
