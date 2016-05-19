@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 
-
+/*
 // globals
 
 const int NUM_OF_VERTICES  = 1258;
@@ -18,7 +18,7 @@ float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
 float3   obj_norm [NUM_OF_NORMALES]  = {0};
 Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
 Face     obj_face [NUM_OF_FACES]     = {0};
-
+*/
 TGAImage texture(1024, 1024, TGAImage::RGB);
 
 
@@ -95,7 +95,7 @@ bool my_pixel_shader (const Vertex *v, const int3 &barc, TGAColor &color) {
     
 int main(int argc, char** argv) {
     
-    /*
+    
     const int NUM_OF_VERTICES  = 1258;
     const int NUM_OF_VTEXTURES = 1339;
     const int NUM_OF_FACES     = 2492;
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     float3   obj_norm [NUM_OF_NORMALES]  = {0};
     Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
     Face     obj_face [NUM_OF_FACES]     = {0};
-    */
+    
         
 	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
 	//read_obj_file ("obj/cube.obj", obj_vtx, obj_norm, obj_text, obj_face);
