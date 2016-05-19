@@ -20,9 +20,10 @@ typedef struct Point2D {
     int x, y;
 } Point2D;
 
-typedef struct Point2Df {
+/*typedef struct Point2Df {
     float u, v;
 } Point2Df;
+*/
 
 typedef struct Face {
 	int3 vtx_idx; // vertex indices
@@ -31,7 +32,7 @@ typedef struct Face {
 
 typedef struct Vertex {
 	float3 norm;
-	Point2Df txt_uv;
+	float2 text;
 	ScreenPt coords;
 } Vertex;
 

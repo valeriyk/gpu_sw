@@ -50,8 +50,8 @@ bool my_pixel_shader (const Vertex *v, const int3 &barc, TGAColor &color) {
 	int barc_sum = 0;
 	for (int i = 0; i < 3; i++) barc_sum += barc[i];
 	
-	int uu = (int) (TEXTURE_U_SIZE * (v[0].txt_uv.u*barc[0] + v[1].txt_uv.u*barc[1] + v[2].txt_uv.u*barc[2]) / barc_sum);
-	int vv = (int) (TEXTURE_V_SIZE * (v[0].txt_uv.v*barc[0] + v[1].txt_uv.v*barc[1] + v[2].txt_uv.v*barc[2]) / barc_sum);
+	int uu = (int) (TEXTURE_U_SIZE * (v[0].text[0]*barc[0] + v[1].text[0]*barc[1] + v[2].text[0]*barc[2]) / barc_sum);
+	int vv = (int) (TEXTURE_V_SIZE * (v[0].text[1]*barc[0] + v[1].text[1]*barc[1] + v[2].text[1]*barc[2]) / barc_sum);
 
 	TGAColor tmpcolor = texture.get(uu, vv);
 	
@@ -103,14 +103,14 @@ int main(int argc, char** argv) {
     const int NUM_OF_NORMALES  = NUM_OF_VERTICES;
    
     //float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
-    float3   obj_norm [NUM_OF_NORMALES]  = {0};
-    Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
+    //float3   obj_norm [NUM_OF_NORMALES]  = {0};
+    //Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
     Face     obj_face [NUM_OF_FACES]     = {0};
     
     
 	DynArray *obj_vtx  = dyn_array_create (sizeof(float), 384);
-	//DynArray obj_norm = dyn_array_create (sizeof(float),   256);
-	//DynArray obj_text = dyn_array_create (sizeof(Point2Df), 256);
+	DynArray *obj_norm = dyn_array_create (sizeof(float), 384);
+	DynArray *obj_text = dyn_array_create (sizeof(float), 256);
 	//DynArray obj_face = dyn_array_create (sizeof(Face),     256);
 	
 	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
@@ -171,19 +171,19 @@ int main(int argc, char** argv) {
         Vertex vtx[3];     
 		for (int j = 0; j < 3; j++) {
 			float3 tmp;
-			//tmp = (float3) dyn_array_get(obj_vtx, face.vtx_idx[j]*3);
 			for (int k = 0; k < 3; k++) {
-				//tmp = (float*) dyn_array_get(obj_vtx, face.vtx_idx[j]*3 + k);
-				//tmp2[k] = *tmp;
-				//tmp[k] = *(float**) dyn_array_get(obj_vtx, face.vtx_idx[j]*3 + k);
-				tmp[k] = *((float*) obj_vtx->data[face.vtx_idx[j]*3 + k]);
-				//printf ("face %d, vertex %d, coord %d = %f, face.vtx_idx[j] = %d\n", i, j, k, tmp2, face.vtx_idx[j]);
+				tmp[k] = *((float*) dyn_array_get (obj_vtx, face.vtx_idx[j]*3 + k));
 			}
-			//printf ("world coords for vtx shader: x = %f, y = %f, z = %f\n", tmp[0], tmp[1], tmp[2]);
+			
 			my_vertex_shader (model, view, projection, viewport, tmp, vtx[j].coords);
-			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
+			
+			//vtx[j].txt_uv = obj_text[face.txt_idx[j]];
+			for (int k = 0; k < 2; k++) {
+				vtx[j].text[k] = *((float*) dyn_array_get (obj_text, face.txt_idx[j]*2 + k));//obj_norm[face.vtx_idx[j]][k];
+			}
+			
 			for (int k = 0; k < 3; k++) {
-				vtx[j].norm[k]   = obj_norm[face.vtx_idx[j]][k];
+				vtx[j].norm[k] = *((float*) dyn_array_get (obj_norm, face.vtx_idx[j]*3 + k));//obj_norm[face.vtx_idx[j]][k];
 			}
 		}
 		

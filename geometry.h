@@ -6,7 +6,7 @@
 typedef int32_t int3 [3];
 //typedef int32_t int4 [4];
 
-//typedef float float2 [2];
+typedef float float2 [2];
 typedef float float3 [3];
 typedef float float4 [4];
 

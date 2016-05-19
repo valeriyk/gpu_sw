@@ -6,7 +6,7 @@
 // Parse Wavefront OBJ format
 
 //int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
-int read_obj_file (const char *filename, DynArray *obj_vtx, float3 *obj_norm, Point2Df *obj_text, Face *obj_face) {
+int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, Face *obj_face) {
 
     const int ALPHA_SIZE = 16;
     
@@ -118,14 +118,24 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, float3 *obj_norm, Po
 						}
 						else if (VT_DATA == line_type) {
 							float af = (float) atof (alpha_num);
-							if      (line_field == VALUE1) obj_text[text_idx].u = af;
-							else if (line_field == VALUE2) obj_text[text_idx].v = af;
+							if ((line_field == VALUE1) || (line_field == VALUE2)) {
+								float *data = (float*) dyn_array_new(obj_text);
+								*data = af;
+								dyn_array_push (obj_text, data);
+							}
+							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
+							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
 						}
 						else if (VN_DATA == line_type) {
 							float af = (float) atof (alpha_num);
-							if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
-							else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;
-							else if (line_field == VALUE3) obj_norm[norm_idx][2] = af;
+							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
+								float *data = (float*) dyn_array_new(obj_norm);
+								*data = af;
+								dyn_array_push (obj_norm, data);
+							}
+							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
+							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;
+							//else if (line_field == VALUE3) obj_norm[norm_idx][2] = af;
 						}
 						
 						if (c == '/') {
