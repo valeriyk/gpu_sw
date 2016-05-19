@@ -144,6 +144,9 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
     
     // Rasterize:
     // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
+    // 1.a. dumb method: just compute all the values for each pixel
+    // 2.a. smart method: compute values once per triangle, then just increment every
+    //      pixel and every row
     // 2. interpolate values such as Z for every pixel:
     // 2.a. dumb method: Z = (z0*bar0+z1*bar1+z2*bar2)/sum_of_bar
 	//      *divide by sum_of_bar because bar values are not normalized
