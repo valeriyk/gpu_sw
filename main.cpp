@@ -3,6 +3,7 @@
 #include "wavefront_obj.h"
 #include "geometry.h"
 #include "gl.h"
+#include "dyn_array.h"
 #include <stdint.h>
 
 
@@ -101,12 +102,17 @@ int main(int argc, char** argv) {
     const int NUM_OF_FACES     = 2492;
     const int NUM_OF_NORMALES  = NUM_OF_VERTICES;
    
-    float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
+    //float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
     float3   obj_norm [NUM_OF_NORMALES]  = {0};
     Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
     Face     obj_face [NUM_OF_FACES]     = {0};
     
-        
+    
+	DynArray *obj_vtx  = dyn_array_create (sizeof(float), 384);
+	//DynArray obj_norm = dyn_array_create (sizeof(float),   256);
+	//DynArray obj_text = dyn_array_create (sizeof(Point2Df), 256);
+	//DynArray obj_face = dyn_array_create (sizeof(Face),     256);
+	
 	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
 	//read_obj_file ("obj/cube.obj", obj_vtx, obj_norm, obj_text, obj_face);
     TGAImage image(width, height, TGAImage::RGB);
@@ -164,7 +170,17 @@ int main(int argc, char** argv) {
         // for each vertex j of a triangle
         Vertex vtx[3];     
 		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (model, view, projection, viewport, obj_vtx[face.vtx_idx[j]], vtx[j].coords);
+			float3 tmp;
+			//tmp = (float3) dyn_array_get(obj_vtx, face.vtx_idx[j]*3);
+			for (int k = 0; k < 3; k++) {
+				//tmp = (float*) dyn_array_get(obj_vtx, face.vtx_idx[j]*3 + k);
+				//tmp2[k] = *tmp;
+				//tmp[k] = *(float**) dyn_array_get(obj_vtx, face.vtx_idx[j]*3 + k);
+				tmp[k] = *((float*) obj_vtx->data[face.vtx_idx[j]*3 + k]);
+				//printf ("face %d, vertex %d, coord %d = %f, face.vtx_idx[j] = %d\n", i, j, k, tmp2, face.vtx_idx[j]);
+			}
+			//printf ("world coords for vtx shader: x = %f, y = %f, z = %f\n", tmp[0], tmp[1], tmp[2]);
+			my_vertex_shader (model, view, projection, viewport, tmp, vtx[j].coords);
 			vtx[j].txt_uv = obj_text[face.txt_idx[j]];
 			for (int k = 0; k < 3; k++) {
 				vtx[j].norm[k]   = obj_norm[face.vtx_idx[j]][k];
@@ -205,6 +221,8 @@ int main(int argc, char** argv) {
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("output.tga");
 
+	dyn_array_destroy (obj_vtx);
+	
     return 0;
 }
 

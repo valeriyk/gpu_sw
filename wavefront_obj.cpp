@@ -1,10 +1,12 @@
 #include "wavefront_obj.h"
+#include "dyn_array.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 // Parse Wavefront OBJ format
 
-int read_obj_file (const char *filename, float3 *obj_vtx, float3 *obj_norm, Point2Df *obj_text, Face *obj_face) {
+//int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
+int read_obj_file (const char *filename, DynArray *obj_vtx, float3 *obj_norm, Point2Df *obj_text, Face *obj_face) {
 
     const int ALPHA_SIZE = 16;
     
@@ -89,9 +91,16 @@ int read_obj_file (const char *filename, float3 *obj_vtx, float3 *obj_norm, Poin
 						// convert string to number and save it
 						if (V_DATA == line_type) {
 							float af = (float) atof (alpha_num);
-							if      (line_field == VALUE1) obj_vtx[vtx_idx][0] = af;
-							else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
-							else if (line_field == VALUE3) obj_vtx[vtx_idx][2] = af;
+							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
+								
+								float *data = (float*) dyn_array_new(obj_vtx);
+								*data = af;
+								//printf ("obj_vtx = %f\n", obj_vtx->data);
+								dyn_array_push (obj_vtx, data);
+							}
+							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
+							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
+							//else if (line_field == VALUE3) obj_vtx[vtx_idx][2] = af;
 						}
 						else if (F_DATA == line_type) {
 							int ai = atoi (alpha_num);
