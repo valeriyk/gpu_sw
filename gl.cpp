@@ -140,20 +140,75 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
     screenxy_t min_y = tri_min_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, 0);
     screenxy_t max_y = tri_max_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, SCREEN_SIZE[1]);
     
-    // Rasterize
+    if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
+    
+    // Rasterize:
+    // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
+    // 2. interpolate values such as Z for every pixel:
+    // 2.a. dumb method: Z = (z0*bar0+z1*bar1+z2*bar2)/sum_of_bar
+	//      *divide by sum_of_bar because bar values are not normalized
+	// 2.b. smart method: Z = z0 + bar1*(z1-z0)/sum_of_bar + bar2*(z2-z0)/sum_of_bar
+	//      *can get rid of bar0
+	//      **(z1-z0)/sum_of_bar is constant for a triangle
+	//      ***(z2-z0)/sum_of_bar is constant for a triangle
+	
+	
+	ScreenPt test_pt;
+	test_pt.x = min_x;
+	test_pt.y = min_y;
+	test_pt.z = 0;
+	
+	int A01 = v[0].coords.y - v[1].coords.y;
+	int A12 = v[1].coords.y - v[2].coords.y;
+	int A20 = v[2].coords.y - v[0].coords.y;
+	int B01 = v[1].coords.x - v[0].coords.x;
+	int B12 = v[2].coords.x - v[1].coords.x;
+	int B20 = v[0].coords.x - v[2].coords.x;
+	
+	int3 bar_row;
+	bar_row[0] = orient2d(v[1].coords, v[2].coords, test_pt); // not normalized
+    bar_row[1] = orient2d(v[2].coords, v[0].coords, test_pt); // not normalized
+    bar_row[2] = orient2d(v[0].coords, v[1].coords, test_pt); // not normalized
+            
+	int sum_of_bars = bar_row[0] + bar_row[1] + bar_row[2];
+	if (sum_of_bars == 0) {
+		printf ("Im gonna die!!!\n");
+		return;
+	}
+	int z1z0_over_sob = (v[1].coords.z - v[0].coords.z) / sum_of_bars;
+	int z2z0_over_sob = (v[2].coords.z - v[0].coords.z) / sum_of_bars;
+	
     ScreenPt p;
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {
+		
+		int3 bar;		
+		for (int i = 0; i < 3; i++) bar[i] = bar_row[i];
+		
         for (p.x = min_x; p.x < max_x; p.x++) {
             // Determine whether a point is to the left,
             // to the right, or on the edge of a triangle.
             // Repeat for all edges.
-            int3 barc;
-            barc[0] = orient2d(v[1].coords, v[2].coords, p);
-            barc[1] = orient2d(v[2].coords, v[0].coords, p);
-            barc[2] = orient2d(v[0].coords, v[1].coords, p);
-            
-            int barc_sum = 0;
+            //int3 barc;
+            /*
+             * bar[0] = orient2d(v[1].coords, v[2].coords, p); // not normalized TBD remove
+            bar[1] = orient2d(v[2].coords, v[0].coords, p); // not normalized
+            bar[2] = orient2d(v[0].coords, v[1].coords, p); // not normalized
+            */
+            // If p is on or inside all edges, render pixel.
+            if ((bar[0] | bar[1] | bar[2]) > 0) {
+								
+				int z = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				
+				if (zbuffer[p.x + p.y*width] < z) {
+					zbuffer[p.x + p.y*width] = (screenz_t) z;
+					
+					TGAColor color;
+					bool draw = shader (v, bar, color);
+					if (draw) image.set (p.x, p.y, color);
+				}
+			}
+            /*int barc_sum = 0;
             for (int i = 0; i < 3; i++) barc_sum += barc[i];
             // If p is on or inside all edges, render pixel.
             //if ((barc[0] == 0) && (barc[1] == 0) && (barc[2] == 0)) continue;
@@ -171,7 +226,15 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
 					if (draw) image.set (p.x, p.y, color);
 				}
 			}
+			*/
+			bar[0] += A12;
+			bar[1] += A20;
+			bar[2] += A01;
         }
+        
+        bar_row[0] += B12;
+        bar_row[1] += B20;
+        bar_row[2] += B01;
     }
 }
 
