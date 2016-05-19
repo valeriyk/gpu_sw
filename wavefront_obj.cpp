@@ -6,7 +6,7 @@
 // Parse Wavefront OBJ format
 
 //int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
-int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, Face *obj_face) {
+int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
 
     const int ALPHA_SIZE = 16;
     
@@ -105,16 +105,24 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 						else if (F_DATA == line_type) {
 							int ai = atoi (alpha_num);
 							ai--; // decrement all indices because in OBJ they start at 1
-							if (VERTEX_IDX == face_elem) {							
-								if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
-								else if (line_field == VALUE2) obj_face[face_idx].vtx_idx[1] = ai;
-								else if (line_field == VALUE3) obj_face[face_idx].vtx_idx[2] = ai;
+							if ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX)) {
+								int *data = (int*) dyn_array_new(obj_face);
+								*data = ai;
+								//printf ("obj_vtx = %f\n", obj_vtx->data);
+								dyn_array_push (obj_face, data);
+							}
+							/*if (VERTEX_IDX == face_elem) {							
+								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
+								//else if (line_field == VALUE2) obj_face[face_idx].vtx_idx[1] = ai;
+								//else if (line_field == VALUE3) obj_face[face_idx].vtx_idx[2] = ai;
 							}
 							else if (TEXTURE_IDX == face_elem) {							
-								if      (line_field == VALUE1) obj_face[face_idx].txt_idx[0] = ai;
-								else if (line_field == VALUE2) obj_face[face_idx].txt_idx[1] = ai;
-								else if (line_field == VALUE3) obj_face[face_idx].txt_idx[2] = ai;
+								//if      (line_field == VALUE1) obj_face[face_idx].txt_idx[0] = ai;
+								//else if (line_field == VALUE2) obj_face[face_idx].txt_idx[1] = ai;
+								//else if (line_field == VALUE3) obj_face[face_idx].txt_idx[2] = ai;
 							}
+							else if (NORMAL_IDX == face_elem) {
+							}*/
 						}
 						else if (VT_DATA == line_type) {
 							float af = (float) atof (alpha_num);

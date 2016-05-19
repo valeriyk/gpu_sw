@@ -105,13 +105,13 @@ int main(int argc, char** argv) {
     //float3   obj_vtx  [NUM_OF_VERTICES]  = {0};
     //float3   obj_norm [NUM_OF_NORMALES]  = {0};
     //Point2Df obj_text [NUM_OF_VTEXTURES] = {0};
-    Face     obj_face [NUM_OF_FACES]     = {0};
+    //Face     obj_face [NUM_OF_FACES]     = {0};
     
     
-	DynArray *obj_vtx  = dyn_array_create (sizeof(float), 384);
-	DynArray *obj_norm = dyn_array_create (sizeof(float), 384);
-	DynArray *obj_text = dyn_array_create (sizeof(float), 256);
-	//DynArray obj_face = dyn_array_create (sizeof(Face),     256);
+	DynArray *obj_vtx  = dyn_array_create (sizeof (float), 384);
+	DynArray *obj_norm = dyn_array_create (sizeof (float), 384);
+	DynArray *obj_text = dyn_array_create (sizeof (float), 256);
+	DynArray *obj_face = dyn_array_create (sizeof   (int), 768);
 	
 	read_obj_file ("obj/african_head.obj", obj_vtx, obj_norm, obj_text, obj_face);
 	//read_obj_file ("obj/cube.obj", obj_vtx, obj_norm, obj_text, obj_face);
@@ -163,27 +163,33 @@ int main(int argc, char** argv) {
 	init_view       (view, eye, center, up);
     
     
+    int face[3][3]; // 3 vertices and 3 indices for each (coordinate, texture, normal)
     for (int i = 0; i < NUM_OF_FACES; i++) {
 	//for (int i = 13; i < 35; i++) {
-        Face face = obj_face[i];
-        
+        //Face face = obj_face[i];
+        for (int j = 0; j < 3; j++) {
+			for (int k = 0; k < 3; k++) {
+				face[j][k] = *((int*) dyn_array_get (obj_face, i*9 + j*3 + k));
+			}
+		}
+		        
         // for each vertex j of a triangle
         Vertex vtx[3];     
 		for (int j = 0; j < 3; j++) {
 			float3 tmp;
 			for (int k = 0; k < 3; k++) {
-				tmp[k] = *((float*) dyn_array_get (obj_vtx, face.vtx_idx[j]*3 + k));
+				tmp[k] = *((float*) dyn_array_get (obj_vtx, face[j][0]*3 + k));
 			}
 			
 			my_vertex_shader (model, view, projection, viewport, tmp, vtx[j].coords);
 			
 			//vtx[j].txt_uv = obj_text[face.txt_idx[j]];
 			for (int k = 0; k < 2; k++) {
-				vtx[j].text[k] = *((float*) dyn_array_get (obj_text, face.txt_idx[j]*2 + k));//obj_norm[face.vtx_idx[j]][k];
+				vtx[j].text[k] = *((float*) dyn_array_get (obj_text, face[j][1]*2 + k));//obj_norm[face.vtx_idx[j]][k];
 			}
 			
 			for (int k = 0; k < 3; k++) {
-				vtx[j].norm[k] = *((float*) dyn_array_get (obj_norm, face.vtx_idx[j]*3 + k));//obj_norm[face.vtx_idx[j]][k];
+				vtx[j].norm[k] = *((float*) dyn_array_get (obj_norm, face[j][2]*3 + k));//obj_norm[face.vtx_idx[j]][k];
 			}
 		}
 		
