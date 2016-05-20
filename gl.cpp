@@ -9,12 +9,13 @@ int orient2d(const ScreenPt &a, const ScreenPt &b, const ScreenPt &c)
     return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
 }
 
+/*
 void  world2screen (const float4 &w, ScreenPt &s) {
 	s.x = (screenxy_t) w[X] / w[W];
 	s.y = (screenxy_t) w[Y] / w[W];
 	s.z = (screenz_t)  w[Z] / w[W];
 }
-
+*/
 
 screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
 	int min = a;
@@ -131,16 +132,18 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (r, t, m);
 }
 
-void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
+void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
 {
     // Compute triangle bounding box
-    screenxy_t min_x = tri_min_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, 0);
-    screenxy_t max_x = tri_max_bound (v[0].coords.x, v[1].coords.x, v[2].coords.x, SCREEN_SIZE[0]);
+    screenxy_t min_x = tri_min_bound (t.cx[0], t.cx[1], t.cx[2], 0);
+    screenxy_t max_x = tri_max_bound (t.cx[0], t.cx[1], t.cx[2], SCREEN_SIZE[0]);
     
-    screenxy_t min_y = tri_min_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, 0);
-    screenxy_t max_y = tri_max_bound (v[0].coords.y, v[1].coords.y, v[2].coords.y, SCREEN_SIZE[1]);
+    screenxy_t min_y = tri_min_bound (t.cy[0], t.cy[1], t.cy[2], 0);
+    screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], SCREEN_SIZE[1]);
     
-    if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
+    for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
+    printf ("min/max:  x:%d/%d, y:%d/%d\n", min_x, max_x, min_y, max_y);
+    //if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
     
     // Rasterize:
     // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
@@ -161,14 +164,21 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
 	test_pt.y = min_y;
 	test_pt.z = 0;
 	
-	int A01 = v[0].coords.y - v[1].coords.y;
-	int A12 = v[1].coords.y - v[2].coords.y;
-	int A20 = v[2].coords.y - v[0].coords.y;
-	int B01 = v[1].coords.x - v[0].coords.x;
-	int B12 = v[2].coords.x - v[1].coords.x;
-	int B20 = v[0].coords.x - v[2].coords.x;
+	int A01 = t.cy[0] - t.cy[1];//v[0].coords.y - v[1].coords.y;
+	int A12 = t.cy[1] - t.cy[2];//v[1].coords.y - v[2].coords.y;
+	int A20 = t.cy[2] - t.cy[0];//v[2].coords.y - v[0].coords.y;
+	int B01 = t.cx[1] - t.cx[0];//v[1].coords.x - v[0].coords.x;
+	int B12 = t.cx[2] - t.cx[1];//v[2].coords.x - v[1].coords.x;
+	int B20 = t.cx[0] - t.cx[2];//v[0].coords.x - v[2].coords.x;
 	
 	int3 bar_row;
+	
+	Vertex v[3];
+	for (int i = 0; i < 3; i++) {
+		v[i].coords.x = t.cx[i];
+		v[i].coords.y = t.cy[i];
+		v[i].coords.z = t.cz[i];
+	}	
 	bar_row[0] = orient2d(v[1].coords, v[2].coords, test_pt); // not normalized
     bar_row[1] = orient2d(v[2].coords, v[0].coords, test_pt); // not normalized
     bar_row[2] = orient2d(v[0].coords, v[1].coords, test_pt); // not normalized
@@ -185,11 +195,12 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {
 		
+		printf ("Row ");
 		int3 bar;		
 		for (int i = 0; i < 3; i++) bar[i] = bar_row[i];
 		
         for (p.x = min_x; p.x < max_x; p.x++) {
-            // Determine whether a point is to the left,
+			// Determine whether a point is to the left,
             // to the right, or on the edge of a triangle.
             // Repeat for all edges.
             //int3 barc;
@@ -199,6 +210,8 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
             bar[2] = orient2d(v[0].coords, v[1].coords, p); // not normalized
             */
             // If p is on or inside all edges, render pixel.
+            //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
+            
             if ((bar[0] | bar[1] | bar[2]) > 0) {
 								
 				int z = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
@@ -206,8 +219,8 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
 				if (zbuffer[p.x + p.y*width] < z) {
 					zbuffer[p.x + p.y*width] = (screenz_t) z;
 					
-					TGAColor color;
-					bool draw = shader (v, bar, color);
+					TGAColor color;// = TGAColor (255, 255, 255, 255);
+					bool draw = shader (t, bar, color);
 					if (draw) image.set (p.x, p.y, color);
 				}
 			}
@@ -239,6 +252,7 @@ void draw_triangle (const Vertex *v, pixel_shader shader, screenz_t *zbuffer, TG
         bar_row[1] += B20;
         bar_row[2] += B01;
     }
+    printf ("\n");
 }
 
 /*

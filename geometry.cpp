@@ -36,6 +36,12 @@ float float3_float3_smult (const float3 &a, const float3 &b) {
 	return smult;
 }
 
+float float3_int3_smult (const float3 &a, const int3 &b) {
+	float smult = 0;
+	for (int i = 0; i < 3; i++ ) smult += a[i] * (float) b[i];
+	return smult;
+}
+
 void float3_float3_crossprod(const float3 &a, const float3 &b, float3 &c) {
 	c[0] = a[1]*b[2] - a[2]*b[1];
 	c[1] = a[2]*b[0] - a[0]*b[2]; 
@@ -45,4 +51,14 @@ void float3_float3_crossprod(const float3 &a, const float3 &b, float3 &c) {
 void float3_normalize (float3 &v) {
 	float length = (float) sqrt(pow(v[0], 2) + pow(v[1], 2) + pow(v[2], 2));
 	for (int i = 0; i < 3; i++) v[i] = v[i] / length;
+}
+
+void float3_float4_conv (const float3 &in, float4 &out) {
+	for (int k = 0; k < 4; k++)
+		out[k] = (k < 3) ? in[k] : 1.0f;
+}
+
+void float4_float3_conv (const float4 &in, float3 &out) {
+	for (int k = 0; k < 3; k++)
+		out[k] = in[k] / in[3];
 }
