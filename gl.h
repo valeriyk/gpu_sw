@@ -10,7 +10,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 
 
 typedef int16_t screenxy_t;
-typedef int16_t screenz_t;
+typedef int32_t screenz_t;
 typedef struct ScreenPt {
 	screenxy_t x;
 	screenxy_t y;
@@ -42,6 +42,7 @@ typedef struct Triangle {
 	int3 cx;
 	int3 cy;
 	int3 cz;
+	float3 cw;
 	float3 nx;
 	float3 ny;
 	float3 nz;
@@ -49,7 +50,7 @@ typedef struct Triangle {
 	float3 v;
 } Triangle;
 
-typedef bool (*pixel_shader) (const Triangle &t, const WFobj &obj, const int3 &barc, TGAColor &color);
+typedef bool (*pixel_shader) (const Triangle &t, const WFobj &obj, const float3 &barc, TGAColor &color);
 
 int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 

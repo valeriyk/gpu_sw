@@ -35,7 +35,7 @@ screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy
 }
 
 void init_viewport (fmat4 &m, int x, int y, int w, int h, int d) {
-	fmat4_set (m, 0, 0, w / 2.0f);
+	fmat4_set (m, 0, 0, w * 0.28125f);// 2.0f);
 	fmat4_set (m, 0, 3, x + w / 2.0f);
 	fmat4_set (m, 1, 1, h / 2.0f);
 	fmat4_set (m, 1, 3, y + h / 2.0f);
@@ -185,8 +185,11 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 	bar_row[0] = orient2d(v[1].coords, v[2].coords, test_pt); // not normalized
     bar_row[1] = orient2d(v[2].coords, v[0].coords, test_pt); // not normalized
     bar_row[2] = orient2d(v[0].coords, v[1].coords, test_pt); // not normalized
-            
-	int sum_of_bars = bar_row[0] + bar_row[1] + bar_row[2];
+          
+    float3 bar_clip;
+    for (int i = 0; i < 3; i++) bar_clip[i] = (float) bar_row[i] / t.cw[i];
+	//int sum_of_bars = bar_row[0] + bar_row[1] + bar_row[2];
+	float sum_of_bars = bar_clip[0] + bar_clip[1] + bar_clip[2];
 	if (sum_of_bars == 0) {
 		printf ("Im gonna die!!!\n");
 		return;
@@ -194,26 +197,36 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 	int z1z0_over_sob = (v[1].coords.z - v[0].coords.z) / sum_of_bars;
 	int z2z0_over_sob = (v[2].coords.z - v[0].coords.z) / sum_of_bars;
 	
+	   
     ScreenPt p;
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {
 		
 		//printf ("Row ");
 		int3 bar;		
-		for (int i = 0; i < 3; i++) bar[i] = bar_row[i];
+		for (int i = 0; i < 3; i++)
+			bar[i] = bar_row[i];
 		
         for (p.x = min_x; p.x < max_x; p.x++) {
 			// If p is on or inside all edges, render pixel.
             //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
             if ((bar[0] | bar[1] | bar[2]) > 0) {
-								
-				int z = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				int z1, z2;
+				z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
 				
-				if (zbuffer[p.x + p.y*width] < z) {
-					zbuffer[p.x + p.y*width] = (screenz_t) z;
+				bar_clip[0] = (float) bar[0]/t.cw[0]; // not normalized
+				bar_clip[1] = (float) bar[1]/t.cw[1]; // not normalized
+				bar_clip[2] = (float) bar[2]/t.cw[2]; // not normalized
+				//z2 = (int) float3_int3_smult (bar_clip, t.cz);// / (bar_clip[0] + bar_clip[1] + bar_clip[2]);
+				z2 = (int) t.cz[0] + bar_clip[1]*z1z0_over_sob + bar_clip[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				//if (z1 != z2) printf ("Z mismatch, z1=%d, z2=%d\n", z1, z2);
+				if (zbuffer[p.x + p.y*width] < z2) {
+					zbuffer[p.x + p.y*width] = (screenz_t) z2;
 					
 					TGAColor color;// = TGAColor (255, 255, 255, 255);
-					bool draw = shader (t, obj, bar, color);
+					//for (int n = 0; n < 3; n++)
+					//	bar_clip[n] = (float) bar[n]/t.cw[n];
+					bool draw = shader (t, obj, bar_clip, color);
 					if (draw) image.set (p.x, p.y, color);
 				}
 			}
