@@ -2,6 +2,8 @@
 
 #include "geometry.h"
 #include "tgaimage.h"
+#include "wavefront_obj.h"
+
 #include <stdint.h>
 
 typedef enum {X = 0, Y, Z, W} axis;
@@ -47,8 +49,7 @@ typedef struct Triangle {
 	float3 v;
 } Triangle;
 
-//typedef bool (*pixel_shader) (const Vertex *v, const int3 &barc, TGAColor &color);
-typedef bool (*pixel_shader) (const Triangle &t, const int3 &barc, TGAColor &color);
+typedef bool (*pixel_shader) (const Triangle &t, const WFobj &obj, const int3 &barc, TGAColor &color);
 
 int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 
@@ -64,4 +65,4 @@ void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int
 
 void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis);
 
-void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity);
+void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, const WFobj &obj, float3 light_dir, float tri_intensity);

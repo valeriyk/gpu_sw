@@ -5,8 +5,7 @@
 
 // Parse Wavefront OBJ format
 
-//int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
-int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, DynArray *obj_text, DynArray *obj_face) {
+int read_obj_file (const char *filename, WFobj &obj) {
 
     const int ALPHA_SIZE = 16;
     
@@ -93,10 +92,10 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
 								
-								float *data = (float*) dyn_array_new(obj_vtx);
+								float *data = (float*) dyn_array_new(obj.vtx);
 								*data = af;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
-								dyn_array_push (obj_vtx, data);
+								dyn_array_push (obj.vtx, data);
 							}
 							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
 							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
@@ -106,10 +105,10 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 							int ai = atoi (alpha_num);
 							ai--; // decrement all indices because in OBJ they start at 1
 							if ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX)) {
-								int *data = (int*) dyn_array_new(obj_face);
+								int *data = (int*) dyn_array_new(obj.face);
 								*data = ai;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
-								dyn_array_push (obj_face, data);
+								dyn_array_push (obj.face, data);
 							}
 							/*if (VERTEX_IDX == face_elem) {							
 								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
@@ -127,9 +126,9 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 						else if (VT_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2)) {
-								float *data = (float*) dyn_array_new(obj_text);
+								float *data = (float*) dyn_array_new(obj.text);
 								*data = af;
-								dyn_array_push (obj_text, data);
+								dyn_array_push (obj.text, data);
 							}
 							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
 							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
@@ -137,9 +136,9 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 						else if (VN_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								float *data = (float*) dyn_array_new(obj_norm);
+								float *data = (float*) dyn_array_new(obj.norm);
 								*data = af;
-								dyn_array_push (obj_norm, data);
+								dyn_array_push (obj.norm, data);
 							}
 							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
 							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;
@@ -170,6 +169,7 @@ int read_obj_file (const char *filename, DynArray *obj_vtx, DynArray *obj_norm, 
 						alpha_idx = 0;
 						
 						if (c == '\n') {
+							
 							if      ( V_DATA == line_type)  vtx_idx++;
 							else if (VT_DATA == line_type) text_idx++;
 							else if (VN_DATA == line_type) norm_idx++;

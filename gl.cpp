@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include "main.h" // TBD -remove
 #include "tgaimage.h"
+#include "wavefront_obj.h"
 #include <math.h>
 
 int orient2d(const ScreenPt &a, const ScreenPt &b, const ScreenPt &c)
@@ -132,7 +133,7 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (r, t, m);
 }
 
-void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, TGAImage &texture, float3 light_dir, float tri_intensity)
+void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, const WFobj &obj, float3 light_dir, float tri_intensity)
 {
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (t.cx[0], t.cx[1], t.cx[2], 0);
@@ -141,9 +142,11 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
     screenxy_t min_y = tri_min_bound (t.cy[0], t.cy[1], t.cy[2], 0);
     screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], SCREEN_SIZE[1]);
     
-    for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
+    /*
+     * for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
     printf ("min/max:  x:%d/%d, y:%d/%d\n", min_x, max_x, min_y, max_y);
-    //if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
+    */
+    if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
     
     // Rasterize:
     // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
@@ -195,23 +198,13 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {
 		
-		printf ("Row ");
+		//printf ("Row ");
 		int3 bar;		
 		for (int i = 0; i < 3; i++) bar[i] = bar_row[i];
 		
         for (p.x = min_x; p.x < max_x; p.x++) {
-			// Determine whether a point is to the left,
-            // to the right, or on the edge of a triangle.
-            // Repeat for all edges.
-            //int3 barc;
-            /*
-             * bar[0] = orient2d(v[1].coords, v[2].coords, p); // not normalized TBD remove
-            bar[1] = orient2d(v[2].coords, v[0].coords, p); // not normalized
-            bar[2] = orient2d(v[0].coords, v[1].coords, p); // not normalized
-            */
-            // If p is on or inside all edges, render pixel.
+			// If p is on or inside all edges, render pixel.
             //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
-            
             if ((bar[0] | bar[1] | bar[2]) > 0) {
 								
 				int z = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
@@ -220,29 +213,11 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 					zbuffer[p.x + p.y*width] = (screenz_t) z;
 					
 					TGAColor color;// = TGAColor (255, 255, 255, 255);
-					bool draw = shader (t, bar, color);
+					bool draw = shader (t, obj, bar, color);
 					if (draw) image.set (p.x, p.y, color);
 				}
 			}
-            /*int barc_sum = 0;
-            for (int i = 0; i < 3; i++) barc_sum += barc[i];
-            // If p is on or inside all edges, render pixel.
-            //if ((barc[0] == 0) && (barc[1] == 0) && (barc[2] == 0)) continue;
-			if (barc_sum == 0) continue;
-			else if (barc[0] >= 0 && barc[1] >= 0 && barc[2] >= 0) {
-                int z = 0; // TBD change to screenz_t or use p.z;
-                for (int i = 0; i < 3; i++) z += v[i].coords.z*barc[i];
-                z /= barc_sum;
-                
-                if (zbuffer[p.x + p.y*width] < z) {
-					zbuffer[p.x + p.y*width] = (screenz_t) z;
-					
-					TGAColor color;
-					bool draw = shader (v, barc, color);
-					if (draw) image.set (p.x, p.y, color);
-				}
-			}
-			*/
+            
 			bar[0] += A12;
 			bar[1] += A20;
 			bar[2] += A01;
@@ -252,7 +227,7 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
         bar_row[1] += B20;
         bar_row[2] += B01;
     }
-    printf ("\n");
+    //printf ("\n");
 }
 
 /*
