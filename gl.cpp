@@ -133,7 +133,7 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (r, t, m);
 }
 
-void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, TGAImage &image, const WFobj &obj, float3 light_dir, float tri_intensity)
+void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 light_dir, float tri_intensity)
 {
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (t.cx[0], t.cx[1], t.cx[2], 0);
@@ -227,11 +227,12 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 					zbuffer[p.x + p.y*width] = (screenz_t) z2;
 				
 								
-					TGAColor color;// = TGAColor (255, 255, 255, 255);
+					pixel_color_t color;// = TGAColor (255, 255, 255, 255);
 					//for (int n = 0; n < 3; n++)
 					//	bar_clip[n] = (float) bar[n]/t.cw[n];
 					bool draw = shader (t, obj, bar_clip, color);
-					if (draw) image.set (p.x, 719-p.y, color); // TBD remove this p.y hack which avoids flipping the framebuffer
+					//if (draw) image.set (p.x, 719-p.y, color); // TBD remove this p.y hack which avoids flipping the framebuffer
+					if (draw) fbuffer[p.x + (719 - p.y)*width] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 				}
 				else {
 					TGAColor color3 = TGAColor (255, 0, 255, 255);

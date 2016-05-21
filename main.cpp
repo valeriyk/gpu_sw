@@ -48,7 +48,7 @@ void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &proje
 	//printf ("[vertex shader] 4Df: %f/%f/%f/%f; 3Df: %f/%f/%f, 3Di: %d/%d/%d\n", sc4d[0], sc4d[1], sc4d[2], sc4d[3], sc3d[0], sc3d[1], sc3d[2], sp.x, sp.y, sp.z);
 };
 
-bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, TGAColor &color) {
+bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, pixel_color_t &color) {
 	
 	float barc_sum = 0;
 	for (int i = 0; i < 3; i++) barc_sum += barc[i];
@@ -57,6 +57,7 @@ bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, T
 	int vv = (int) (obj.texth * float3_float3_smult (t.v, barc) / barc_sum);
 
 	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
+	
 	
 	//TGAColor tmpcolor = TGAColor (255, 255, 255, 255);
 	// interpolate normals
@@ -144,12 +145,15 @@ int main(int argc, char** argv) {
     
     size_t    buffer_size = width*height;
     
-    screenz_t zbuffer[buffer_size];
-    int       fbuffer[buffer_size];
+    screenz_t     zbuffer[buffer_size];
+    pixel_color_t fbuffer[buffer_size];
     
     for (int i = 0; i < buffer_size; i++) {
 		zbuffer[i] = INT32_MIN;
-		fbuffer[i] = 0;
+		fbuffer[i].r = 0;
+		fbuffer[i].g = 0;
+		fbuffer[i].b = 0;
+		fbuffer[i].a = 0;
 	}
     
     
@@ -157,9 +161,9 @@ int main(int argc, char** argv) {
         
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
-	printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
+	//printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
 	//float3_normalize (camera); TBD - uncomment?
-	printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
+	//printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
 	
 	
 	fmat4 model      = {0};
@@ -206,7 +210,7 @@ int main(int argc, char** argv) {
 		}
 		
 		float tri_intensity = 0;
-		draw_triangle (t, my_pixel_shader, zbuffer, image, african_head, light_dir, tri_intensity);        
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir, tri_intensity);        
     }
 	
 
@@ -241,11 +245,21 @@ int main(int argc, char** argv) {
 		}
 		
 		float tri_intensity = 0;
-		draw_triangle (t, my_pixel_shader, zbuffer, image, my_floor, light_dir, tri_intensity);        
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir, tri_intensity);        
     }
     
+    // write down the framebuffer
     TGAImage image(width, height, TGAImage::RGB);
-    image.write_tga_file("output.tga");
+    for (int i = 0; i < width; i++) {
+		TGAColor color;
+		for (int j = 0; j < height; j++) {
+			color.r = fbuffer[i + j*width].r;
+			color.g = fbuffer[i + j*width].g;
+			color.b = fbuffer[i + j*width].b;
+			image.set(i, j, color);
+		}
+	}
+	image.write_tga_file("output.tga");
 
 	dyn_array_destroy (african_head.vtx);
 	dyn_array_destroy (african_head.norm);
@@ -254,5 +268,3 @@ int main(int argc, char** argv) {
 	
     return 0;
 }
-
-
