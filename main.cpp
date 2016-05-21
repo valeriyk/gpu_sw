@@ -56,7 +56,7 @@ bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, T
 	int uu = (int) (obj.textw * float3_float3_smult (t.u, barc) / barc_sum);
 	int vv = (int) (obj.texth * float3_float3_smult (t.v, barc) / barc_sum);
 
-	TGAColor tmpcolor = obj.texture.get(uu, vv);
+	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
 	
 	//TGAColor tmpcolor = TGAColor (255, 255, 255, 255);
 	// interpolate normals
@@ -105,7 +105,6 @@ int main(int argc, char** argv) {
 	read_obj_file ("obj/african_head.obj", african_head);	        
     african_head.texture = TGAImage(1, 1, TGAImage::RGB);
     african_head.texture.read_tga_file("obj/african_head_diffuse.tga");    
-    african_head.texture.flip_vertically();
     african_head.textw = african_head.texture.get_width();
     african_head.texth = african_head.texture.get_height();    
     for (int i = 0; i < 3; i++) {
@@ -129,7 +128,6 @@ int main(int argc, char** argv) {
     read_obj_file ("obj/floor.obj", my_floor);    
     my_floor.texture = TGAImage(1, 1, TGAImage::RGB);
     my_floor.texture.read_tga_file("obj/floor_diffuse.tga");
-    my_floor.texture.flip_vertically();
     my_floor.textw = my_floor.texture.get_width();
     my_floor.texth = my_floor.texture.get_height();    
     for (int i = 0; i < 3; i++) {
@@ -137,18 +135,22 @@ int main(int argc, char** argv) {
 		my_floor.rotate[i] = rotate[i];
 		my_floor.tran[i]   = tran[i];
 	}
-	my_floor.tran[1]   = 0.0f;
+	my_floor.tran[2]   = -0.5f;
+	//my_floor.tran[1]   = 0.0f;
 	
 	    
     
     
-    TGAImage image(width, height, TGAImage::RGB);
     
+    size_t    buffer_size = width*height;
     
-    size_t    zbuffer_size = width*height;
-    screenz_t zbuffer[zbuffer_size];
-    for (int i = 0; i < zbuffer_size; i++)
-		zbuffer[i] = 0;
+    screenz_t zbuffer[buffer_size];
+    int       fbuffer[buffer_size];
+    
+    for (int i = 0; i < buffer_size; i++) {
+		zbuffer[i] = INT32_MIN;
+		fbuffer[i] = 0;
+	}
     
     
 	float3_normalize (light_dir);
@@ -242,7 +244,7 @@ int main(int argc, char** argv) {
 		draw_triangle (t, my_pixel_shader, zbuffer, image, my_floor, light_dir, tri_intensity);        
     }
     
-    image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    TGAImage image(width, height, TGAImage::RGB);
     image.write_tga_file("output.tga");
 
 	dyn_array_destroy (african_head.vtx);

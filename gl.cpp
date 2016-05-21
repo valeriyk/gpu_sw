@@ -35,7 +35,7 @@ screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy
 }
 
 void init_viewport (fmat4 &m, int x, int y, int w, int h, int d) {
-	fmat4_set (m, 0, 0, w * 0.28125f);// 2.0f);
+	fmat4_set (m, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
 	fmat4_set (m, 0, 3, x + w / 2.0f);
 	fmat4_set (m, 1, 1, h / 2.0f);
 	fmat4_set (m, 1, 3, y + h / 2.0f);
@@ -211,6 +211,9 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 			// If p is on or inside all edges, render pixel.
             //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
             if ((bar[0] | bar[1] | bar[2]) > 0) {
+				TGAColor color2 = TGAColor (255, 255, 255, 255);
+				//image.set (p.x, p.y, color2);
+				
 				int z1, z2;
 				z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
 				
@@ -222,12 +225,17 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 				//if (z1 != z2) printf ("Z mismatch, z1=%d, z2=%d\n", z1, z2);
 				if (zbuffer[p.x + p.y*width] < z2) {
 					zbuffer[p.x + p.y*width] = (screenz_t) z2;
-					
+				
+								
 					TGAColor color;// = TGAColor (255, 255, 255, 255);
 					//for (int n = 0; n < 3; n++)
 					//	bar_clip[n] = (float) bar[n]/t.cw[n];
 					bool draw = shader (t, obj, bar_clip, color);
-					if (draw) image.set (p.x, p.y, color);
+					if (draw) image.set (p.x, 719-p.y, color); // TBD remove this p.y hack which avoids flipping the framebuffer
+				}
+				else {
+					TGAColor color3 = TGAColor (255, 0, 255, 255);
+					//image.set (p.x, p.y, color3);
 				}
 			}
             
