@@ -99,57 +99,28 @@ int main(int argc, char** argv) {
 	float3 tran   = { 0.0f, 0.0f,  0.0f};
 	
 	WFobj african_head;
-    african_head.vtx  = dyn_array_create (sizeof (float), 384);
-    african_head.norm = dyn_array_create (sizeof (float), 384);
-	african_head.text = dyn_array_create (sizeof (float), 256);
-	african_head.face = dyn_array_create (sizeof   (int), 1152);
-	read_obj_file ("obj/african_head.obj", african_head);	        
-    african_head.texture = TGAImage(1, 1, TGAImage::RGB);
-    african_head.texture.read_tga_file("obj/african_head_diffuse.tga");    
-    african_head.textw = african_head.texture.get_width();
-    african_head.texth = african_head.texture.get_height();    
+    init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
     for (int i = 0; i < 3; i++) {
 		african_head.scale[i]  = scale[i];
 		african_head.rotate[i] = rotate[i];
 		african_head.tran[i]   = tran[i];
 	}
 	
-	//////////////////////////////////////////////////////
-    /*
-     * scale  = { 1.f,   1.f,   1.f};
-	rotate = { 15.0f, 0.0f,  0.0f};
-	tran   = { 0.0f, 0.25f,  0.0f};
-	*/
-	
     WFobj my_floor;
-    my_floor.vtx  = dyn_array_create (sizeof (float), 48);
-    my_floor.norm = dyn_array_create (sizeof (float), 48);
-	my_floor.text = dyn_array_create (sizeof (float), 32);
-	my_floor.face = dyn_array_create (sizeof   (int), 144);
-    read_obj_file ("obj/floor.obj", my_floor);    
-    my_floor.texture = TGAImage(1, 1, TGAImage::RGB);
-    my_floor.texture.read_tga_file("obj/floor_diffuse.tga");
-    my_floor.textw = my_floor.texture.get_width();
-    my_floor.texth = my_floor.texture.get_height();    
+    init_obj (my_floor, "obj/floor.obj", "obj/floor_diffuse.tga");
     for (int i = 0; i < 3; i++) {
 		my_floor.scale[i]  = 2.0f;//scale[i];
 		my_floor.rotate[i] = rotate[i];
 		my_floor.tran[i]   = tran[i];
 	}
 	my_floor.tran[2]   = -0.5f;
-	//my_floor.tran[1]   = 0.0f;
 	
-	    
-    
-    
-    
     size_t    buffer_size = width*height;
-    
     screenz_t     zbuffer[buffer_size];
-    pixel_color_t fbuffer[buffer_size];
-    
+    pixel_color_t fbuffer[buffer_size];    
     for (int i = 0; i < buffer_size; i++) {
 		zbuffer[i] = INT32_MIN;
+		
 		fbuffer[i].r = 0;
 		fbuffer[i].g = 0;
 		fbuffer[i].b = 0;

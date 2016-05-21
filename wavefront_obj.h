@@ -9,10 +9,10 @@ typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;
 typedef enum {VERTEX_IDX, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
 
 typedef struct WFobj {
-	DynArray *vtx;
-	DynArray *norm;
-	DynArray *text;
-	DynArray *face;
+	DynArray *vtx = NULL;
+	DynArray *norm = NULL;
+	DynArray *text = NULL;
+	DynArray *face = NULL;
 	TGAImage texture;
 	int textw;
 	int texth;
@@ -21,4 +21,5 @@ typedef struct WFobj {
 	float3 tran;
 } WFobj;
 
+void init_obj (WFobj &obj, const char *obj_file, const char *texture_file);
 int read_obj_file (const char *filename, WFobj &obj);

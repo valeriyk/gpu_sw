@@ -3,8 +3,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Parse Wavefront OBJ format
 
+void init_obj (WFobj &obj, const char *obj_file, const char *texture_file) {
+	obj.vtx  = dyn_array_create (sizeof (float), 384);
+    obj.norm = dyn_array_create (sizeof (float), 384);
+	obj.text = dyn_array_create (sizeof (float), 256);
+	obj.face = dyn_array_create (sizeof   (int), 1152);
+	read_obj_file (obj_file, obj);	        
+    
+    obj.texture = TGAImage(1, 1, TGAImage::RGB);
+    obj.texture.read_tga_file(texture_file);    
+    obj.textw = obj.texture.get_width();
+    obj.texth = obj.texture.get_height();
+}
+
+// Parse Wavefront OBJ format
 int read_obj_file (const char *filename, WFobj &obj) {
 
     const int ALPHA_SIZE = 16;
