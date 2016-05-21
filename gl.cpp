@@ -215,13 +215,18 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 				//image.set (p.x, p.y, color2);
 				
 				int z1, z2;
-				z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				//z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
 				
 				bar_clip[0] = (float) bar[0]/t.cw[0]; // not normalized
 				bar_clip[1] = (float) bar[1]/t.cw[1]; // not normalized
 				bar_clip[2] = (float) bar[2]/t.cw[2]; // not normalized
-				//z2 = (int) float3_int3_smult (bar_clip, t.cz);// / (bar_clip[0] + bar_clip[1] + bar_clip[2]);
-				z2 = (int) t.cz[0] + bar_clip[1]*z1z0_over_sob + bar_clip[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				sum_of_bars = (bar_clip[0] + bar_clip[1] + bar_clip[2]);
+				bar_clip[0] /= sum_of_bars;
+				bar_clip[1] /= sum_of_bars;
+				bar_clip[2] /= sum_of_bars;
+				//z2 = (int) float3_int3_smult (bar_clip, t.cz);// / 
+				//z2 = (int) t.cz[0] + bar_clip[1]*z1z0_over_sob + bar_clip[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
+				z2 = (int) t.cz[0] + bar_clip[1]*(t.cz[1]-t.cz[0]) + bar_clip[2]*(t.cz[2] - t.cz[0]); // TBD change to screenz_t or use p.z;
 				//if (z1 != z2) printf ("Z mismatch, z1=%d, z2=%d\n", z1, z2);
 				if (zbuffer[p.x + p.y*width] < z2) {
 					zbuffer[p.x + p.y*width] = (screenz_t) z2;

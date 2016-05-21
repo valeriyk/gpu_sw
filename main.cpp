@@ -16,18 +16,15 @@ float3 up         = { 0.0f,   1.0f,   0.0f};
 	
 
 
-void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, const float3 &vtx3d, float4 &sc4d) { //ScreenPt &sp) {
+void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, const float3 &vtx3d, float4 &vtx4d) { //ScreenPt &sp) {
 	
 	float4 mc; // model coordinates
     float4 wc; // world coordinates
     float4 vc; // view coordinates
     float4 pc; // projection coordinates
-	//float4 sc4d; // 4d screen coordinates
-	float3 sc3d; // 3d screend coordinates
 		
-	// transform 3d coords to homogenous coords
+	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (vtx3d, mc);
-	
 	
 	// 1. Model - transform local coords to global
 	// 2. View - transform global coords to adjust for camera position
@@ -36,25 +33,13 @@ void my_vertex_shader (const fmat4 &model, const fmat4 &view, const fmat4 &proje
 	fmat4_float4_mult (model, mc, wc);
 	fmat4_float4_mult (view, wc, vc);
 	fmat4_float4_mult (projection, vc, pc);
-	fmat4_float4_mult (viewport, pc, sc4d);
-	
-	/*
-	// transform homogenous coords back to 3d
-	float4_float3_conv (sc4d, sc3d);
-	sp.x = (screenxy_t) sc3d[0];
-	sp.y = (screenxy_t) sc3d[1];
-	sp.z = (screenz_t)  sc3d[2];
-	*/
-	//printf ("[vertex shader] 4Df: %f/%f/%f/%f; 3Df: %f/%f/%f, 3Di: %d/%d/%d\n", sc4d[0], sc4d[1], sc4d[2], sc4d[3], sc3d[0], sc3d[1], sc3d[2], sp.x, sp.y, sp.z);
+	fmat4_float4_mult (viewport, pc, vtx4d);
 };
 
-bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, pixel_color_t &color) {
+bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barw, pixel_color_t &color) {
 	
-	float barc_sum = 0;
-	for (int i = 0; i < 3; i++) barc_sum += barc[i];
-	
-	int uu = (int) (obj.textw * float3_float3_smult (t.u, barc) / barc_sum);
-	int vv = (int) (obj.texth * float3_float3_smult (t.v, barc) / barc_sum);
+	int uu = (int) (obj.textw * float3_float3_smult (t.u, barw));
+	int vv = (int) (obj.texth * float3_float3_smult (t.v, barw));
 
 	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
 	
@@ -68,9 +53,9 @@ bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, p
 	
 	if (phong) {
 		float3 interp_norm;
-		interp_norm[0] = float3_float3_smult (t.nx, barc) / barc_sum;
-		interp_norm[1] = float3_float3_smult (t.ny, barc) / barc_sum;
-		interp_norm[2] = float3_float3_smult (t.nz, barc) / barc_sum;
+		interp_norm[0] = float3_float3_smult (t.nx, barw);
+		interp_norm[1] = float3_float3_smult (t.ny, barw);
+		interp_norm[2] = float3_float3_smult (t.nz, barw);
 		intensity = -float3_float3_smult (interp_norm, light_dir);
 	}
 	else if (gouraud) {
@@ -79,7 +64,7 @@ bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barc, p
 			float3 ii = {t.nx[i], t.ny[i], t.nz[i]};
 			interp_intens[i] = float3_float3_smult (ii, light_dir);
 		}
-		intensity = -float3_float3_smult (interp_intens, barc) / barc_sum;
+		intensity = -float3_float3_smult (interp_intens, barw);
 	}	
 	//printf("intensity=%f, barc=%d:%d:%d:sum=%d, light=%f:%f:%f \n", intensity, barc[0], barc[1], barc[2], barc_sum, light_dir[0], light_dir[1], light_dir[2]);
 	if (intensity > 0) {
