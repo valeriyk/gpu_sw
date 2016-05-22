@@ -37,7 +37,7 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
     float4 wc; // world coordinates
     float4 vc; // view coordinates
     float4 pc; // projection coordinates
-		
+	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (obj_coords, mc);
 	
@@ -48,39 +48,29 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	fmat4_float4_mult (model, mc, wc);
 	fmat4_float4_mult (view, wc, vc);
 	fmat4_float4_mult (projection, vc, pc);
-	fmat4_float4_mult (viewport, pc, vtx4d);
+	fmat4_float4_mult (viewport, pc, sc);
 	
-		
-	//t.u[j] = *((float*) dyn_array_get (african_head.text, face[j][1]*2));
-	//t.v[j] = *((float*) dyn_array_get (african_head.text, face[j][1]*2 + 1));
+	vtx4d[0] = sc[0]/sc[3];
+	vtx4d[1] = sc[1]/sc[3];
+	vtx4d[2] = sc[2]/sc[3];
+	vtx4d[3] = sc[3];
+	
 	VARYING_U[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2));
 	VARYING_V[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2 + 1));
 	
-	//t.nx[j] = *((float*) dyn_array_get (african_head.norm, face[j][2]*3));
-	//t.ny[j] = *((float*) dyn_array_get (african_head.norm, face[j][2]*3+1));
-	//t.nz[j] = *((float*) dyn_array_get (african_head.norm, face[j][2]*3+2));
 	VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
 	VARYING_NY[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
 	VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
-
 };
 
-bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barw, pixel_color_t &color) {
+bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color) {
 	
-	/*
-	int uu = (int) (obj.textw * float3_float3_smult (t.u, barw));
-	int vv = (int) (obj.texth * float3_float3_smult (t.v, barw));
-	*/
 	int uu = (int) (obj.textw * float3_float3_smult (VARYING_U, barw));
 	int vv = (int) (obj.texth * float3_float3_smult (VARYING_V, barw));
 	
 	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
 	
-	
-	//TGAColor tmpcolor = TGAColor (255, 255, 255, 255);
-	// interpolate normals
 	float intensity = 0;
-	
 	bool phong = 0;
 	bool gouraud = !phong;	
 	
@@ -112,43 +102,48 @@ bool my_pixel_shader (const Triangle &t, const WFobj &obj, const float3 &barw, p
     
 int main(int argc, char** argv) {
        
-    float3 scale  = { 1.f,   1.f,   1.f};
-	float3 rotate = { 0.0f, 0.0f,  0.0f};
-	float3 tran   = { 0.0f, 0.0f,  0.0f};
-	
-	WFobj african_head;
-    init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
-    for (int i = 0; i < 3; i++) {
-		african_head.scale[i]  = scale[i];
-		african_head.rotate[i] = rotate[i];
-		african_head.tran[i]   = tran[i];
-	}
-	
-    WFobj my_floor;
-    init_obj (my_floor, "obj/floor.obj", "obj/floor_diffuse.tga");
-    for (int i = 0; i < 3; i++) {
-		my_floor.scale[i]  = 2.0f;//scale[i];
-		my_floor.rotate[i] = rotate[i];
-		my_floor.tran[i]   = tran[i];
-	}
-	my_floor.tran[2]   = -0.5f;
-	
-    size_t    buffer_size = width*height;
-    //screenz_t     zbuffer[buffer_size];
-    //pixel_color_t fbuffer[buffer_size];    
-    screenz_t *zbuffer = (screenz_t*) calloc (buffer_size, sizeof(screenz_t));
+    size_t buffer_size = SCREEN_SIZE[0]*SCREEN_SIZE[1];
+    
+    screenz_t     *zbuffer = (screenz_t*)     calloc (buffer_size, sizeof(screenz_t));
     pixel_color_t *fbuffer = (pixel_color_t*) calloc (buffer_size, sizeof(pixel_color_t));
+    
     for (int i = 0; i < buffer_size; i++) {
-		zbuffer[i] = INT32_MIN;
+		zbuffer[i] = INT32_MIN;	
 		
 		fbuffer[i].r = 0;
 		fbuffer[i].g = 0;
 		fbuffer[i].b = 0;
 		fbuffer[i].a = 0;
 	}
+	
+	
+    
+    float3 default_scale  = { 1.f,   1.f,   1.f};
+	float3 default_rotate = { 0.0f, 0.0f,  0.0f};
+	float3 default_tran   = { 0.0f, 0.0f,  0.0f};
+	
+	WFobj african_head;
+    init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
+    for (int i = 0; i < 3; i++) {
+		african_head.scale[i]  = default_scale[i];
+		african_head.rotate[i] = default_rotate[i];
+		african_head.tran[i]   = default_tran[i];
+	}
+	
+    WFobj my_floor;
+    init_obj (my_floor, "obj/floor.obj", "obj/floor_diffuse.tga");
+    for (int i = 0; i < 3; i++) {
+		my_floor.scale[i]  = 2.0f;//default_scale[i];
+		my_floor.rotate[i] = default_rotate[i];
+		my_floor.tran[i]   = default_tran[i];
+	}
+	my_floor.tran[2]   = -0.5f;
+	
+	
+    
+    float3_normalize (light_dir);
     
     
-	float3_normalize (light_dir);
         
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
@@ -162,40 +157,32 @@ int main(int argc, char** argv) {
 	fmat4 projection = {0};
 	fmat4 viewport   = {0};
 		
-	init_model      (model, african_head.scale, african_head.rotate, african_head.tran);
 	init_view       (view, eye, center, up);
 	init_projection (projection, -1.0f/camera[Z]);
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     
+    init_model      (model, african_head.scale, african_head.rotate, african_head.tran);
+    
     for (int i = 0; i < (african_head.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
     	// for each vertex j of a triangle
-		Triangle t;
+		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
-			float4 scr_coords;
-			my_vertex_shader (african_head, i, j, model, view, projection, viewport, scr_coords);
-			t.cx[j] = (screenxy_t) scr_coords[0]/scr_coords[3];
-			t.cy[j] = (screenxy_t) scr_coords[1]/scr_coords[3];
-			t.cz[j] = (screenz_t)  scr_coords[2]/scr_coords[3];
-			t.cw[j] = scr_coords[3];	
+			my_vertex_shader (african_head, i, j, model, view, projection, viewport, t.vtx_coords[j]);
 		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir, 0.0f);        
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
     }
 	
 	init_model      (model, my_floor.scale, my_floor.rotate, my_floor.tran);
+	
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         // for each vertex j of a triangle
-		Triangle t;     
+		ScreenTriangle t;     
 		for (int j = 0; j < 3; j++) {
-			float4 scr_coords;
-			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, scr_coords);
-			t.cx[j] = (screenxy_t) scr_coords[0]/scr_coords[3];
-			t.cy[j] = (screenxy_t) scr_coords[1]/scr_coords[3];
-			t.cz[j] = (screenz_t)  scr_coords[2]/scr_coords[3];
-			t.cw[j] = scr_coords[3];	
+			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
 		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir, 0.0f);             
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
     }
 
     // write down the framebuffer

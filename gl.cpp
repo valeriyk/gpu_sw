@@ -10,14 +10,6 @@ int orient2d(const ScreenPt &a, const ScreenPt &b, const ScreenPt &c)
     return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
 }
 
-/*
-void  world2screen (const float4 &w, ScreenPt &s) {
-	s.x = (screenxy_t) w[X] / w[W];
-	s.y = (screenxy_t) w[Y] / w[W];
-	s.z = (screenz_t)  w[Z] / w[W];
-}
-*/
-
 screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
 	int min = a;
 	if (b < min) min = b;
@@ -133,8 +125,17 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (r, t, m);
 }
 
-void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 light_dir, float tri_intensity)
+void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir)
 {
+    
+    Triangle t;
+    for (int i = 0; i < 3; i++) {
+		t.cx[i] = (screenxy_t) st.vtx_coords[i][X];
+		t.cy[i] = (screenxy_t) st.vtx_coords[i][Y];
+		t.cz[i] = (screenz_t)  st.vtx_coords[i][Z];
+		t.cw[i] = st.vtx_coords[i][W];
+	}    
+    
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (t.cx[0], t.cx[1], t.cx[2], 0);
     screenxy_t max_x = tri_max_bound (t.cx[0], t.cx[1], t.cx[2], SCREEN_SIZE[0]);
@@ -187,16 +188,16 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
     bar_row[2] = orient2d(v[0].coords, v[1].coords, test_pt); // not normalized
           
     float3 bar_clip;
-    for (int i = 0; i < 3; i++) bar_clip[i] = (float) bar_row[i] / t.cw[i];
-	//int sum_of_bars = bar_row[0] + bar_row[1] + bar_row[2];
-	float sum_of_bars = bar_clip[0] + bar_clip[1] + bar_clip[2];
+    float sum_of_bars = 0;
+    for (int i = 0; i < 3; i++) {
+		bar_clip[i] = (float) bar_row[i] / t.cw[i];
+		sum_of_bars += bar_clip[i];
+	}
+
 	if (sum_of_bars == 0) {
 		printf ("Im gonna die!!!\n");
 		return;
 	}
-	int z1z0_over_sob = (v[1].coords.z - v[0].coords.z) / sum_of_bars;
-	int z2z0_over_sob = (v[2].coords.z - v[0].coords.z) / sum_of_bars;
-	
 	   
     ScreenPt p;
     p.z = 0;
@@ -211,38 +212,33 @@ void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, 
 			// If p is on or inside all edges, render pixel.
             //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
             if ((bar[0] | bar[1] | bar[2]) > 0) {
-				TGAColor color2 = TGAColor (255, 255, 255, 255);
-				//image.set (p.x, p.y, color2);
 				
-				int z1, z2;
+				/*
+				TGAColor color2 = TGAColor (255, 255, 255, 255);
+				image.set (p.x, p.y, color2);
+				*/
+				
 				//z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
 				
-				bar_clip[0] = (float) bar[0]/t.cw[0]; // not normalized
-				bar_clip[1] = (float) bar[1]/t.cw[1]; // not normalized
-				bar_clip[2] = (float) bar[2]/t.cw[2]; // not normalized
-				sum_of_bars = (bar_clip[0] + bar_clip[1] + bar_clip[2]);
-				bar_clip[0] /= sum_of_bars;
-				bar_clip[1] /= sum_of_bars;
-				bar_clip[2] /= sum_of_bars;
+				sum_of_bars = 0.0f;
+				for (int i = 0; i < 3; i++) {
+					bar_clip[i] = (float) bar[i]/t.cw[i]; // not normalized
+					sum_of_bars += bar_clip[i];
+				}
+				for (int i = 0; i < 3; i++) bar_clip[i] /= sum_of_bars;
 				//z2 = (int) float3_int3_smult (bar_clip, t.cz);// / 
-				//z2 = (int) t.cz[0] + bar_clip[1]*z1z0_over_sob + bar_clip[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
-				z2 = (int) t.cz[0] + bar_clip[1]*(t.cz[1]-t.cz[0]) + bar_clip[2]*(t.cz[2] - t.cz[0]); // TBD change to screenz_t or use p.z;
+				p.z = (int) t.cz[0] + bar_clip[1]*(t.cz[1]-t.cz[0]) + bar_clip[2]*(t.cz[2] - t.cz[0]); // TBD change to screenz_t or use p.z;
 				//if (z1 != z2) printf ("Z mismatch, z1=%d, z2=%d\n", z1, z2);
-				if (zbuffer[p.x + p.y*width] < z2) {
-					zbuffer[p.x + p.y*width] = (screenz_t) z2;
-				
-								
+				if (zbuffer[p.x + p.y*width] < p.z) {
+					zbuffer[p.x + p.y*width] = p.z;
 					pixel_color_t color;// = TGAColor (255, 255, 255, 255);
-					//for (int n = 0; n < 3; n++)
-					//	bar_clip[n] = (float) bar[n]/t.cw[n];
-					bool draw = shader (t, obj, bar_clip, color);
-					//if (draw) image.set (p.x, 719-p.y, color); // TBD remove this p.y hack which avoids flipping the framebuffer
+					bool draw = shader (obj, bar_clip, color);
 					if (draw) fbuffer[p.x + (719 - p.y)*width] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 				}
-				else {
+				/*else {
 					TGAColor color3 = TGAColor (255, 0, 255, 255);
-					//image.set (p.x, p.y, color3);
-				}
+					image.set (p.x, p.y, color3);
+				}*/
 			}
             
 			bar[0] += A12;

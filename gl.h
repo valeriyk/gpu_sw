@@ -41,19 +41,18 @@ typedef struct Vertex {
 	ScreenPt coords;
 } Vertex;
 
+typedef struct ScreenTriangle {
+	float4 vtx_coords[3];
+} ScreenTriangle;
+
 typedef struct Triangle {
 	int3 cx;
 	int3 cy;
 	int3 cz;
-	float3 cw;
-	float3 nx;
-	float3 ny;
-	float3 nz;
-	float3 u;
-	float3 v;
+	float4 cw;
 } Triangle;
 
-typedef bool (*pixel_shader) (const Triangle &t, const WFobj &obj, const float3 &barc, pixel_color_t &color);
+typedef bool (*pixel_shader) (const WFobj &obj, const float3 &barc, pixel_color_t &color);
 
 int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 
@@ -69,4 +68,4 @@ void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int
 
 void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis);
 
-void draw_triangle (const Triangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 light_dir, float tri_intensity);
+void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir);
