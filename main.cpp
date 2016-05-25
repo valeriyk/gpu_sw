@@ -10,8 +10,8 @@
 // globals:
 
 float3 light_dir  = { 0.0f,   -1.0f,   -1.0f};
-float3 eye        = { 5.0f,   5.0f,   5.0f};
-float3 center     = { 0.0f,   0.0f,   0.0f};
+float3 eye        = { 5.0f,   0.1f,   20.0f};
+float3 center     = { 0.0f,   0.1f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 	
 float3 VARYING_U;
@@ -121,24 +121,28 @@ int main(int argc, char** argv) {
     float3 default_scale  = { 1.f,   1.f,   1.f};
 	float3 default_rotate = { 0.0f, 0.0f,  0.0f};
 	float3 default_tran   = { 0.0f, 0.0f,  0.0f};
+	float3 scale;
+	float3 rotate;
+	float3 tran;
 	
 	WFobj african_head;
     init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
+    /*
     for (int i = 0; i < 3; i++) {
 		african_head.scale[i]  = default_scale[i];
 		african_head.rotate[i] = default_rotate[i];
 		african_head.tran[i]   = default_tran[i];
-	}
+	}*/
 	
     WFobj my_floor;
     init_obj (my_floor, "obj/floor.obj", "obj/floor_diffuse.tga");
-    for (int i = 0; i < 3; i++) {
-		my_floor.scale[i]  = 2.0f;//default_scale[i];
+    /*for (int i = 0; i < 3; i++) {
+		my_floor.scale[i]  = 1.0f;//default_scale[i];
 		my_floor.rotate[i] = default_rotate[i];
 		my_floor.tran[i]   = default_tran[i];
 	}
-	my_floor.tran[2]   = -0.5f;
-	
+	my_floor.tran[1]   = 0.75f;
+	*/
 	
     
     float3_normalize (light_dir);
@@ -161,6 +165,7 @@ int main(int argc, char** argv) {
 	init_projection (projection, -1.0f/camera[Z]);
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     
+    /*
     init_model      (model, african_head.scale, african_head.rotate, african_head.tran);
     
     for (int i = 0; i < (african_head.face->end) / 9; i++) {
@@ -172,8 +177,59 @@ int main(int argc, char** argv) {
 		}		
 		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
     }
+	*/
 	
-	init_model      (model, my_floor.scale, my_floor.rotate, my_floor.tran);
+	for (int i = 0; i < 3; i++) {
+		scale[i]  = default_scale[i];
+		rotate[i] = default_rotate[i];
+		tran[i]   = default_tran[i];
+	}
+	rotate[0] = 0.0f;
+	tran[2]   = 0.75f;
+	
+	init_model      (model, scale, rotate, tran);	
+	
+	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
+	//for (int i = 13; i < 35; i++) {
+        // for each vertex j of a triangle
+		ScreenTriangle t;     
+		for (int j = 0; j < 3; j++) {
+			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
+		}		
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
+    }
+    
+    for (int i = 0; i < 3; i++) {
+		scale[i]  = default_scale[i];
+		rotate[i] = default_rotate[i];
+		tran[i]   = default_tran[i];
+	}
+	rotate[0] = 90.0f;
+	tran[1]   = 0.75f;
+	
+	init_model      (model, scale, rotate, tran);	
+	
+	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
+	//for (int i = 13; i < 35; i++) {
+        // for each vertex j of a triangle
+		ScreenTriangle t;     
+		for (int j = 0; j < 3; j++) {
+			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
+		}		
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
+    }
+    
+    for (int i = 0; i < 3; i++) {
+		scale[i]  = default_scale[i];
+		rotate[i] = default_rotate[i];
+		tran[i]   = default_tran[i];
+	}
+	rotate[2] = -90.0f;
+	tran[0]   = 0;//-0.75f;
+	tran[1]   = 0;//0.75f;
+	tran[2]   = 0.75f;
+	
+	init_model      (model, scale, rotate, tran);	
 	
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {

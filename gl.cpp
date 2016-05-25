@@ -143,10 +143,10 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zb
     screenxy_t min_y = tri_min_bound (t.cy[0], t.cy[1], t.cy[2], 0);
     screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], SCREEN_SIZE[1]);
     
-    /*
-     * for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
+    
+    for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
     printf ("min/max:  x:%d/%d, y:%d/%d\n", min_x, max_x, min_y, max_y);
-    */
+    
     if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
     
     // Rasterize:

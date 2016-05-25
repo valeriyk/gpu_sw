@@ -16,9 +16,6 @@ typedef struct WFobj {
 	TGAImage texture;
 	int textw;
 	int texth;
-	float3 scale;
-	float3 rotate;
-	float3 tran;
 } WFobj;
 
 void init_obj (WFobj &obj, const char *obj_file, const char *texture_file);
