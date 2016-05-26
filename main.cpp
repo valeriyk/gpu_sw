@@ -9,8 +9,8 @@
 
 // globals:
 
-float3 light_dir  = { 0.0f,   -1.0f,   -1.0f};
-float3 eye        = { 5.0f,   0.1f,   20.0f};
+float3 light_dir  = { 0.0f,   -1.0f,   -0.1f};
+float3 eye        = { 2.0f,   0.1f,   2.0f};
 float3 center     = { 0.0f,   0.1f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 	
@@ -20,6 +20,8 @@ float3 VARYING_NX;
 float3 VARYING_NY;
 float3 VARYING_NZ;
 float3 VARYING_INTENSITY;
+fmat4  UNIFORM_M = {0};
+fmat4  UNIFORM_MIT = {0};
 
 void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) { //ScreenPt &sp) {
 	
@@ -41,15 +43,17 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (obj_coords, mc);
 	
+	
 	// 1. Model - transform local coords to global
 	// 2. View - transform global coords to adjust for camera position
 	// 3. Projection - perspective correction
 	// 4. Viewport - move to screen coords
-	fmat4_float4_mult (model, mc, wc);
-	fmat4_float4_mult (view, wc, vc);
-	fmat4_float4_mult (projection, vc, pc);
-	fmat4_float4_mult (viewport, pc, sc);
-	
+	// Doing everyhting in reverse order:
+	fmat4 tmp1, tmp2, tmp3;
+	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
+	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
+	fmat4_fmat4_mult (&tmp2, &model, &tmp3); 
+	fmat4_float4_mult (tmp3, mc, sc);
 	vtx4d[0] = sc[0]/sc[3];
 	vtx4d[1] = sc[1]/sc[3];
 	vtx4d[2] = sc[2]/sc[3];
@@ -126,29 +130,13 @@ int main(int argc, char** argv) {
 	float3 tran;
 	
 	WFobj african_head;
+	WFobj my_floor;
     init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
-    /*
-    for (int i = 0; i < 3; i++) {
-		african_head.scale[i]  = default_scale[i];
-		african_head.rotate[i] = default_rotate[i];
-		african_head.tran[i]   = default_tran[i];
-	}*/
-	
-    WFobj my_floor;
-    init_obj (my_floor, "obj/floor.obj", "obj/floor_diffuse.tga");
-    /*for (int i = 0; i < 3; i++) {
-		my_floor.scale[i]  = 1.0f;//default_scale[i];
-		my_floor.rotate[i] = default_rotate[i];
-		my_floor.tran[i]   = default_tran[i];
-	}
-	my_floor.tran[1]   = 0.75f;
-	*/
-	
-    
+    init_obj (my_floor,     "obj/floor.obj",        "obj/floor_diffuse.tga");
+      
+
     float3_normalize (light_dir);
     
-    
-        
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
 	//printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
@@ -161,10 +149,11 @@ int main(int argc, char** argv) {
 	fmat4 projection = {0};
 	fmat4 viewport   = {0};
 		
-	init_view       (view, eye, center, up);
+	init_view       (&view, eye, center, up);
 	init_projection (projection, -1.0f/camera[Z]);
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
-    
+    fmat4 projview;
+    fmat4_fmat4_mult (&projection, &view, &projview);
     /*
     init_model      (model, african_head.scale, african_head.rotate, african_head.tran);
     
@@ -187,8 +176,30 @@ int main(int argc, char** argv) {
 	rotate[0] = 0.0f;
 	tran[2]   = 0.75f;
 	
-	init_model      (model, scale, rotate, tran);	
+	init_model       (&model, scale, rotate, tran);	
+	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	
+	
+    print_fmat4 (&viewport, "Viewport: ");
+    print_fmat4 (&projection, "Projection: ");
+	print_fmat4 (&view, "View: ");
+	print_fmat4 (&projview, "Projview: ");
+	print_fmat4 (&model, "Model: ");
+	print_fmat4 (&UNIFORM_M, "M: ");
+	
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
+	print_fmat4 (&UNIFORM_MIT, "MI: ");
+	fmat4 check_inv;
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	print_fmat4 (&check_inv, "check inv: ");
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+		}
+	}
+	fmat4_transpose (&UNIFORM_MIT);
+	print_fmat4 (&UNIFORM_MIT, "MIT: ");
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         // for each vertex j of a triangle
@@ -207,11 +218,18 @@ int main(int argc, char** argv) {
 	rotate[0] = 90.0f;
 	tran[1]   = 0.75f;
 	
-	init_model      (model, scale, rotate, tran);	
-	
+	init_model (&model, scale, rotate, tran);	
+	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+		}
+	}
+	fmat4_transpose (&UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
-	//for (int i = 13; i < 35; i++) {
-        // for each vertex j of a triangle
 		ScreenTriangle t;     
 		for (int j = 0; j < 3; j++) {
 			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
@@ -229,8 +247,17 @@ int main(int argc, char** argv) {
 	tran[1]   = 0;//0.75f;
 	tran[2]   = 0.75f;
 	
-	init_model      (model, scale, rotate, tran);	
-	
+	init_model (&model, scale, rotate, tran);	
+	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+		}
+	}
+	fmat4_transpose (&UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         // for each vertex j of a triangle

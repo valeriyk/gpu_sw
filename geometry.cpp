@@ -10,13 +10,99 @@ float fmat4_get (fmat4& mat, const int row, const int col) {
 	return mat[row][col];
 }
 
-void  fmat4_fmat4_mult (const fmat4& a, const fmat4& b, fmat4& c) {
+void  fmat4_fmat4_mult (const fmat4 *a, const fmat4 *b, fmat4 *c) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
-			c[i][j] = 0;
-			for (int k = 0; k < 4; k++)	c[i][j] += a[i][k]*b[k][j];
+			(*c)[i][j] = 0;
+			for (int k = 0; k < 4; k++)	(*c)[i][j] += (*a)[i][k] * (*b)[k][j];
 		}
 	}
+}
+
+#include <stdio.h>
+
+void print_fmat4 (const fmat4 *m, const char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 4; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 4; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
+void print_fmat3 (const fmat3 *m, const char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 3; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 3; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+float det3x3 (const fmat3 *m) {
+	return (*m)[0][0] * (*m)[1][1] * (*m)[2][2] -
+	       (*m)[0][0] * (*m)[1][2] * (*m)[2][1] -
+	       (*m)[0][1] * (*m)[1][0] * (*m)[2][2] +
+	       (*m)[0][1] * (*m)[1][2] * (*m)[2][0] +
+	       (*m)[0][2] * (*m)[1][0] * (*m)[2][1] -
+	       (*m)[0][2] * (*m)[1][1] * (*m)[2][0];
+}
+
+void fmat4_transpose (fmat4 *m) {
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			(*m)[i][j] = (*m)[j][i];
+}
+
+void fmat4_get_minor (const fmat4 *in, const int r, const int c, fmat3 *out) {
+	int m = 0;
+	int n = 0;
+	for (int i = 0; i < 4; i++) {
+		if (r != i) {
+			for (int j = 0; j < 4; j++) {
+				if (c != j) (*out)[m][n++] = (*in)[i][j];
+			}
+			m++;
+			n = 0;
+		}
+	}
+}
+
+void fmat4_cofactor (const fmat4 *in, fmat4 *out) {
+	// cofactor of M = matrix of determinants of minors of M, multiplied by -1^(i+j)
+	fmat3 minor;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			fmat4_get_minor (in, i, j, &minor);
+			int sign = ((i + j) % 2) ? -1 : 1; // TBD check sign
+			(*out)[i][j] = det3x3 (&minor) * sign;
+		}
+	}
+}
+
+void fmat4_adjugate (const fmat4 *in, fmat4 *out) {
+	// adjoint of M = transposed cofactor of M
+	fmat4_cofactor (in, out);
+	fmat4_transpose (out);
+}
+
+void fmat4_invert (const fmat4 *in, fmat4 *out) {
+	// inverse of M = adjoint of M / det M
+	fmat4 adj;
+	fmat4_adjugate(in, &adj);
+	float det = 0.0f;
+	fmat3 minor;
+	for (int i = 0; i < 4; i++) {
+		fmat4_get_minor (&adj, 0, i, &minor);
+		det += adj[0][i] * det3x3 (&minor) * ((i % 2) ? -1 : 1); // TBD check sign
+	}
+	if (det == 0) printf ("Det is ZERO!\n");
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			(*out)[i][j] = adj[i][j] / det;
 }
 
 void  fmat4_float4_mult (const fmat4 &a, const float4 &b, float4 &c) {

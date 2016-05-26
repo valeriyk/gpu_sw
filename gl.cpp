@@ -41,7 +41,7 @@ void init_projection (fmat4 &m, const float val) {
 	fmat4_set (m, 3, 2, val);
 }
 
-void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 &up) {
+void init_view (fmat4 *m, const float3 &eye, const float3 &center, const float3 &up) {
 	
 	float3 z, x, y;
 	
@@ -65,16 +65,10 @@ void init_view (fmat4 &m, const float3 &eye, const float3 &center, const float3 
 		fmat4_set (Minv, 2, i, z[i]);
 		fmat4_set (Tr, i, 3, -center[i]);
 	}
-	fmat4_fmat4_mult(Minv, Tr, m);
-	//fmat4_fmat4_mult(Tr, Minv, m);
-	
-	
-	//for (int i = 0; i < 4; i++)	
-	//	fmat4_set (m, i, i, 1.0f);
-	
+	fmat4_fmat4_mult(&Minv, &Tr, m);
 }
 
-void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis) {
+void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	float rad = alpha_deg * 0.01745f; // degrees to rad conversion
 	float sin_alpha = sin(rad);
 	float cos_alpha = cos(rad);
@@ -94,10 +88,10 @@ void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis) {
 	fmat4_set (r, 2, 0, (axis == Y) ?  sin_alpha : 0.0f);
 	fmat4_set (r, 2, 1, (axis == X) ?  sin_alpha : 0.0f);
 	
-	fmat4_fmat4_mult (in, r, out);
+	fmat4_fmat4_mult (in, &r, out);
 }
 
-void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const float3 &tran) {
+void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const float3 &tran) {
 	
 	// scale - rotate - translate
 	
@@ -110,9 +104,9 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	
 	// 2. rotate
 	fmat4 tmp1, tmp2, r;
-	rotate_coords (   s, tmp1, rotate[X], X);
-	rotate_coords (tmp1, tmp2, rotate[Y], Y);
-	rotate_coords (tmp2,    r, rotate[Z], Z);
+	rotate_coords (   &s, &tmp1, rotate[X], X);
+	rotate_coords (&tmp1, &tmp2, rotate[Y], Y);
+	rotate_coords (&tmp2,    &r, rotate[Z], Z);
 		
 	// 3. translate	
 	fmat4 t = {0};
@@ -122,7 +116,7 @@ void init_model (fmat4 &m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_set (t, 1, 3, tran[Y]);
 	fmat4_set (t, 2, 3, tran[Z]);
 	
-	fmat4_fmat4_mult (r, t, m);
+	fmat4_fmat4_mult (&r, &t, m);
 }
 
 void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir)

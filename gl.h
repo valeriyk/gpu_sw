@@ -61,11 +61,11 @@ int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff);
 screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff);
 
-void init_model      (fmat4 &m, const float3 &scale, const float3 &rotate, const float3 &tran);
-void init_view       (fmat4 &m, const float3 &eye,   const float3 &center, const float3 &up);
+void init_model      (fmat4 *m, const float3 &scale, const float3 &rotate, const float3 &tran);
+void init_view       (fmat4 *m, const float3 &eye,   const float3 &center, const float3 &up);
 void init_projection (fmat4 &m, const float val);
 void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int h, const int d);
 
-void rotate_coords (const fmat4 &in, fmat4 &out, float alpha_deg, axis axis);
+void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
 void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir);
