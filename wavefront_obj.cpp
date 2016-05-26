@@ -100,15 +100,18 @@ int read_obj_file (const char *filename, WFobj &obj) {
 						 if ((c != ' ') && (c != '\t')) return 2;
 					}
 					else {
+						objdata data;
 						// convert string to number and save it
 						if (V_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
 								
-								float *data = (float*) dyn_array_new(obj.vtx);
-								*data = af;
+								//float *data = (float*) dyn_array_new(obj.vtx);
+								//*data = af;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
-								dyn_array_push (obj.vtx, data);
+								
+								data.f = af;
+								dyn_array_push (obj.vtx, &data);
 							}
 							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
 							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
@@ -118,10 +121,11 @@ int read_obj_file (const char *filename, WFobj &obj) {
 							int ai = atoi (alpha_num);
 							ai--; // decrement all indices because in OBJ they start at 1
 							if ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX)) {
-								int *data = (int*) dyn_array_new(obj.face);
-								*data = ai;
+								//int *data = (int*) dyn_array_new(obj.face);
+								//*data = ai;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
-								dyn_array_push (obj.face, data);
+								data.i = ai;
+								dyn_array_push (obj.face, &data);
 							}
 							/*if (VERTEX_IDX == face_elem) {							
 								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
@@ -139,9 +143,10 @@ int read_obj_file (const char *filename, WFobj &obj) {
 						else if (VT_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2)) {
-								float *data = (float*) dyn_array_new(obj.text);
-								*data = af;
-								dyn_array_push (obj.text, data);
+								//float *data = (float*) dyn_array_new(obj.text);
+								//*data = af;
+								data.f = af;
+								dyn_array_push (obj.text, &data);
 							}
 							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
 							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
@@ -149,9 +154,10 @@ int read_obj_file (const char *filename, WFobj &obj) {
 						else if (VN_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								float *data = (float*) dyn_array_new(obj.norm);
-								*data = af;
-								dyn_array_push (obj.norm, data);
+								//float *data = (float*) dyn_array_new(obj.norm);
+								//*data = af;
+								data.f = af;
+								dyn_array_push (obj.norm, &data);
 							}
 							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
 							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;
