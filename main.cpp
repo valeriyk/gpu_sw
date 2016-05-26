@@ -64,9 +64,18 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	VARYING_U[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2));
 	VARYING_V[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2 + 1));
 	
-	VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
+	/*VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
 	VARYING_NY[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
-	VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+	VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));*/
+	float4 n, nr;
+	n[0] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
+	n[1] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
+	n[2] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+	n[3] = 1.0f;
+	fmat4_float4_mult (UNIFORM_MIT, n, nr);
+	VARYING_NX[vtx_idx] = nr[0]/nr[3];
+	VARYING_NY[vtx_idx] = nr[1]/nr[3];
+	VARYING_NZ[vtx_idx] = nr[2]/nr[3];
 };
 
 bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color) {
@@ -77,7 +86,7 @@ bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color
 	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
 	
 	float intensity = 0;
-	bool phong = 0;
+	bool phong = 1;
 	bool gouraud = !phong;	
 	
 	if (phong) {
@@ -85,6 +94,11 @@ bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color
 		interp_norm[0] = float3_float3_smult (VARYING_NX, barw);
 		interp_norm[1] = float3_float3_smult (VARYING_NY, barw);
 		interp_norm[2] = float3_float3_smult (VARYING_NZ, barw);
+		/*interp_norm[3] = 1.0f;
+		float4 inormal;
+		fmat4_float4_mult (UNIFORM_MIT, interp_norm, inormal);
+		float3 nnormal;
+		for (int i = 0; i < 3; i++) nnormal[i] /= nnormal[3];*/
 		intensity = -float3_float3_smult (interp_norm, light_dir);
 	}
 	else if (gouraud) {
@@ -97,6 +111,7 @@ bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color
 	}	
 	//printf("intensity=%f, barc=%d:%d:%d:sum=%d, light=%f:%f:%f \n", intensity, barc[0], barc[1], barc[2], barc_sum, light_dir[0], light_dir[1], light_dir[2]);
 	if (intensity > 0) {
+		if (intensity < 0.2) intensity = 0.2;
 		color.r = tmpcolor.r * intensity;
 		color.g = tmpcolor.g * intensity;
 		color.b = tmpcolor.b * intensity;
