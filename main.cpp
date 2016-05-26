@@ -5,6 +5,7 @@
 #include "gl.h"
 #include "dyn_array.h"
 #include <stdint.h>
+#include <math.h>
 
 
 // globals:
@@ -20,8 +21,9 @@ float3 VARYING_NX;
 float3 VARYING_NY;
 float3 VARYING_NZ;
 float3 VARYING_INTENSITY;
-fmat4  UNIFORM_M = {0};
-fmat4  UNIFORM_MIT = {0};
+fmat4  UNIFORM_M;
+fmat4  UNIFORM_MI;
+fmat4  UNIFORM_MIT;
 
 void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) { //ScreenPt &sp) {
 	
@@ -187,18 +189,18 @@ int main(int argc, char** argv) {
 	print_fmat4 (&model, "Model: ");
 	print_fmat4 (&UNIFORM_M, "M: ");
 	
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
-	print_fmat4 (&UNIFORM_MIT, "MI: ");
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
+	print_fmat4 (&UNIFORM_MI, "MI: ");
 	fmat4 check_inv;
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
 	print_fmat4 (&check_inv, "check inv: ");
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
 		}
 	}
-	fmat4_transpose (&UNIFORM_MIT);
+	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	print_fmat4 (&UNIFORM_MIT, "MIT: ");
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
@@ -220,15 +222,16 @@ int main(int argc, char** argv) {
 	
 	init_model (&model, scale, rotate, tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
+	print_fmat4 (&check_inv, "check inv: ");
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
 		}
 	}
-	fmat4_transpose (&UNIFORM_MIT);
+	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 		ScreenTriangle t;     
 		for (int j = 0; j < 3; j++) {
@@ -249,15 +252,16 @@ int main(int argc, char** argv) {
 	
 	init_model (&model, scale, rotate, tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MIT);
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MIT, &check_inv);
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
+	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
+	print_fmat4 (&check_inv, "check inv: ");
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (check_inv[i][j] != 0.0f)) printf ("Matrix inversion fault!\n");
+			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
 		}
 	}
-	fmat4_transpose (&UNIFORM_MIT);
+	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         // for each vertex j of a triangle

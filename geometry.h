@@ -31,7 +31,7 @@ void float3_float4_conv (const float3 &in, float4 &out);
 
 void float4_float3_conv (const float4 &in, float3 &out);
 
-void fmat4_transpose (fmat4 *m);
+void fmat4_transpose (const fmat4 *in, fmat4 *out);
 void fmat4_invert (const fmat4 *in, fmat4 *out);
 
 
