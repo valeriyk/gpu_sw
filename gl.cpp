@@ -138,8 +138,8 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zb
     screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], SCREEN_SIZE[1]);
     
     
-    for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
-    printf ("min/max:  x:%d/%d, y:%d/%d\n", min_x, max_x, min_y, max_y);
+    //for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
+    //printf ("min/max:  x:%d/%d, y:%d/%d\n", min_x, max_x, min_y, max_y);
     
     if ((min_x == max_x) || (min_y == max_y)) return; // degenerate triangle
     
@@ -220,9 +220,7 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zb
 					sum_of_bars += bar_clip[i];
 				}
 				for (int i = 0; i < 3; i++) bar_clip[i] /= sum_of_bars;
-				//z2 = (int) float3_int3_smult (bar_clip, t.cz);// / 
 				p.z = (int) t.cz[0] + bar_clip[1]*(t.cz[1]-t.cz[0]) + bar_clip[2]*(t.cz[2] - t.cz[0]); // TBD change to screenz_t or use p.z;
-				//if (z1 != z2) printf ("Z mismatch, z1=%d, z2=%d\n", z1, z2);
 				if (zbuffer[p.x + p.y*width] < p.z) {
 					zbuffer[p.x + p.y*width] = p.z;
 					pixel_color_t color;// = TGAColor (255, 255, 255, 255);

@@ -84,7 +84,7 @@ void fmat4_cofactor (const fmat4 *in, fmat4 *out) {
 			printf ("cof: %f\n\n", (*out)[i][j]);*/
 		}
 	}
-	print_fmat4 (out, "Cof mtx: ");
+	//print_fmat4 (out, "Cof mtx: ");
 }
 
 void fmat4_adjugate (const fmat4 *in, fmat4 *out) {
@@ -92,7 +92,7 @@ void fmat4_adjugate (const fmat4 *in, fmat4 *out) {
 	fmat4 cof;
 	fmat4_cofactor (in, &cof);
 	fmat4_transpose (&cof, out);
-	print_fmat4 (out, "Adj: ");
+	//print_fmat4 (out, "Adj: ");
 }
 
 void fmat4_invert (const fmat4 *in, fmat4 *out) {
@@ -105,7 +105,7 @@ void fmat4_invert (const fmat4 *in, fmat4 *out) {
 		fmat4_get_minor (&adj, 0, i, &minor);
 		det += adj[0][i] * det3x3 (&minor) * ((i % 2) ? -1 : 1); // TBD check sign
 	}
-	printf ("Det is %f\n", det);
+	//printf ("Det is %f\n", det);
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			(*out)[i][j] = adj[i][j] / det;

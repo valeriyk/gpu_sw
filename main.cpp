@@ -10,9 +10,9 @@
 
 // globals:
 
-float3 light_dir  = { 0.0f,   -1.0f,   -0.1f};
-float3 eye        = { 2.0f,   0.1f,   2.0f};
-float3 center     = { 0.0f,   0.1f,   0.0f};
+float3 light_dir  = { -1.0f,   -0.0f,   -0.0f};
+float3 eye        = { 5.0f,   5.0f,   5.0f};
+float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 	
 float3 VARYING_U;
@@ -24,6 +24,7 @@ float3 VARYING_INTENSITY;
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MI;
 fmat4  UNIFORM_MIT;
+float3 UNIFORM_LIGHT;
 
 void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) { //ScreenPt &sp) {
 	
@@ -64,19 +65,23 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	VARYING_U[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2));
 	VARYING_V[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2 + 1));
 	
-	/*VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
-	VARYING_NY[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
-	VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));*/
-	float4 n, nr;
-	n[0] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
-	n[1] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
-	n[2] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
-	n[3] = 1.0f;
-	fmat4_float4_mult (UNIFORM_MIT, n, nr);
-	VARYING_NX[vtx_idx] = nr[0]/nr[3];
-	VARYING_NY[vtx_idx] = nr[1]/nr[3];
-	VARYING_NZ[vtx_idx] = nr[2]/nr[3];
-};
+	if (0) {
+		VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
+		VARYING_NY[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
+		VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+	}
+	else {
+		float4 n, nr;
+		n[0] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
+		n[1] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
+		n[2] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+		n[3] = 1.0f;
+		fmat4_float4_mult (UNIFORM_MIT, n, nr);
+		VARYING_NX[vtx_idx] = nr[0]/nr[3];
+		VARYING_NY[vtx_idx] = nr[1]/nr[3];
+		VARYING_NZ[vtx_idx] = nr[2]/nr[3];
+	}
+}
 
 bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color) {
 	
@@ -94,27 +99,26 @@ bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color
 		interp_norm[0] = float3_float3_smult (VARYING_NX, barw);
 		interp_norm[1] = float3_float3_smult (VARYING_NY, barw);
 		interp_norm[2] = float3_float3_smult (VARYING_NZ, barw);
-		/*interp_norm[3] = 1.0f;
-		float4 inormal;
-		fmat4_float4_mult (UNIFORM_MIT, interp_norm, inormal);
-		float3 nnormal;
-		for (int i = 0; i < 3; i++) nnormal[i] /= nnormal[3];*/
-		intensity = -float3_float3_smult (interp_norm, light_dir);
+		float3_normalize(interp_norm);
+		intensity = -float3_float3_smult (interp_norm, UNIFORM_LIGHT);
 	}
 	else if (gouraud) {
 		float3 interp_intens;
 		for (int i = 0; i < 3; i++) {
 			float3 ii = {VARYING_NX[i], VARYING_NY[i], VARYING_NZ[i]};
-			interp_intens[i] = float3_float3_smult (ii, light_dir);
+			interp_intens[i] = float3_float3_smult (ii, UNIFORM_LIGHT);
 		}
 		intensity = -float3_float3_smult (interp_intens, barw);
-	}	
-	//printf("intensity=%f, barc=%d:%d:%d:sum=%d, light=%f:%f:%f \n", intensity, barc[0], barc[1], barc[2], barc_sum, light_dir[0], light_dir[1], light_dir[2]);
+	}
 	if (intensity > 0) {
-		if (intensity < 0.2) intensity = 0.2;
+		//if (intensity < 0.2) intensity = 0.2;
 		color.r = tmpcolor.r * intensity;
 		color.g = tmpcolor.g * intensity;
 		color.b = tmpcolor.b * intensity;
+		/*color.r = 255 * intensity;
+		color.g = 255 * intensity;
+		color.b = 255 * intensity;
+		*/
 		return true;
 	}
 	return false;
@@ -149,11 +153,12 @@ int main(int argc, char** argv) {
 	WFobj african_head;
 	WFobj my_floor;
     init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
+    //init_obj (african_head, "obj/african_head.obj", "obj/floor_diffuse.tga");
     init_obj (my_floor,     "obj/floor.obj",        "obj/floor_diffuse.tga");
       
 
-    float3_normalize (light_dir);
-    
+	float4 light_dir4, light_new;
+	
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
 	//printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
@@ -171,8 +176,24 @@ int main(int argc, char** argv) {
 	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     fmat4 projview;
     fmat4_fmat4_mult (&projection, &view, &projview);
-    /*
-    init_model      (model, african_head.scale, african_head.rotate, african_head.tran);
+    
+    for (int i = 0; i < 3; i++) {
+		scale[i]  = default_scale[i];
+		rotate[i] = default_rotate[i];
+		tran[i]   = default_tran[i];
+	}
+	//rotate[0] = 0.0f;
+	//tran[2]   = 0.7f;
+	
+    init_model      (&model, scale, rotate, tran);
+    fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
+	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
+	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
+	
+	float3_float4_conv (light_dir, light_dir4);
+	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	float4_float3_conv (light_new, UNIFORM_LIGHT);
+    float3_normalize (UNIFORM_LIGHT);
     
     for (int i = 0; i < (african_head.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
@@ -183,8 +204,8 @@ int main(int argc, char** argv) {
 		}		
 		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
     }
-	*/
 	
+	/*
 	for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
 		rotate[i] = default_rotate[i];
@@ -197,26 +218,26 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	
 	
-    print_fmat4 (&viewport, "Viewport: ");
-    print_fmat4 (&projection, "Projection: ");
-	print_fmat4 (&view, "View: ");
-	print_fmat4 (&projview, "Projview: ");
-	print_fmat4 (&model, "Model: ");
-	print_fmat4 (&UNIFORM_M, "M: ");
+    //print_fmat4 (&viewport, "Viewport: ");
+    //print_fmat4 (&projection, "Projection: ");
+	//print_fmat4 (&view, "View: ");
+	//print_fmat4 (&projview, "Projview: ");
+	//print_fmat4 (&model, "Model: ");
+	//print_fmat4 (&UNIFORM_M, "M: ");
 	
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	print_fmat4 (&UNIFORM_MI, "MI: ");
-	fmat4 check_inv;
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
-	print_fmat4 (&check_inv, "check inv: ");
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
-		}
-	}
+	//print_fmat4 (&UNIFORM_MI, "MI: ");
+	//fmat4 check_inv;
+	//fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
+	//print_fmat4 (&check_inv, "check inv: ");
+	//for (int i = 0; i < 4; i++) {
+	//	for (int j = 0; j < 4; j++) {
+	//		if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
+	//		if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
+	//	}
+	//}
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	print_fmat4 (&UNIFORM_MIT, "MIT: ");
+	//print_fmat4 (&UNIFORM_MIT, "MIT: ");
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
         // for each vertex j of a triangle
@@ -238,14 +259,6 @@ int main(int argc, char** argv) {
 	init_model (&model, scale, rotate, tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
-	print_fmat4 (&check_inv, "check inv: ");
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
-		}
-	}
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
 		ScreenTriangle t;     
@@ -268,25 +281,17 @@ int main(int argc, char** argv) {
 	init_model (&model, scale, rotate, tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
-	print_fmat4 (&check_inv, "check inv: ");
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-			if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
-		}
-	}
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
-	//for (int i = 13; i < 35; i++) {
-        // for each vertex j of a triangle
+	    // for each vertex j of a triangle
 		ScreenTriangle t;     
 		for (int j = 0; j < 3; j++) {
 			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
 		}		
 		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
     }
-
+	*/
+    
     // write down the framebuffer
     TGAImage image(width, height, TGAImage::RGB);
     for (int i = 0; i < width; i++) {
