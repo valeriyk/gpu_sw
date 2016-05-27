@@ -112,13 +112,8 @@ bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color
 	}
 	if (intensity > 0) {
 		//if (intensity < 0.2) intensity = 0.2;
-		color.r = tmpcolor.r * intensity;
-		color.g = tmpcolor.g * intensity;
-		color.b = tmpcolor.b * intensity;
-		/*color.r = 255 * intensity;
-		color.g = 255 * intensity;
-		color.b = 255 * intensity;
-		*/
+		color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
+		//color = set_color (255 * intensity, 255 * intensity, 255 * intensity, 0);
 		return true;
 	}
 	return false;
@@ -134,11 +129,7 @@ int main(int argc, char** argv) {
     
     for (int i = 0; i < buffer_size; i++) {
 		zbuffer[i] = INT32_MIN;	
-		
-		fbuffer[i].r = 0;
-		fbuffer[i].g = 0;
-		fbuffer[i].b = 0;
-		fbuffer[i].a = 0;
+		fbuffer[i] = set_color(0, 0, 0, 0);
 	}
 	
 	

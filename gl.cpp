@@ -245,6 +245,15 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zb
     //printf ("\n");
 }
 
+pixel_color_t set_color (const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a) {
+	pixel_color_t pc;
+	pc.r = r;
+	pc.g = g;
+	pc.b = b;
+	pc.a = a;
+	return pc;
+}
+
 /*
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
     bool steep = false;
