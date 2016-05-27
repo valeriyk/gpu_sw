@@ -1,7 +1,6 @@
 #include "shader.h"
 //#include "wavefront_obj.h"
 //#include "geometry.h"
-//#include "dyn_array.h"
 //#include "gl.h"
 #include "main.h"
 

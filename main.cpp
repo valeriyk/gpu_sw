@@ -3,7 +3,7 @@
 #include "wavefront_obj.h"
 #include "geometry.h"
 #include "gl.h"
-#include "dyn_array.h"
+
 #include "shader.h"
 #include <stdint.h>
 #include <math.h>
