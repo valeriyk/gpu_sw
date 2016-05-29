@@ -97,7 +97,9 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
 	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	
+	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+
+	/*
     for (int i = 0; i < wfobj_get_num_of_faces(african_head); i++) {
 	//for (int i = 13; i < 35; i++) {
     	// for each vertex j of a triangle
@@ -107,7 +109,7 @@ int main(int argc, char** argv) {
 		}		
 		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
     }
-	
+	*/
 	/*
 	for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
