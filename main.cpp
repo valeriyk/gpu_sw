@@ -38,13 +38,16 @@ int main(int argc, char** argv) {
 	float3 rotate;
 	float3 tran;
 	
+	/*
 	WFobj african_head;
 	WFobj my_floor;
     init_obj (african_head, "obj/african_head.obj", "obj/african_head_diffuse.tga");
     //init_obj (african_head, "obj/african_head.obj", "obj/floor_diffuse.tga");
     init_obj (my_floor,     "obj/floor.obj",        "obj/floor_diffuse.tga");
-      
-
+    */
+    WFobj *african_head = wfobj_new ("obj/african_head.obj");
+	wfobj_load_texture (african_head, "obj/african_head_diffuse.tga");
+	
 	float4 light_dir4, light_new;
 	
 	float3 camera;	
@@ -83,7 +86,7 @@ int main(int argc, char** argv) {
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
-    for (int i = 0; i < (african_head.face->end) / 9; i++) {
+    for (int i = 0; i < (african_head->face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
     	// for each vertex j of a triangle
 		ScreenTriangle t;
@@ -193,10 +196,16 @@ int main(int argc, char** argv) {
 	}
 	image.write_tga_file("output.tga");
 
-	dyn_array_destroy (african_head.vtx);
-	dyn_array_destroy (african_head.norm);
-	dyn_array_destroy (african_head.text);
-	dyn_array_destroy (african_head.face);
+/*
+	dyn_array_destroy (african_head->vtx);
+	dyn_array_destroy (african_head->norm);
+	dyn_array_destroy (african_head->text);
+	dyn_array_destroy (african_head->face);
+*/
+	wfobj_free(african_head);
+	
+	free(zbuffer);
+	free(fbuffer);
 	
     return 0;
 }

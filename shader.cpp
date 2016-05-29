@@ -19,24 +19,16 @@ fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
 
 
-void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) {
-	
-	int3 vtx_elems;
-	for (int k = 0; k < 3; k++) {
-		vtx_elems[k] = *((int*) dyn_array_get (obj.face, face_idx*9 + vtx_idx*3 + k));
-	}
+void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) {
 	
 	float3 obj_coords;
-	for (int k = 0; k < 3; k++) {
-		obj_coords[k] = *((float*) dyn_array_get (obj.vtx, vtx_elems[0]*3 + k));
-	}
+	for (int k = 0; k < 3; k++)
+		obj_coords[k] = wfobj_get_vtx_coord (obj, face_idx, vtx_idx, k);
 	
 	float4 mc; // model coordinates
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (obj_coords, mc);
-	
-	
 	// 1. Model - transform local coords to global
 	// 2. View - transform global coords to adjust for camera position
 	// 3. Projection - perspective correction
@@ -52,19 +44,20 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	vtx4d[2] = sc[2]/sc[3];
 	vtx4d[3] = sc[3];
 	
-	VARYING_U[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2));
-	VARYING_V[vtx_idx] = *((float*) dyn_array_get (obj.text, vtx_elems[1]*2 + 1));
+	VARYING_U[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 0);
+	VARYING_V[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 1);
+	
 	
 	if (0) {
-		VARYING_NX[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
-		VARYING_NY[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
-		VARYING_NZ[vtx_idx] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+		VARYING_NX[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
+		VARYING_NY[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
+		VARYING_NZ[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
 	}
 	else {
 		float4 n, nr;
-		n[0] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3));
-		n[1] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+1));
-		n[2] = *((float*) dyn_array_get (obj.norm, vtx_elems[2]*3+2));
+		n[0] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
+		n[1] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
+		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
 		n[3] = 1.0f;
 		fmat4_float4_mult (UNIFORM_MIT, n, nr);
 		VARYING_NX[vtx_idx] = nr[0]/nr[3];
@@ -73,12 +66,12 @@ void my_vertex_shader (const WFobj &obj, const int face_idx, const int vtx_idx, 
 	}
 }
 
-bool my_pixel_shader (const WFobj &obj, const float3 &barw, pixel_color_t &color) {
+bool my_pixel_shader (const WFobj *obj, const float3 &barw, pixel_color_t &color) {
 	
-	int uu = (int) (obj.textw * float3_float3_smult (VARYING_U, barw));
-	int vv = (int) (obj.texth * float3_float3_smult (VARYING_V, barw));
+	int uu = (int) (obj->textw * float3_float3_smult (VARYING_U, barw));
+	int vv = (int) (obj->texth * float3_float3_smult (VARYING_V, barw));
 	
-	TGAColor tmpcolor = obj.texture.get(uu, obj.texth-vv-1);
+	TGAColor tmpcolor = obj->texture.get(uu, obj->texth-vv-1);
 	
 	float intensity = 0;
 	bool phong = 1;

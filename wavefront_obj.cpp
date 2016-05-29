@@ -3,21 +3,65 @@
 #include <stdlib.h>
 
 
-void init_obj (WFobj &obj, const char *obj_file, const char *texture_file) {
-	obj.vtx  = dyn_array_create (sizeof (float), 384);
-    obj.norm = dyn_array_create (sizeof (float), 384);
-	obj.text = dyn_array_create (sizeof (float), 256);
-	obj.face = dyn_array_create (sizeof   (int), 1152);
+WFobj * wfobj_new (const char *obj_file) {
+	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
+	
+	if (obj == NULL) return NULL;
+	
+	obj->vtx  = dyn_array_create (sizeof (float), 384);
+    obj->norm = dyn_array_create (sizeof (float), 384);
+	obj->text = dyn_array_create (sizeof (float), 256);
+	obj->face = dyn_array_create (sizeof   (int), 1152);
+	
 	read_obj_file (obj_file, obj);	        
     
-    obj.texture = TGAImage(1, 1, TGAImage::RGB);
-    obj.texture.read_tga_file(texture_file);    
-    obj.textw = obj.texture.get_width();
-    obj.texth = obj.texture.get_height();
+    obj->face_offset = 0;
+    obj->vtx_offset = 0;
+    
+    return obj;
+}
+
+void wfobj_free (WFobj *obj) {
+	dyn_array_destroy (obj->vtx);
+	dyn_array_destroy (obj->norm);
+	dyn_array_destroy (obj->text);
+	dyn_array_destroy (obj->face);
+	
+	free (obj);
+}
+
+void wfobj_load_texture (WFobj *obj, const char *texture_file) {
+	obj->texture = TGAImage(1, 1, TGAImage::RGB);
+    obj->texture.read_tga_file(texture_file);    
+    obj->textw = obj->texture.get_width();
+    obj->texth = obj->texture.get_height();
+}
+
+/*void wfobj_set_face_idx   (const WFobj *obj, const int face_idx) {
+	obj->face_offset = face_idx*9;
+}
+
+void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx) {
+	obj->vtx_offset = obj->face_offset + vtx_idx*3;
+}*/
+
+float   wfobj_get_vtx_coord  (const WFobj *obj, const int face_idx,  const int vtx_idx, const int coord_idx) {
+	int vtx_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3));
+	return *((float*) dyn_array_get (obj->vtx, vtx_coords_offset*3 + coord_idx));
+}
+
+float   wfobj_get_text_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
+	int text_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3 + 1));
+	return *((float*) dyn_array_get (obj->text, text_coords_offset*2 + coord_idx));
+}
+
+float   wfobj_get_norm_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
+	int norm_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3 + 2));
+	return *((float*) dyn_array_get (obj->norm, norm_coords_offset*3 + coord_idx));
 }
 
 // Parse Wavefront OBJ format
-int read_obj_file (const char *filename, WFobj &obj) {
+int read_obj_file (const char *filename, WFobj *obj) {
 
     const int ALPHA_SIZE = 16;
     
@@ -110,7 +154,7 @@ int read_obj_file (const char *filename, WFobj &obj) {
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
 								
 								data.f = af;
-								dyn_array_push (obj.vtx, &data);
+								dyn_array_push (obj->vtx, &data);
 							}
 							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
 							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
@@ -124,7 +168,7 @@ int read_obj_file (const char *filename, WFobj &obj) {
 								//*data = ai;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
 								data.i = ai;
-								dyn_array_push (obj.face, &data);
+								dyn_array_push (obj->face, &data);
 							}
 							/*if (VERTEX_IDX == face_elem) {							
 								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
@@ -145,7 +189,7 @@ int read_obj_file (const char *filename, WFobj &obj) {
 								//float *data = (float*) dyn_array_new(obj.text);
 								//*data = af;
 								data.f = af;
-								dyn_array_push (obj.text, &data);
+								dyn_array_push (obj->text, &data);
 							}
 							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
 							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
@@ -156,7 +200,7 @@ int read_obj_file (const char *filename, WFobj &obj) {
 								//float *data = (float*) dyn_array_new(obj.norm);
 								//*data = af;
 								data.f = af;
-								dyn_array_push (obj.norm, &data);
+								dyn_array_push (obj->norm, &data);
 							}
 							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
 							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;

@@ -119,7 +119,7 @@ void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (&r, &t, m);
 }
 
-void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir)
+void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj, float3 &light_dir)
 {
     
     Triangle t;
@@ -224,7 +224,7 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader shader, screenz_t *zb
 				if (zbuffer[p.x + p.y*width] < p.z) {
 					zbuffer[p.x + p.y*width] = p.z;
 					pixel_color_t color;// = TGAColor (255, 255, 255, 255);
-					bool draw = shader (obj, bar_clip, color);
+					bool draw = pshader (obj, bar_clip, color);
 					if (draw) fbuffer[p.x + (719 - p.y)*width] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 				}
 				/*else {

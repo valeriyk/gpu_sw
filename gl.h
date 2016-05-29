@@ -52,7 +52,7 @@ typedef struct Triangle {
 	float4 cw;
 } Triangle;
 
-typedef bool (*pixel_shader) (const WFobj &obj, const float3 &barc, pixel_color_t &color);
+typedef bool (*pixel_shader) (const WFobj *obj, const float3 &barc, pixel_color_t &color);
 
 int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
 
@@ -68,6 +68,6 @@ void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int
 
 void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj &obj, float3 &light_dir);
+void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj, float3 &light_dir);
 
 pixel_color_t set_color (const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a);
