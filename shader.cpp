@@ -19,7 +19,7 @@ fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
 
 
-void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 &model, const fmat4 &view, const fmat4 &projection, const fmat4 &viewport, float4 &vtx4d) {
+void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 &mvpv, float4 &vtx4d) {
 	
 	float3 obj_coords;
 	for (int k = 0; k < 3; k++)
@@ -29,16 +29,7 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (obj_coords, mc);
-	// 1. Model - transform local coords to global
-	// 2. View - transform global coords to adjust for camera position
-	// 3. Projection - perspective correction
-	// 4. Viewport - move to screen coords
-	// Doing everyhting in reverse order:
-	fmat4 tmp1, tmp2, tmp3;
-	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
-	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
-	fmat4_fmat4_mult (&tmp2, &model, &tmp3); 
-	fmat4_float4_mult (tmp3, mc, sc);
+	fmat4_float4_mult (mvpv, mc, sc);
 	vtx4d[0] = sc[0]/sc[3];
 	vtx4d[1] = sc[1]/sc[3];
 	vtx4d[2] = sc[2]/sc[3];

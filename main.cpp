@@ -86,12 +86,23 @@ int main(int argc, char** argv) {
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
+    
+	// 1. Model - transform local coords to global
+	// 2. View - transform global coords to adjust for camera position
+	// 3. Projection - perspective correction
+	// 4. Viewport - move to screen coords
+	// Doing everyhting in reverse order:
+	fmat4 tmp1, tmp2, mvpv;
+	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
+	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
+	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	
     for (int i = 0; i < (african_head->face->end) / 9; i++) {
 	//for (int i = 13; i < 35; i++) {
     	// for each vertex j of a triangle
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (african_head, i, j, model, view, projection, viewport, t.vtx_coords[j]);
+			my_vertex_shader (african_head, i, j, mvpv, t.vtx_coords[j]);
 		}		
 		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
     }
