@@ -3,30 +3,74 @@
 #include <stdlib.h>
 
 
+
+typedef union ObjData {
+	int i;
+	float f;
+} objdata;
+
+typedef struct DynArray {
+	int end;
+	int max;
+	size_t elem_size;
+	size_t expand_rate;
+	objdata *data;
+} DynArray;
+
+struct WFobjPrivate {
+	DynArray *vtx   = NULL;
+	DynArray *norm  = NULL;
+	DynArray *text  = NULL;
+	DynArray *face  = NULL;
+	int face_offset = 0;
+	int vtx_offset  = 0;
+};
+
+typedef enum {V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
+typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;  
+typedef enum {VERTEX_IDX, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
+
+
+DynArray * dyn_array_create (size_t elem_size, size_t initial_max);
+
+int    dyn_array_push    (DynArray *a, objdata *el);
+int    dyn_array_expand  (DynArray *a);
+void   dyn_array_destroy (DynArray *a);
+
+static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
+//static inline void * dyn_array_new (DynArray *a)        {return calloc(1, a->elem_size);}
+
+void init_obj (WFobj &obj, const char *obj_file, const char *texture_file);
+int  read_obj_file (const char *filename, WFobj *obj);
+
+
 WFobj * wfobj_new (const char *obj_file) {
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	
 	if (obj == NULL) return NULL;
 	
-	obj->vtx  = dyn_array_create (sizeof (float), 384);
-    obj->norm = dyn_array_create (sizeof (float), 384);
-	obj->text = dyn_array_create (sizeof (float), 256);
-	obj->face = dyn_array_create (sizeof   (int), 1152);
+	obj->priv = (WFobjPrivate*) malloc (sizeof(WFobjPrivate));
+	
+	obj->priv->vtx  = dyn_array_create (sizeof (float), 384);
+    obj->priv->norm = dyn_array_create (sizeof (float), 384);
+	obj->priv->text = dyn_array_create (sizeof (float), 256);
+	obj->priv->face = dyn_array_create (sizeof   (int), 1152);
 	
 	read_obj_file (obj_file, obj);	        
     
-    obj->face_offset = 0;
-    obj->vtx_offset = 0;
+    obj->priv->face_offset = 0;
+    obj->priv->vtx_offset = 0;
     
     return obj;
 }
 
 void wfobj_free (WFobj *obj) {
-	dyn_array_destroy (obj->vtx);
-	dyn_array_destroy (obj->norm);
-	dyn_array_destroy (obj->text);
-	dyn_array_destroy (obj->face);
+	dyn_array_destroy (obj->priv->vtx);
+	dyn_array_destroy (obj->priv->norm);
+	dyn_array_destroy (obj->priv->text);
+	dyn_array_destroy (obj->priv->face);
 	
+	free (obj->priv);
 	free (obj);
 }
 
@@ -46,18 +90,22 @@ void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx) {
 }*/
 
 float   wfobj_get_vtx_coord  (const WFobj *obj, const int face_idx,  const int vtx_idx, const int coord_idx) {
-	int vtx_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3));
-	return *((float*) dyn_array_get (obj->vtx, vtx_coords_offset*3 + coord_idx));
+	int vtx_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3));
+	return *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + coord_idx));
 }
 
 float   wfobj_get_text_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
-	int text_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3 + 1));
-	return *((float*) dyn_array_get (obj->text, text_coords_offset*2 + coord_idx));
+	int text_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 1));
+	return *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + coord_idx));
 }
 
 float   wfobj_get_norm_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
-	int norm_coords_offset = *((int*) dyn_array_get (obj->face, face_idx*9 + vtx_idx*3 + 2));
-	return *((float*) dyn_array_get (obj->norm, norm_coords_offset*3 + coord_idx));
+	int norm_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 2));
+	return *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + coord_idx));
+}
+
+int     wfobj_get_num_of_faces (const WFobj *obj) {
+	return obj->priv->face->end / 9;
 }
 
 // Parse Wavefront OBJ format
@@ -154,7 +202,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
 								
 								data.f = af;
-								dyn_array_push (obj->vtx, &data);
+								dyn_array_push (obj->priv->vtx, &data);
 							}
 							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
 							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
@@ -168,7 +216,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 								//*data = ai;
 								//printf ("obj_vtx = %f\n", obj_vtx->data);
 								data.i = ai;
-								dyn_array_push (obj->face, &data);
+								dyn_array_push (obj->priv->face, &data);
 							}
 							/*if (VERTEX_IDX == face_elem) {							
 								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
@@ -189,7 +237,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 								//float *data = (float*) dyn_array_new(obj.text);
 								//*data = af;
 								data.f = af;
-								dyn_array_push (obj->text, &data);
+								dyn_array_push (obj->priv->text, &data);
 							}
 							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
 							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
@@ -200,7 +248,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 								//float *data = (float*) dyn_array_new(obj.norm);
 								//*data = af;
 								data.f = af;
-								dyn_array_push (obj->norm, &data);
+								dyn_array_push (obj->priv->norm, &data);
 							}
 							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
 							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;

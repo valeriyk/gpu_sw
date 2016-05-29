@@ -245,6 +245,19 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *z
     //printf ("\n");
 }
 
+
+/*void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 &mvpv, float3 &light_dir) {
+	for (int i = 0; i < wfobj_get_num_of_faces(obj); i++) {
+	//for (int i = 13; i < 35; i++) {
+    	// for each vertex j of a triangle
+		ScreenTriangle t;
+		for (int j = 0; j < 3; j++) {
+			my_vertex_shader (african_head, i, j, mvpv, t.vtx_coords[j]);
+		}		
+		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
+    }
+}*/
+
 pixel_color_t set_color (const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a) {
 	pixel_color_t pc;
 	pc.r = r;

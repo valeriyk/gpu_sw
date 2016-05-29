@@ -6,6 +6,7 @@
 
 #include "shader.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <math.h>
 
 
@@ -97,7 +98,7 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
 	
-    for (int i = 0; i < (african_head->face->end) / 9; i++) {
+    for (int i = 0; i < wfobj_get_num_of_faces(african_head); i++) {
 	//for (int i = 13; i < 35; i++) {
     	// for each vertex j of a triangle
 		ScreenTriangle t;
