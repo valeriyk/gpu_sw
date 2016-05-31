@@ -248,8 +248,6 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *z
 
 void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 &mvpv, float3 &light_dir) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj); i++) {
-	//for (int i = 13; i < 35; i++) {
-    	// for each vertex j of a triangle
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
 			vshader (obj, i, j, mvpv, t.vtx_coords[j]);

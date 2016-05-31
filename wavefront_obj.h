@@ -3,9 +3,9 @@
 #include "tgaimage.h"
 
 typedef struct WFobj {
-	TGAImage texture;
-	int textw;
-	int texth;
+	TGAImage *texture;
+	//int textw;
+	//int texth;
 	struct WFobjPrivate *priv;
 } WFobj;
 

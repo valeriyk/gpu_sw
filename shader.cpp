@@ -59,10 +59,10 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 
 bool my_pixel_shader (const WFobj *obj, const float3 &barw, pixel_color_t &color) {
 	
-	int uu = (int) (obj->textw * float3_float3_smult (VARYING_U, barw));
-	int vv = (int) (obj->texth * float3_float3_smult (VARYING_V, barw));
+	int uu = (int) (obj->texture->get_width() * float3_float3_smult (VARYING_U, barw));
+	int vv = (int) (obj->texture->get_height() * float3_float3_smult (VARYING_V, barw));
 	
-	TGAColor tmpcolor = obj->texture.get(uu, obj->texth-vv-1);
+	TGAColor tmpcolor = obj->texture->get(uu, obj->texture->get_height()-vv-1);
 	
 	float intensity = 0;
 	bool phong = 1;
@@ -85,7 +85,7 @@ bool my_pixel_shader (const WFobj *obj, const float3 &barw, pixel_color_t &color
 		intensity = -float3_float3_smult (interp_intens, barw);
 	}
 	if (intensity > 0) {
-		//if (intensity < 0.2) intensity = 0.2;
+		if (intensity < 0.1) intensity = 0.1; // ambient light
 		color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
 		//color = set_color (255 * intensity, 255 * intensity, 255 * intensity, 0);
 		return true;

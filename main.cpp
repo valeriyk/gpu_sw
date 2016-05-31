@@ -12,8 +12,8 @@
 
 // globals:
 
-float3 light_dir  = { -1.0f,   -0.0f,   -0.0f};
-float3 eye        = { 5.0f,   5.0f,   5.0f};
+float3 light_dir  = { -1.0f,   -0.2f,   -1.1f};
+float3 eye        = { 2.0f,   3.0f,   5.0f};
 float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 	
@@ -47,14 +47,25 @@ int main(int argc, char** argv) {
     init_obj (my_floor,     "obj/floor.obj",        "obj/floor_diffuse.tga");
     */
     WFobj *african_head = wfobj_new ("obj/african_head.obj");
-	wfobj_load_texture (african_head, "obj/african_head_diffuse.tga");
+	TGAImage *head_diffuse = new TGAImage (1, 1, TGAImage::RGB);
+	head_diffuse->read_tga_file ("obj/african_head_diffuse.tga");
+	african_head->texture = head_diffuse;
+	
+	//wfobj_load_texture (african_head, "obj/african_head_diffuse.tga");
+	//WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga");
+	//WFobj *my_floor = wfobj_new ("obj/floor.obj", "obj/floor_diffuse.tga");
+	WFobj *my_floor = wfobj_new ("obj/floor.obj");
+	TGAImage *floor_diffuse = new TGAImage (1, 1, TGAImage::RGB);
+	floor_diffuse->read_tga_file ("obj/floor_diffuse.tga");
+	my_floor->texture = floor_diffuse;
+	
 	
 	float4 light_dir4, light_new;
 	
 	float3 camera;	
 	float3_float3_sub(eye, center, camera);
 	//printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
-	//float3_normalize (camera); TBD - uncomment?
+	//float3_normalize (camera); //TBD - uncomment?
 	//printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
 	
 	
@@ -75,7 +86,7 @@ int main(int argc, char** argv) {
 		tran[i]   = default_tran[i];
 	}
 	//rotate[0] = 0.0f;
-	//tran[2]   = 0.7f;
+	tran[2]   = 0.6f;
 	
     init_model      (&model, scale, rotate, tran);
     fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
@@ -98,19 +109,8 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
 	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
-
-	/*
-    for (int i = 0; i < wfobj_get_num_of_faces(african_head); i++) {
-	//for (int i = 13; i < 35; i++) {
-    	// for each vertex j of a triangle
-		ScreenTriangle t;
-		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (african_head, i, j, mvpv, t.vtx_coords[j]);
-		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, african_head, light_dir);        
-    }
-	*/
-	/*
+	
+	
 	for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
 		rotate[i] = default_rotate[i];
@@ -122,37 +122,17 @@ int main(int argc, char** argv) {
 	init_model       (&model, scale, rotate, tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	
-	
-    //print_fmat4 (&viewport, "Viewport: ");
-    //print_fmat4 (&projection, "Projection: ");
-	//print_fmat4 (&view, "View: ");
-	//print_fmat4 (&projview, "Projview: ");
-	//print_fmat4 (&model, "Model: ");
-	//print_fmat4 (&UNIFORM_M, "M: ");
-	
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	//print_fmat4 (&UNIFORM_MI, "MI: ");
-	//fmat4 check_inv;
-	//fmat4_fmat4_mult (&UNIFORM_M, &UNIFORM_MI, &check_inv);
-	//print_fmat4 (&check_inv, "check inv: ");
-	//for (int i = 0; i < 4; i++) {
-	//	for (int j = 0; j < 4; j++) {
-	//		if ((i == j) && (check_inv[i][j] != 1.0f)) printf ("Matrix inversion fault!\n");
-	//		if ((i != j) && (fabs(check_inv[i][j]) > 0.0001f)) printf ("Matrix inversion fault!\n");
-	//	}
-	//}
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	//print_fmat4 (&UNIFORM_MIT, "MIT: ");
-	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
-	//for (int i = 13; i < 35; i++) {
-        // for each vertex j of a triangle
-		ScreenTriangle t;     
-		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
-		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
-    }
+	
+	float3_float4_conv (light_dir, light_dir4);
+	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	float4_float3_conv (light_new, UNIFORM_LIGHT);
+    float3_normalize (UNIFORM_LIGHT);
     
+	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	
     for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
 		rotate[i] = default_rotate[i];
@@ -165,14 +145,15 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
-		ScreenTriangle t;     
-		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
-		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
-    }
+	
+	float3_float4_conv (light_dir, light_dir4);
+	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	float4_float3_conv (light_new, UNIFORM_LIGHT);
+    float3_normalize (UNIFORM_LIGHT);
     
+    fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	
     for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
 		rotate[i] = default_rotate[i];
@@ -187,15 +168,15 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	for (int i = 0; i < (my_floor.face->end) / 9; i++) {
-	    // for each vertex j of a triangle
-		ScreenTriangle t;     
-		for (int j = 0; j < 3; j++) {
-			my_vertex_shader (my_floor, i, j, model, view, projection, viewport, t.vtx_coords[j]);
-		}		
-		draw_triangle (t, my_pixel_shader, zbuffer, fbuffer, my_floor, light_dir);             
-    }
-	*/
+	
+	float3_float4_conv (light_dir, light_dir4);
+	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	float4_float3_conv (light_new, UNIFORM_LIGHT);
+    float3_normalize (UNIFORM_LIGHT);
+    
+    fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	
     
     // write down the framebuffer
     TGAImage image(width, height, TGAImage::RGB);
@@ -210,13 +191,7 @@ int main(int argc, char** argv) {
 	}
 	image.write_tga_file("output.tga");
 
-/*
-	dyn_array_destroy (african_head->vtx);
-	dyn_array_destroy (african_head->norm);
-	dyn_array_destroy (african_head->text);
-	dyn_array_destroy (african_head->face);
-*/
-	wfobj_free(african_head);
+	//wfobj_free(african_head);
 	
 	free(zbuffer);
 	free(fbuffer);

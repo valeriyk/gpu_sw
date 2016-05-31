@@ -61,6 +61,11 @@ WFobj * wfobj_new (const char *obj_file) {
     obj->priv->face_offset = 0;
     obj->priv->vtx_offset = 0;
     
+    /*obj->texture = TGAImage(1, 1, TGAImage::RGB);
+    obj->texture.read_tga_file(texture_file);    
+    obj->textw = obj->texture.get_width();
+    obj->texth = obj->texture.get_height();
+    */
     return obj;
 }
 
@@ -74,12 +79,12 @@ void wfobj_free (WFobj *obj) {
 	free (obj);
 }
 
-void wfobj_load_texture (WFobj *obj, const char *texture_file) {
-	obj->texture = TGAImage(1, 1, TGAImage::RGB);
-    obj->texture.read_tga_file(texture_file);    
-    obj->textw = obj->texture.get_width();
-    obj->texth = obj->texture.get_height();
-}
+/*void wfobj_load_texture (WFobj *obj, const char *texture_file) {
+	obj->texture = new TGAImage(1, 1, TGAImage::RGB);
+    obj->texture->read_tga_file(texture_file);    
+    obj->textw = obj->texture->get_width();
+    obj->texth = obj->texture->get_height();
+}*/
 
 /*void wfobj_set_face_idx   (const WFobj *obj, const int face_idx) {
 	obj->face_offset = face_idx*9;
