@@ -5,9 +5,9 @@
 #include "wavefront_obj.h"
 #include <math.h>
 
-int orient2d(const ScreenPt &a, const ScreenPt &b, const ScreenPt &c)
+int orient2d(const ScreenPt *a, const ScreenPt *b, const ScreenPt *c)
 {
-    return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
+    return (b->x - a->x)*(c->y - a->y) - (b->y - a->y)*(c->x - a->x);
 }
 
 screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
@@ -91,30 +91,30 @@ void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	fmat4_fmat4_mult (in, &r, out);
 }
 
-void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const float3 &tran) {
+void init_model (fmat4 *m, const float3 *scale, const float3 *rotate, const float3 *tran) {
 	
 	// scale - rotate - translate
 	
 	// 1. scale	
 	fmat4 s = {0};
-	fmat4_set (&s, 0, 0, scale[X]);
-	fmat4_set (&s, 1, 1, scale[Y]);
-	fmat4_set (&s, 2, 2, scale[Z]);
+	fmat4_set (&s, 0, 0, (*scale)[X]);
+	fmat4_set (&s, 1, 1, (*scale)[Y]);
+	fmat4_set (&s, 2, 2, (*scale)[Z]);
 	fmat4_set (&s, 3, 3, 1.0f);
 	
 	// 2. rotate
 	fmat4 tmp1, tmp2, r;
-	rotate_coords (   &s, &tmp1, rotate[X], X);
-	rotate_coords (&tmp1, &tmp2, rotate[Y], Y);
-	rotate_coords (&tmp2,    &r, rotate[Z], Z);
+	rotate_coords (   &s, &tmp1, (*rotate)[X], X);
+	rotate_coords (&tmp1, &tmp2, (*rotate)[Y], Y);
+	rotate_coords (&tmp2,    &r, (*rotate)[Z], Z);
 		
 	// 3. translate	
 	fmat4 t = {0};
 	for (int i = 0; i < 4; i++)	
 		fmat4_set (&t, i, i, 1.0f);
-	fmat4_set (&t, 0, 3, tran[X]);
-	fmat4_set (&t, 1, 3, tran[Y]);
-	fmat4_set (&t, 2, 3, tran[Z]);
+	fmat4_set (&t, 0, 3, (*tran)[X]);
+	fmat4_set (&t, 1, 3, (*tran)[Y]);
+	fmat4_set (&t, 2, 3, (*tran)[Z]);
 	
 	fmat4_fmat4_mult (&r, &t, m);
 }
@@ -177,9 +177,9 @@ void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *z
 		v[i].coords.y = t.cy[i];
 		v[i].coords.z = t.cz[i];
 	}	
-	bar_row[0] = orient2d(v[1].coords, v[2].coords, test_pt); // not normalized
-    bar_row[1] = orient2d(v[2].coords, v[0].coords, test_pt); // not normalized
-    bar_row[2] = orient2d(v[0].coords, v[1].coords, test_pt); // not normalized
+	bar_row[0] = orient2d(&v[1].coords, &v[2].coords, &test_pt); // not normalized
+    bar_row[1] = orient2d(&v[2].coords, &v[0].coords, &test_pt); // not normalized
+    bar_row[2] = orient2d(&v[0].coords, &v[1].coords, &test_pt); // not normalized
           
     float3 bar_clip;
     float sum_of_bars = 0;

@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 	//rotate[0] = 0.0f;
 	tran[2]   = 0.6f;
 	
-    init_model      (&model, scale, rotate, tran);
+    init_model      (&model, &scale, &rotate, &tran);
     fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 	rotate[0] = 0.0f;
 	tran[2]   = 0.75f;
 	
-	init_model       (&model, scale, rotate, tran);	
+	init_model       (&model, &scale, &rotate, &tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 	rotate[0] = 90.0f;
 	tran[1]   = 0.75f;
 	
-	init_model (&model, scale, rotate, tran);	
+	init_model (&model, &scale, &rotate, &tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
 	tran[1]   = 0;//0.75f;
 	tran[2]   = 0.75f;
 	
-	init_model (&model, scale, rotate, tran);	
+	init_model (&model, &scale, &rotate, &tran);	
 	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);

@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-typedef enum {X = 0, Y = 1, Z = 2, W = 3} axis;
+typedef enum {X = 0, Y, Z, W} axis;
 
 
 typedef int16_t screenxy_t;
@@ -56,14 +56,14 @@ typedef struct Triangle {
 typedef void (*vertex_shader) (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 *mvpv, float4 *vtx4d);
 typedef bool (*pixel_shader)  (const WFobj *obj, const float3 *barc, pixel_color_t *color);
 
-int   orient2d (const ScreenPt &a, const ScreenPt &b, const ScreenPt &c);
+int   orient2d (const ScreenPt *a, const ScreenPt *b, const ScreenPt *c);
 
 //void  world2screen (const float4 &w, ScreenPt &s);
 
 screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff);
 screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff);
 
-void init_model      (fmat4 *m, const float3 &scale, const float3 &rotate, const float3 &tran);
+void init_model      (fmat4 *m, const float3 *scale, const float3 *rotate, const float3 *tran);
 void init_view       (fmat4 *m, const float3 *eye,   const float3 *center, const float3 *up);
 void init_projection (fmat4 *m, const float val);
 void init_viewport   (fmat4 *m, const int x, const int y, const int w, const int h, const int d);
