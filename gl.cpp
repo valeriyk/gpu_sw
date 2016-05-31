@@ -119,7 +119,7 @@ void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (&r, &t, m);
 }
 
-void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj, float3 &light_dir)
+void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj)
 {
     
     Triangle t;
@@ -246,13 +246,13 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *z
 }
 
 
-void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 *mvpv, float3 &light_dir) {
+void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 *mvpv) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj); i++) {
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
 			vshader (obj, i, j, mvpv, &t.vtx_coords[j]);
 		}		
-		draw_triangle (t, pshader, zbuffer, fbuffer, obj, light_dir);        
+		draw_triangle (t, pshader, zbuffer, fbuffer, obj);        
     }
 }
 

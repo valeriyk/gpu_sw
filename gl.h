@@ -70,7 +70,7 @@ void init_viewport   (fmat4 &m, const int x, const int y, const int w, const int
 
 void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj, float3 &light_dir);
-void draw_obj      (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 *mvpv, float3 &light_dir);
+void draw_triangle (const ScreenTriangle &t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj);
+void draw_obj      (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 *mvpv);
 
 pixel_color_t set_color (const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a);
