@@ -17,7 +17,7 @@ void  fmat4_set (      fmat4 &mat, const int row, const int col, const float val
 float fmat4_get (const fmat4 &mat, const int row, const int col                 );
 
 void  fmat4_fmat4_mult  (const fmat4 *a, const  fmat4 *b,  fmat4 *c);
-void  fmat4_float4_mult (const fmat4 &a, const float4& b, float4& c);
+void  fmat4_float4_mult (const fmat4 *a, const float4 *b, float4 *c);
 
 void  float3_float3_sub       (const float3 &a, const float3 &b, float3 &c);
 float float3_float3_smult     (const float3 &a, const float3 &b);

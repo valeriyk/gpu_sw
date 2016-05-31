@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
 	float3_float4_conv (light_dir, light_dir4);
-	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
 	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
 	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv, light_dir);
 	
 	
 	for (int i = 0; i < 3; i++) {
@@ -126,12 +126,12 @@ int main(int argc, char** argv) {
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
 	float3_float4_conv (light_dir, light_dir4);
-	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv, light_dir);
 	
     for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
@@ -147,12 +147,12 @@ int main(int argc, char** argv) {
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
 	float3_float4_conv (light_dir, light_dir4);
-	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
     fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv, light_dir);
 	
     for (int i = 0; i < 3; i++) {
 		scale[i]  = default_scale[i];
@@ -170,12 +170,12 @@ int main(int argc, char** argv) {
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
 	float3_float4_conv (light_dir, light_dir4);
-	fmat4_float4_mult (UNIFORM_M, light_dir4, light_new);
+	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
 	float4_float3_conv (light_new, UNIFORM_LIGHT);
     float3_normalize (UNIFORM_LIGHT);
     
     fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, mvpv, light_dir);
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv, light_dir);
 	
     
     // write down the framebuffer

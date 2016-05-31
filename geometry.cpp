@@ -111,10 +111,10 @@ void fmat4_invert (const fmat4 *in, fmat4 *out) {
 			(*out)[i][j] = adj[i][j] / det;
 }
 
-void  fmat4_float4_mult (const fmat4 &a, const float4 &b, float4 &c) {
+void  fmat4_float4_mult (const fmat4 *a, const float4 *b, float4 *c) {
 	for (int i = 0; i < 4; i++) {
-		c[i] = 0;
-		for (int j = 0; j < 4; j++) c[i] += a[i][j]*b[j];
+		(*c)[i] = 0;
+		for (int j = 0; j < 4; j++) (*c)[i] += (*a)[i][j] * (*b)[j];
 	}
 }
 

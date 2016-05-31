@@ -19,7 +19,7 @@ fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
 
 
-void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 &mvpv, float4 &vtx4d) {
+void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 *mvpv, float4 *vtx4d) {
 	
 	float3 obj_coords;
 	for (int k = 0; k < 3; k++)
@@ -29,11 +29,11 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
 	float3_float4_conv (obj_coords, mc);
-	fmat4_float4_mult (mvpv, mc, sc);
-	vtx4d[0] = sc[0]/sc[3];
-	vtx4d[1] = sc[1]/sc[3];
-	vtx4d[2] = sc[2]/sc[3];
-	vtx4d[3] = sc[3];
+	fmat4_float4_mult (mvpv, &mc, &sc);
+	(*vtx4d)[0] = sc[0]/sc[3];
+	(*vtx4d)[1] = sc[1]/sc[3];
+	(*vtx4d)[2] = sc[2]/sc[3];
+	(*vtx4d)[3] = sc[3];
 	
 	VARYING_U[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 0);
 	VARYING_V[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 1);
@@ -50,7 +50,7 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 		n[1] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
 		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
 		n[3] = 1.0f;
-		fmat4_float4_mult (UNIFORM_MIT, n, nr);
+		fmat4_float4_mult (&UNIFORM_MIT, &n, &nr);
 		VARYING_NX[vtx_idx] = nr[0]/nr[3];
 		VARYING_NY[vtx_idx] = nr[1]/nr[3];
 		VARYING_NZ[vtx_idx] = nr[2]/nr[3];
