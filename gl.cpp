@@ -119,15 +119,15 @@ void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const floa
 	fmat4_fmat4_mult (&r, &t, m);
 }
 
-void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj)
+void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj)
 {
     
     Triangle t;
     for (int i = 0; i < 3; i++) {
-		t.cx[i] = (screenxy_t) st.vtx_coords[i][X];
-		t.cy[i] = (screenxy_t) st.vtx_coords[i][Y];
-		t.cz[i] = (screenz_t)  st.vtx_coords[i][Z];
-		t.cw[i] = st.vtx_coords[i][W];
+		t.cx[i] = (screenxy_t) st->vtx_coords[i][X];
+		t.cy[i] = (screenxy_t) st->vtx_coords[i][Y];
+		t.cz[i] = (screenz_t)  st->vtx_coords[i][Z];
+		t.cw[i] = st->vtx_coords[i][W];
 	}    
     
     // Compute triangle bounding box
@@ -252,7 +252,7 @@ void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, sc
 		for (int j = 0; j < 3; j++) {
 			vshader (obj, i, j, mvpv, &t.vtx_coords[j]);
 		}		
-		draw_triangle (t, pshader, zbuffer, fbuffer, obj);        
+		draw_triangle (&t, pshader, zbuffer, fbuffer, obj);        
     }
 }
 
