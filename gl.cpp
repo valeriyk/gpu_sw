@@ -26,7 +26,7 @@ screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy
 	return max;
 }
 
-void init_viewport (fmat4 &m, int x, int y, int w, int h, int d) {
+void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
 	fmat4_set (m, 0, 3, x + w / 2.0f);
 	fmat4_set (m, 1, 1, h / 2.0f);
@@ -36,7 +36,7 @@ void init_viewport (fmat4 &m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 3, 3, 1.0f);
 }
 
-void init_projection (fmat4 &m, const float val) {
+void init_projection (fmat4 *m, const float val) {
 	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
 	fmat4_set (m, 3, 2, val);
 }
@@ -55,15 +55,15 @@ void init_view (fmat4 *m, const float3 &eye, const float3 &center, const float3 
 	fmat4 Minv = {0};
 	fmat4 Tr = {0};
 	for (int i = 0; i < 4; i++)	{
-		fmat4_set (Minv, i, i, 1.0f);
-		fmat4_set (Tr, i, i, 1.0f);
+		fmat4_set (&Minv, i, i, 1.0f);
+		fmat4_set (&Tr, i, i, 1.0f);
 	}
 	
 	for (int i = 0; i < 3; i++)	{
-		fmat4_set (Minv, 0, i, x[i]);
-		fmat4_set (Minv, 1, i, y[i]);
-		fmat4_set (Minv, 2, i, z[i]);
-		fmat4_set (Tr, i, 3, -center[i]);
+		fmat4_set (&Minv, 0, i, x[i]);
+		fmat4_set (&Minv, 1, i, y[i]);
+		fmat4_set (&Minv, 2, i, z[i]);
+		fmat4_set (&Tr, i, 3, -center[i]);
 	}
 	fmat4_fmat4_mult(&Minv, &Tr, m);
 }
@@ -75,18 +75,18 @@ void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	
 	fmat4 r = {0};
 	
-	fmat4_set (r, 0, 0, (axis == X) ? 1.0f : cos_alpha);
-	fmat4_set (r, 1, 1, (axis == Y) ? 1.0f : cos_alpha);
-	fmat4_set (r, 2, 2, (axis == Z) ? 1.0f : cos_alpha);
-	fmat4_set (r, 3, 3,  1.0f);
+	fmat4_set (&r, 0, 0, (axis == X) ? 1.0f : cos_alpha);
+	fmat4_set (&r, 1, 1, (axis == Y) ? 1.0f : cos_alpha);
+	fmat4_set (&r, 2, 2, (axis == Z) ? 1.0f : cos_alpha);
+	fmat4_set (&r, 3, 3,  1.0f);
 	
-	fmat4_set (r, 0, 1, (axis == Z) ? -sin_alpha : 0.0f);
-	fmat4_set (r, 0, 2, (axis == Y) ? -sin_alpha : 0.0f);
-	fmat4_set (r, 1, 2, (axis == X) ? -sin_alpha : 0.0f);
+	fmat4_set (&r, 0, 1, (axis == Z) ? -sin_alpha : 0.0f);
+	fmat4_set (&r, 0, 2, (axis == Y) ? -sin_alpha : 0.0f);
+	fmat4_set (&r, 1, 2, (axis == X) ? -sin_alpha : 0.0f);
 	
-	fmat4_set (r, 1, 0, (axis == Z) ?  sin_alpha : 0.0f);
-	fmat4_set (r, 2, 0, (axis == Y) ?  sin_alpha : 0.0f);
-	fmat4_set (r, 2, 1, (axis == X) ?  sin_alpha : 0.0f);
+	fmat4_set (&r, 1, 0, (axis == Z) ?  sin_alpha : 0.0f);
+	fmat4_set (&r, 2, 0, (axis == Y) ?  sin_alpha : 0.0f);
+	fmat4_set (&r, 2, 1, (axis == X) ?  sin_alpha : 0.0f);
 	
 	fmat4_fmat4_mult (in, &r, out);
 }
@@ -97,10 +97,10 @@ void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const floa
 	
 	// 1. scale	
 	fmat4 s = {0};
-	fmat4_set (s, 0, 0, scale[X]);
-	fmat4_set (s, 1, 1, scale[Y]);
-	fmat4_set (s, 2, 2, scale[Z]);
-	fmat4_set (s, 3, 3, 1.0f);
+	fmat4_set (&s, 0, 0, scale[X]);
+	fmat4_set (&s, 1, 1, scale[Y]);
+	fmat4_set (&s, 2, 2, scale[Z]);
+	fmat4_set (&s, 3, 3, 1.0f);
 	
 	// 2. rotate
 	fmat4 tmp1, tmp2, r;
@@ -111,10 +111,10 @@ void init_model (fmat4 *m, const float3 &scale, const float3 &rotate, const floa
 	// 3. translate	
 	fmat4 t = {0};
 	for (int i = 0; i < 4; i++)	
-		fmat4_set (t, i, i, 1.0f);
-	fmat4_set (t, 0, 3, tran[X]);
-	fmat4_set (t, 1, 3, tran[Y]);
-	fmat4_set (t, 2, 3, tran[Z]);
+		fmat4_set (&t, i, i, 1.0f);
+	fmat4_set (&t, 0, 3, tran[X]);
+	fmat4_set (&t, 1, 3, tran[Y]);
+	fmat4_set (&t, 2, 3, tran[Z]);
 	
 	fmat4_fmat4_mult (&r, &t, m);
 }

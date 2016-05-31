@@ -2,13 +2,15 @@
 #include <math.h>
 
 
-void fmat4_set (fmat4& mat, const int row, const int col, const float val) {
-	mat[row][col] = val;
+void fmat4_set (fmat4 *mat, const int row, const int col, const float val) {
+	(*mat)[row][col] = val;
 }
 
+/*
 float fmat4_get (fmat4& mat, const int row, const int col) {
 	return mat[row][col];
 }
+*/
 
 void  fmat4_fmat4_mult (const fmat4 *a, const fmat4 *b, fmat4 *c) {
 	for (int i = 0; i < 4; i++) {

@@ -75,8 +75,8 @@ int main(int argc, char** argv) {
 	fmat4 viewport   = {0};
 		
 	init_view       (&view, eye, center, up);
-	init_projection (projection, -1.0f/camera[Z]);
-	init_viewport   (viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+	init_projection (&projection, -1.0f/camera[Z]);
+	init_viewport   (&viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     fmat4 projview;
     fmat4_fmat4_mult (&projection, &view, &projview);
     

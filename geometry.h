@@ -13,8 +13,8 @@ typedef float float4 [4];
 typedef float fmat3 [3][3];
 typedef float fmat4 [4][4];
 
-void  fmat4_set (      fmat4 &mat, const int row, const int col, const float val);
-float fmat4_get (const fmat4 &mat, const int row, const int col                 );
+void  fmat4_set (      fmat4 *mat, const int row, const int col, const float val);
+//float fmat4_get (const fmat4 *mat, const int row, const int col                 );
 
 void  fmat4_fmat4_mult  (const fmat4 *a, const  fmat4 *b,  fmat4 *c);
 void  fmat4_float4_mult (const fmat4 *a, const float4 *b, float4 *c);
