@@ -59,8 +59,8 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 
 bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color) {
 	
-	int uu = (int) (obj->texture->get_width() * float3_float3_smult (VARYING_U, *barw));
-	int vv = (int) (obj->texture->get_height() * float3_float3_smult (VARYING_V, *barw));
+	int uu = (int) (obj->texture->get_width()  * float3_float3_smult (&VARYING_U, barw));
+	int vv = (int) (obj->texture->get_height() * float3_float3_smult (&VARYING_V, barw));
 	
 	TGAColor tmpcolor = obj->texture->get(uu, obj->texture->get_height()-vv-1);
 	
@@ -70,19 +70,19 @@ bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color
 	
 	if (phong) {
 		float3 interp_norm;
-		interp_norm[0] = float3_float3_smult (VARYING_NX, *barw);
-		interp_norm[1] = float3_float3_smult (VARYING_NY, *barw);
-		interp_norm[2] = float3_float3_smult (VARYING_NZ, *barw);
+		interp_norm[0] = float3_float3_smult (&VARYING_NX, barw);
+		interp_norm[1] = float3_float3_smult (&VARYING_NY, barw);
+		interp_norm[2] = float3_float3_smult (&VARYING_NZ, barw);
 		float3_normalize(&interp_norm);
-		intensity = -float3_float3_smult (interp_norm, UNIFORM_LIGHT);
+		intensity = -float3_float3_smult (&interp_norm, &UNIFORM_LIGHT);
 	}
 	else if (gouraud) {
 		float3 interp_intens;
 		for (int i = 0; i < 3; i++) {
 			float3 ii = {VARYING_NX[i], VARYING_NY[i], VARYING_NZ[i]};
-			interp_intens[i] = float3_float3_smult (ii, UNIFORM_LIGHT);
+			interp_intens[i] = float3_float3_smult (&ii, &UNIFORM_LIGHT);
 		}
-		intensity = -float3_float3_smult (interp_intens, *barw);
+		intensity = -float3_float3_smult (&interp_intens, barw);
 	}
 	if (intensity > 0) {
 		if (intensity < 0.1) intensity = 0.1; // ambient light
