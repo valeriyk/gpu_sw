@@ -224,7 +224,7 @@ void draw_triangle (const ScreenTriangle &st, pixel_shader pshader, screenz_t *z
 				if (zbuffer[p.x + p.y*width] < p.z) {
 					zbuffer[p.x + p.y*width] = p.z;
 					pixel_color_t color;// = TGAColor (255, 255, 255, 255);
-					bool draw = pshader (obj, bar_clip, color);
+					bool draw = pshader (obj, &bar_clip, &color);
 					if (draw) fbuffer[p.x + (719 - p.y)*width] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 				}
 				/*else {

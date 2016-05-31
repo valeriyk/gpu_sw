@@ -191,10 +191,14 @@ int main(int argc, char** argv) {
 	}
 	image.write_tga_file("output.tga");
 
-	//wfobj_free(african_head);
+	wfobj_free(african_head);
+	wfobj_free(my_floor);
 	
 	free(zbuffer);
 	free(fbuffer);
+	
+	delete head_diffuse;
+	delete floor_diffuse;
 	
     return 0;
 }
