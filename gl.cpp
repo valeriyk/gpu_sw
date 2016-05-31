@@ -41,16 +41,16 @@ void init_projection (fmat4 *m, const float val) {
 	fmat4_set (m, 3, 2, val);
 }
 
-void init_view (fmat4 *m, const float3 &eye, const float3 &center, const float3 &up) {
+void init_view (fmat4 *m, const float3 *eye, const float3 *center, const float3 *up) {
 	
 	float3 z, x, y;
 	
-	float3_float3_sub(eye, center, z);
-	float3_normalize (z);
-	float3_float3_crossprod(up, z, x);
-	float3_normalize (x);
-	float3_float3_crossprod(z, x, y);
-	float3_normalize (y);
+	float3_float3_sub(eye, center, &z);
+	float3_normalize (&z);
+	float3_float3_crossprod(up, &z, &x);
+	float3_normalize (&x);
+	float3_float3_crossprod(&z, &x, &y);
+	float3_normalize (&y);
 	
 	fmat4 Minv = {0};
 	fmat4 Tr = {0};
@@ -63,7 +63,7 @@ void init_view (fmat4 *m, const float3 &eye, const float3 &center, const float3 
 		fmat4_set (&Minv, 0, i, x[i]);
 		fmat4_set (&Minv, 1, i, y[i]);
 		fmat4_set (&Minv, 2, i, z[i]);
-		fmat4_set (&Tr, i, 3, -center[i]);
+		fmat4_set (&Tr, i, 3, -(*center)[i]);
 	}
 	fmat4_fmat4_mult(&Minv, &Tr, m);
 }

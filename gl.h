@@ -64,7 +64,7 @@ screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy
 screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff);
 
 void init_model      (fmat4 *m, const float3 &scale, const float3 &rotate, const float3 &tran);
-void init_view       (fmat4 *m, const float3 &eye,   const float3 &center, const float3 &up);
+void init_view       (fmat4 *m, const float3 *eye,   const float3 *center, const float3 *up);
 void init_projection (fmat4 *m, const float val);
 void init_viewport   (fmat4 *m, const int x, const int y, const int w, const int h, const int d);
 

@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 	float4 light_dir4, light_new;
 	
 	float3 camera;	
-	float3_float3_sub(eye, center, camera);
+	float3_float3_sub(&eye, &center, &camera);
 	//printf ("camera: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
 	//float3_normalize (camera); //TBD - uncomment?
 	//printf ("camera norm: x=%f, y=%f, z=%f\n", camera[0], camera[1], camera[2]);
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	fmat4 projection = {0};
 	fmat4 viewport   = {0};
 		
-	init_view       (&view, eye, center, up);
+	init_view       (&view, &eye, &center, &up);
 	init_projection (&projection, -1.0f/camera[Z]);
 	init_viewport   (&viewport, 0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
     fmat4 projview;
@@ -93,10 +93,10 @@ int main(int argc, char** argv) {
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
-	float3_float4_conv (light_dir, light_dir4);
+	float3_float4_conv (&light_dir, &light_dir4);
 	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (light_new, UNIFORM_LIGHT);
-    float3_normalize (UNIFORM_LIGHT);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize (&UNIFORM_LIGHT);
     
     
 	// 1. Model - transform local coords to global
@@ -125,10 +125,10 @@ int main(int argc, char** argv) {
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
-	float3_float4_conv (light_dir, light_dir4);
+	float3_float4_conv (&light_dir, &light_dir4);
 	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (light_new, UNIFORM_LIGHT);
-    float3_normalize (UNIFORM_LIGHT);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize (&UNIFORM_LIGHT);
     
 	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
 	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
@@ -146,10 +146,10 @@ int main(int argc, char** argv) {
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
-	float3_float4_conv (light_dir, light_dir4);
+	float3_float4_conv (&light_dir, &light_dir4);
 	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (light_new, UNIFORM_LIGHT);
-    float3_normalize (UNIFORM_LIGHT);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize (&UNIFORM_LIGHT);
     
     fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
 	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
@@ -169,10 +169,10 @@ int main(int argc, char** argv) {
 	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
 	
-	float3_float4_conv (light_dir, light_dir4);
+	float3_float4_conv (&light_dir, &light_dir4);
 	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (light_new, UNIFORM_LIGHT);
-    float3_normalize (UNIFORM_LIGHT);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize (&UNIFORM_LIGHT);
     
     fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
 	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);

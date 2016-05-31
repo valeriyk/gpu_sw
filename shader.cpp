@@ -28,7 +28,7 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 	float4 mc; // model coordinates
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
-	float3_float4_conv (obj_coords, mc);
+	float3_float4_conv (&obj_coords, &mc);
 	fmat4_float4_mult (mvpv, &mc, &sc);
 	(*vtx4d)[0] = sc[0]/sc[3];
 	(*vtx4d)[1] = sc[1]/sc[3];
@@ -73,7 +73,7 @@ bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color
 		interp_norm[0] = float3_float3_smult (VARYING_NX, *barw);
 		interp_norm[1] = float3_float3_smult (VARYING_NY, *barw);
 		interp_norm[2] = float3_float3_smult (VARYING_NZ, *barw);
-		float3_normalize(interp_norm);
+		float3_normalize(&interp_norm);
 		intensity = -float3_float3_smult (interp_norm, UNIFORM_LIGHT);
 	}
 	else if (gouraud) {
