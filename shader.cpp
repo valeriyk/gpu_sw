@@ -1,7 +1,7 @@
 #include "shader.h"
 //#include "wavefront_obj.h"
 //#include "geometry.h"
-//#include "gl.h"
+#include "gl.h"
 #include "main.h"
 
 // declare the following here instead of the header to make these variables local:
@@ -59,10 +59,19 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 
 bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color) {
 	
+	/*
 	int uu = (int) (obj->texture->get_width()  * float3_float3_smult (&VARYING_U, barw));
 	int vv = (int) (obj->texture->get_height() * float3_float3_smult (&VARYING_V, barw));
 	
 	TGAColor tmpcolor = obj->texture->get(uu, obj->texture->get_height()-vv-1);
+	*/
+	int uu = (int) (obj->textw * float3_float3_smult (&VARYING_U, barw));
+	int vv = (int) (obj->texth * float3_float3_smult (&VARYING_V, barw));
+	
+	pixel_color_t pix;
+	pix.r = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 0);
+	pix.g = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 1);
+	pix.b = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
 	
 	float intensity = 0;
 	bool phong = 1;
@@ -86,7 +95,8 @@ bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color
 	}
 	if (intensity > 0) {
 		if (intensity < 0.1) intensity = 0.1; // ambient light
-		*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
+		//*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
+		*color = set_color (pix.r * intensity, pix.g * intensity, pix.b * intensity, 0);
 		//color = set_color (255 * intensity, 255 * intensity, 255 * intensity, 0);
 		return true;
 	}

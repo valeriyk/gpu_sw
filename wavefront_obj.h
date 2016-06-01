@@ -1,11 +1,14 @@
 #pragma once 
 
 #include "tgaimage.h"
+#include "tga.h"
 
 typedef struct WFobj {
 	TGAImage *texture;
-	//int textw;
-	//int texth;
+	tbyte *texture2;
+	int textw;
+	int texth;
+	int textbytespp;
 	struct WFobjPrivate *priv;
 } WFobj;
 

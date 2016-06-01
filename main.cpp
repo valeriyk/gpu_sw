@@ -46,18 +46,57 @@ int main(int argc, char** argv) {
     //init_obj (african_head, "obj/african_head.obj", "obj/floor_diffuse.tga");
     init_obj (my_floor,     "obj/floor.obj",        "obj/floor_diffuse.tga");
     */
+    
     WFobj *african_head = wfobj_new ("obj/african_head.obj");
-	TGAImage *head_diffuse = new TGAImage (1, 1, TGAImage::RGB);
-	head_diffuse->read_tga_file ("obj/african_head_diffuse.tga");
-	african_head->texture = head_diffuse;
+	//TGAImage *head_diffuse = new TGAImage (1, 1, TGAImage::RGB);
+	//head_diffuse->read_tga_file ("obj/african_head_diffuse.tga");
+	//african_head->texture = head_diffuse;
+	
+	TGA *tga;
+	TGAData head_data;
+	
+	tga = TGAOpen ("obj/african_head_diffuse.tga", "r");
+	if (!tga || tga->last != TGA_OK) {
+		printf ("TGA error code 1!\n");
+		return 1;
+	}
+	head_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &head_data) != TGA_OK) {
+		printf ("TGA error code 2!\n");
+		return 1;
+	}
+	
+	african_head->texture2 = head_data.img_data;
+	african_head->textw = tga->hdr.width;
+	african_head->texth = tga->hdr.height;
+	african_head->textbytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
 	
 	//wfobj_load_texture (african_head, "obj/african_head_diffuse.tga");
 	//WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga");
 	//WFobj *my_floor = wfobj_new ("obj/floor.obj", "obj/floor_diffuse.tga");
 	WFobj *my_floor = wfobj_new ("obj/floor.obj");
-	TGAImage *floor_diffuse = new TGAImage (1, 1, TGAImage::RGB);
-	floor_diffuse->read_tga_file ("obj/floor_diffuse.tga");
-	my_floor->texture = floor_diffuse;
+	//TGAImage *floor_diffuse = new TGAImage (1, 1, TGAImage::RGB);
+	//floor_diffuse->read_tga_file ("obj/floor_diffuse.tga");
+	//my_floor->texture = floor_diffuse;
+	
+	
+	TGAData floor_data;
+	tga = TGAOpen ("obj/floor_diffuse.tga", "r");
+	if (!tga || tga->last != TGA_OK) {
+		printf ("TGA error code 1!\n");
+		return 1;
+	}
+	floor_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &floor_data) != TGA_OK) {
+		printf ("TGA error code 2!\n");
+		return 1;
+	}
+	my_floor->texture2 = floor_data.img_data;
+	my_floor->textw = tga->hdr.width;
+	my_floor->texth = tga->hdr.height;
+	my_floor->textbytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
 	
 	
 	float4 light_dir4, light_new;
@@ -197,8 +236,8 @@ int main(int argc, char** argv) {
 	free(zbuffer);
 	free(fbuffer);
 	
-	delete head_diffuse;
-	delete floor_diffuse;
+	//delete head_diffuse;
+	//delete floor_diffuse;
 	
     return 0;
 }
