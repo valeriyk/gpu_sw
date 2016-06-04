@@ -17,14 +17,14 @@ typedef struct DynArray {
 	objdata *data;
 } DynArray;
 
-struct WFobjPrivate {
-	DynArray *vtx   = NULL;
-	DynArray *norm  = NULL;
-	DynArray *text  = NULL;
-	DynArray *face  = NULL;
-	int face_offset = 0;
-	int vtx_offset  = 0;
-};
+typedef struct WFobjPrivate {
+	DynArray *vtx;
+	DynArray *norm;
+	DynArray *text;
+	DynArray *face;
+	int face_offset;
+	int vtx_offset;
+} WFobjPrivate;
 
 typedef enum {V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
 typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;  
@@ -40,7 +40,7 @@ void   dyn_array_destroy (DynArray *a);
 static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
 //static inline void * dyn_array_new (DynArray *a)        {return calloc(1, a->elem_size);}
 
-void init_obj (WFobj &obj, const char *obj_file, const char *texture_file);
+//void init_obj (WFobj *obj, const char *obj_file, const char *texture_file);
 int  read_obj_file (const char *filename, WFobj *obj);
 
 
@@ -55,11 +55,10 @@ WFobj * wfobj_new (const char *obj_file) {
     obj->priv->norm = dyn_array_create (sizeof (float), 384);
 	obj->priv->text = dyn_array_create (sizeof (float), 256);
 	obj->priv->face = dyn_array_create (sizeof   (int), 1152);
-	
-	read_obj_file (obj_file, obj);	        
-    
-    obj->priv->face_offset = 0;
+	obj->priv->face_offset = 0;
     obj->priv->vtx_offset = 0;
+    
+	read_obj_file (obj_file, obj);	        
     
     /*obj->texture = TGAImage(1, 1, TGAImage::RGB);
     obj->texture.read_tga_file(texture_file);    

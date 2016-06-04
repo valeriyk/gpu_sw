@@ -1,10 +1,10 @@
 #pragma once 
 
-#include "tgaimage.h"
+//#include "tgaimage.h"
 #include "tga.h"
 
 typedef struct WFobj {
-	TGAImage *texture;
+	//TGAImage *texture;
 	tbyte *texture2;
 	int textw;
 	int texth;

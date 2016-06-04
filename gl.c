@@ -1,16 +1,16 @@
 #include "gl.h"
 #include "geometry.h"
 #include "main.h" // TBD -remove
-#include "tgaimage.h"
+//#include "tgaimage.h"
 #include "wavefront_obj.h"
 #include <math.h>
 
-int orient2d(const ScreenPt *a, const ScreenPt *b, const ScreenPt *c)
+int orient2d(ScreenPt *a, ScreenPt *b, ScreenPt *c)
 {
     return (b->x - a->x)*(c->y - a->y) - (b->y - a->y)*(c->x - a->x);
 }
 
-screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
+screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
 	int min = a;
 	if (b < min) min = b;
 	if (c < min) min = c;
@@ -18,7 +18,7 @@ screenxy_t tri_min_bound (const screenxy_t a, const screenxy_t b, const screenxy
 	return min;
 }
 
-screenxy_t tri_max_bound (const screenxy_t a, const screenxy_t b, const screenxy_t c, const screenxy_t cutoff) {
+screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
 	int max = a;
 	if (b > max) max = b;
 	if (c > max) max = c;
@@ -36,12 +36,12 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 3, 3, 1.0f);
 }
 
-void init_projection (fmat4 *m, const float val) {
+void init_projection (fmat4 *m, float val) {
 	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
 	fmat4_set (m, 3, 2, val);
 }
 
-void init_view (fmat4 *m, const float3 *eye, const float3 *center, const float3 *up) {
+void init_view (fmat4 *m, float3 *eye, float3 *center, float3 *up) {
 	
 	float3 z, x, y;
 	
@@ -52,12 +52,12 @@ void init_view (fmat4 *m, const float3 *eye, const float3 *center, const float3 
 	float3_float3_crossprod(&z, &x, &y);
 	float3_normalize (&y);
 	
-	fmat4 Minv = {0};
-	fmat4 Tr = {0};
-	for (int i = 0; i < 4; i++)	{
+	fmat4 Minv = FMAT4_IDENTITY;
+	fmat4 Tr   = FMAT4_IDENTITY;
+	/*for (int i = 0; i < 4; i++)	{
 		fmat4_set (&Minv, i, i, 1.0f);
 		fmat4_set (&Tr, i, i, 1.0f);
-	}
+	}*/
 	
 	for (int i = 0; i < 3; i++)	{
 		fmat4_set (&Minv, 0, i, x[i]);
@@ -68,17 +68,17 @@ void init_view (fmat4 *m, const float3 *eye, const float3 *center, const float3 
 	fmat4_fmat4_mult(&Minv, &Tr, m);
 }
 
-void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
+void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	float rad = alpha_deg * 0.01745f; // degrees to rad conversion
 	float sin_alpha = sin(rad);
 	float cos_alpha = cos(rad);
 	
-	fmat4 r = {0};
+	fmat4 r = FMAT4_IDENTITY;
 	
 	fmat4_set (&r, 0, 0, (axis == X) ? 1.0f : cos_alpha);
 	fmat4_set (&r, 1, 1, (axis == Y) ? 1.0f : cos_alpha);
 	fmat4_set (&r, 2, 2, (axis == Z) ? 1.0f : cos_alpha);
-	fmat4_set (&r, 3, 3,  1.0f);
+	//fmat4_set (&r, 3, 3,  1.0f);
 	
 	fmat4_set (&r, 0, 1, (axis == Z) ? -sin_alpha : 0.0f);
 	fmat4_set (&r, 0, 2, (axis == Y) ? -sin_alpha : 0.0f);
@@ -91,16 +91,16 @@ void rotate_coords (const fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	fmat4_fmat4_mult (in, &r, out);
 }
 
-void init_model (fmat4 *m, const float3 *scale, const float3 *rotate, const float3 *tran) {
+void init_model (fmat4 *m, float3 *scale, float3 *rotate, float3 *tran) {
 	
 	// scale - rotate - translate
 	
 	// 1. scale	
-	fmat4 s = {0};
+	fmat4 s = FMAT4_IDENTITY;
 	fmat4_set (&s, 0, 0, (*scale)[X]);
 	fmat4_set (&s, 1, 1, (*scale)[Y]);
 	fmat4_set (&s, 2, 2, (*scale)[Z]);
-	fmat4_set (&s, 3, 3, 1.0f);
+	//fmat4_set (&s, 3, 3, 1.0f);
 	
 	// 2. rotate
 	fmat4 tmp1, tmp2, r;
@@ -109,9 +109,9 @@ void init_model (fmat4 *m, const float3 *scale, const float3 *rotate, const floa
 	rotate_coords (&tmp2,    &r, (*rotate)[Z], Z);
 		
 	// 3. translate	
-	fmat4 t = {0};
-	for (int i = 0; i < 4; i++)	
-		fmat4_set (&t, i, i, 1.0f);
+	fmat4 t = FMAT4_IDENTITY;
+	//for (int i = 0; i < 4; i++)	
+	//	fmat4_set (&t, i, i, 1.0f);
 	fmat4_set (&t, 0, 3, (*tran)[X]);
 	fmat4_set (&t, 1, 3, (*tran)[Y]);
 	fmat4_set (&t, 2, 3, (*tran)[Z]);
@@ -119,7 +119,7 @@ void init_model (fmat4 *m, const float3 *scale, const float3 *rotate, const floa
 	fmat4_fmat4_mult (&r, &t, m);
 }
 
-void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const WFobj *obj)
+void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
 {
     
     Triangle t;
@@ -132,10 +132,10 @@ void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *z
     
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (t.cx[0], t.cx[1], t.cx[2], 0);
-    screenxy_t max_x = tri_max_bound (t.cx[0], t.cx[1], t.cx[2], SCREEN_SIZE[0]);
+    screenxy_t max_x = tri_max_bound (t.cx[0], t.cx[1], t.cx[2], WIDTH);
     
     screenxy_t min_y = tri_min_bound (t.cy[0], t.cy[1], t.cy[2], 0);
-    screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], SCREEN_SIZE[1]);
+    screenxy_t max_y = tri_max_bound (t.cy[0], t.cy[1], t.cy[2], HEIGHT);
     
     
     //for (int i = 0; i < 3; i++) printf ("vertex[%d] x:y:z = %d:%d:%d\n", i, t.cx[i], t.cy[i], t.cz[i]);
@@ -221,11 +221,11 @@ void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *z
 				}
 				for (int i = 0; i < 3; i++) bar_clip[i] /= sum_of_bars;
 				p.z = (int) t.cz[0] + bar_clip[1]*(t.cz[1]-t.cz[0]) + bar_clip[2]*(t.cz[2] - t.cz[0]); // TBD change to screenz_t or use p.z;
-				if (zbuffer[p.x + p.y*width] < p.z) {
-					zbuffer[p.x + p.y*width] = p.z;
+				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
+					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;// = TGAColor (255, 255, 255, 255);
 					bool draw = pshader (obj, &bar_clip, &color);
-					if (draw) fbuffer[p.x + (719 - p.y)*width] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+					if (draw) fbuffer[p.x + (719 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 				}
 				/*else {
 					TGAColor color3 = TGAColor (255, 0, 255, 255);
@@ -246,7 +246,7 @@ void draw_triangle (const ScreenTriangle *st, pixel_shader pshader, screenz_t *z
 }
 
 
-void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, const fmat4 *mvpv) {
+void draw_obj (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj); i++) {
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
@@ -256,12 +256,12 @@ void draw_obj (const WFobj *obj, vertex_shader vshader, pixel_shader pshader, sc
     }
 }
 
-pixel_color_t set_color (const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a) {
+pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	pixel_color_t pc;
 	pc.r = r;
 	pc.g = g;
 	pc.b = b;
-	pc.a = a;
+	//pc.a = a;
 	return pc;
 }
 

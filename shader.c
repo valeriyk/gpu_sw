@@ -2,7 +2,7 @@
 //#include "wavefront_obj.h"
 //#include "geometry.h"
 #include "gl.h"
-#include "main.h"
+//#include "main.h"
 
 // declare the following here instead of the header to make these variables local:
 float3 VARYING_U;
@@ -19,7 +19,7 @@ fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
 
 
-void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, const fmat4 *mvpv, float4 *vtx4d) {
+void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d) {
 	
 	float3 obj_coords;
 	for (int k = 0; k < 3; k++)
@@ -57,7 +57,7 @@ void my_vertex_shader (const WFobj *obj, const int face_idx, const int vtx_idx, 
 	}
 }
 
-bool my_pixel_shader (const WFobj *obj, const float3 *barw, pixel_color_t *color) {
+bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
 	/*
 	int uu = (int) (obj->texture->get_width()  * float3_float3_smult (&VARYING_U, barw));
