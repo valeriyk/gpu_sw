@@ -53,6 +53,13 @@ typedef struct Triangle {
 	float4 cw;
 } Triangle;
 
+typedef struct Object {
+	WFobj *wfobj;
+	float3 scale;
+	float3 rotate;
+	float3 tran;
+	fmat4  model;
+} Object;
 
 typedef void (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d);
 typedef bool (*pixel_shader)  (WFobj *obj, float3 *barc, pixel_color_t *color);
@@ -78,3 +85,11 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 void write_fbuffer (pixel_color_t *fbuffer, int x, int y, pixel_color_t *val);
 void write_zbuffer (screenz_t     *zbuffer, int x, int y, screenz_t     *val);
+
+
+
+Object* obj_new (WFobj *wfobj);
+void obj_set_scale       (Object *obj, float x, float y, float z);
+void obj_set_rotation    (Object *obj, float x, float y, float z);
+void obj_set_translation (Object *obj, float x, float y, float z);
+void obj_transform       (Object *obj, fmat4 *model, float3 *light_dir);

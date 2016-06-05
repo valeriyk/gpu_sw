@@ -1,8 +1,11 @@
 #include "gl.h"
 #include "geometry.h"
+#include "shader.h"
 #include "main.h" // TBD -remove
 #include "wavefront_obj.h"
+
 #include <math.h>
+#include <stdlib.h>
 
 int orient2d(ScreenPt *a, ScreenPt *b, ScreenPt *c)
 {
@@ -277,3 +280,45 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, Vec3f P) {
     return Vec3f(-1,1,1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
 */
+
+Object* obj_new (WFobj *wfobj) {
+	Object *obj = (Object*) malloc (sizeof(Object));
+	obj->wfobj = wfobj;
+	for (int i = 0; i < 3; i++) {
+		obj->scale[i]  = 1.f;
+		obj->rotate[i] = 0.f;
+		obj->tran[i]   = 0.f;
+	}
+	return obj;
+}
+
+void obj_set_scale (Object *obj, float x, float y, float z) {
+	obj->scale[0] = x;
+	obj->scale[1] = y;
+	obj->scale[2] = z;
+}
+
+void obj_set_rotation (Object *obj, float x, float y, float z) {
+	obj->rotate[0] = x;
+	obj->rotate[1] = y;
+	obj->rotate[2] = z;
+}
+
+void obj_set_translation (Object *obj, float x, float y, float z) {
+	obj->tran[0] = x;
+	obj->tran[1] = y;
+	obj->tran[2] = z;
+}
+
+void obj_transform (Object *obj, fmat4 *projview, float3 *light_dir) {
+	init_model       (&(obj->model), &(obj->scale), &(obj->rotate), &(obj->tran));
+    fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
+	fmat4_invert     (&UNIFORM_M, &UNIFORM_MI);
+	fmat4_transpose  (&UNIFORM_MI, &UNIFORM_MIT);
+	
+	float4 light_dir4, light_new;
+	float3_float4_conv (light_dir, &light_dir4);
+	fmat4_float4_mult  (&UNIFORM_M, &light_dir4, &light_new);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize   (&UNIFORM_LIGHT);
+}

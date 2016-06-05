@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     pixel_color_t *fbuffer = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     
     WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga");
-	WFobj *my_floor     = wfobj_new ("obj/floor.obj", "obj/floor_diffuse.tga");
+	WFobj *my_floor     = wfobj_new ("obj/floor.obj"       , "obj/floor_diffuse.tga");
 	
 	float3 default_scale  = { 1.f,   1.f,   1.f};
 	float3 default_rotate = { 0.0f, 0.0f,  0.0f};
@@ -43,8 +43,6 @@ int main(int argc, char** argv) {
 	float3 tran;
 	
 	
-	
-	float4 light_dir4, light_new;
 	
 	float3 camera;	
 	float3_float3_sub(&eye, &center, &camera);
@@ -61,24 +59,11 @@ int main(int argc, char** argv) {
     fmat4 projview;
     fmat4_fmat4_mult (&projection, &view, &projview);
     
-    for (int i = 0; i < 3; i++) {
-		scale[i]  = default_scale[i];
-		rotate[i] = default_rotate[i];
-		tran[i]   = default_tran[i];
-	}
-	//rotate[0] = 0.0f;
-	tran[2]   = 0.6f;
-	
-    init_model      (&model, &scale, &rotate, &tran);
-    fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	
-	float3_float4_conv (&light_dir, &light_dir4);
-	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
-    float3_normalize (&UNIFORM_LIGHT);
-    
+    Object *head1 = obj_new (african_head);
+	//obj_set_scale       (head1, 1.f, 1.f, 1.f);
+    //obj_set_rotation    (head1, 0.f, 0.f, 0.f);
+    obj_set_translation (head1, 0.f, 0.f, 0.6f);
+    obj_transform       (head1, &projview, &light_dir);
     
 	// 1. Model - transform local coords to global
 	// 2. View - transform global coords to adjust for camera position
@@ -88,74 +73,31 @@ int main(int argc, char** argv) {
 	fmat4 tmp1, tmp2, mvpv;
 	fmat4_fmat4_mult (&viewport, &projection, &tmp1);
 	fmat4_fmat4_mult (&tmp1, &view, &tmp2);
-	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	fmat4_fmat4_mult (&tmp2, &(head1->model), &mvpv); 
 	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
 	
-	
-	for (int i = 0; i < 3; i++) {
-		scale[i]  = default_scale[i];
-		rotate[i] = default_rotate[i];
-		tran[i]   = default_tran[i];
-	}
-	rotate[0] = 0.0f;
-	tran[2]   = 0.75f;
-	
-	init_model       (&model, &scale, &rotate, &tran);	
-	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	
-	float3_float4_conv (&light_dir, &light_dir4);
-	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
-    float3_normalize (&UNIFORM_LIGHT);
+    Object *floor1 = obj_new (my_floor);
+	//obj_set_scale       (floor1, 1.f, 1.f, 1.f);
+    //obj_set_rotation    (floor1, 0.f, 0.f, 0.f);
+    obj_set_translation (floor1, 0.f, 0.f, 0.75f);
+    obj_transform       (floor1, &projview, &light_dir);
+	fmat4_fmat4_mult (&tmp2, &(floor1->model), &mvpv); 
+	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
     
-	fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+    Object *floor2 = obj_new (my_floor);
+	//obj_set_scale       (floor2, 1.f, 1.f, 1.f);
+    obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
+    obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
+    obj_transform       (floor2, &projview, &light_dir);
+    fmat4_fmat4_mult (&tmp2, &(floor2->model), &mvpv); 
 	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
 	
-    for (int i = 0; i < 3; i++) {
-		scale[i]  = default_scale[i];
-		rotate[i] = default_rotate[i];
-		tran[i]   = default_tran[i];
-	}
-	rotate[0] = 90.0f;
-	tran[1]   = 0.75f;
-	
-	init_model (&model, &scale, &rotate, &tran);	
-	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	
-	float3_float4_conv (&light_dir, &light_dir4);
-	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
-    float3_normalize (&UNIFORM_LIGHT);
-    
-    fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
-	
-    for (int i = 0; i < 3; i++) {
-		scale[i]  = default_scale[i];
-		rotate[i] = default_rotate[i];
-		tran[i]   = default_tran[i];
-	}
-	rotate[2] = -90.0f;
-	tran[0]   = 0;//-0.75f;
-	tran[1]   = 0;//0.75f;
-	tran[2]   = 0.75f;
-	
-	init_model (&model, &scale, &rotate, &tran);	
-	fmat4_fmat4_mult (&projview, &model, &UNIFORM_M);
-	fmat4_invert (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_transpose (&UNIFORM_MI, &UNIFORM_MIT);
-	
-	float3_float4_conv (&light_dir, &light_dir4);
-	fmat4_float4_mult (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
-    float3_normalize (&UNIFORM_LIGHT);
-    
-    fmat4_fmat4_mult (&tmp2, &model, &mvpv); 
+	Object *floor3 = obj_new (my_floor);
+	//obj_set_scale       (floor3, 1.f, 1.f, 1.f);
+    obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
+    obj_set_translation (floor3, 0.f, 0.f, 0.75f);
+    obj_transform       (floor3, &projview, &light_dir);
+    fmat4_fmat4_mult (&tmp2, &(floor3->model), &mvpv); 
 	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
 	
     // write down the framebuffer
