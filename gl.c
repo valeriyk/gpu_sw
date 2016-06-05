@@ -1,7 +1,6 @@
 #include "gl.h"
 #include "geometry.h"
 #include "main.h" // TBD -remove
-//#include "tgaimage.h"
 #include "wavefront_obj.h"
 #include <math.h>
 
@@ -54,10 +53,6 @@ void init_view (fmat4 *m, float3 *eye, float3 *center, float3 *up) {
 	
 	fmat4 Minv = FMAT4_IDENTITY;
 	fmat4 Tr   = FMAT4_IDENTITY;
-	/*for (int i = 0; i < 4; i++)	{
-		fmat4_set (&Minv, i, i, 1.0f);
-		fmat4_set (&Tr, i, i, 1.0f);
-	}*/
 	
 	for (int i = 0; i < 3; i++)	{
 		fmat4_set (&Minv, 0, i, x[i]);
@@ -78,7 +73,6 @@ void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 	fmat4_set (&r, 0, 0, (axis == X) ? 1.0f : cos_alpha);
 	fmat4_set (&r, 1, 1, (axis == Y) ? 1.0f : cos_alpha);
 	fmat4_set (&r, 2, 2, (axis == Z) ? 1.0f : cos_alpha);
-	//fmat4_set (&r, 3, 3,  1.0f);
 	
 	fmat4_set (&r, 0, 1, (axis == Z) ? -sin_alpha : 0.0f);
 	fmat4_set (&r, 0, 2, (axis == Y) ? -sin_alpha : 0.0f);
@@ -93,25 +87,18 @@ void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis) {
 
 void init_model (fmat4 *m, float3 *scale, float3 *rotate, float3 *tran) {
 	
-	// scale - rotate - translate
-	
 	// 1. scale	
 	fmat4 s = FMAT4_IDENTITY;
 	fmat4_set (&s, 0, 0, (*scale)[X]);
 	fmat4_set (&s, 1, 1, (*scale)[Y]);
 	fmat4_set (&s, 2, 2, (*scale)[Z]);
-	//fmat4_set (&s, 3, 3, 1.0f);
-	
 	// 2. rotate
 	fmat4 tmp1, tmp2, r;
 	rotate_coords (   &s, &tmp1, (*rotate)[X], X);
 	rotate_coords (&tmp1, &tmp2, (*rotate)[Y], Y);
 	rotate_coords (&tmp2,    &r, (*rotate)[Z], Z);
-		
 	// 3. translate	
 	fmat4 t = FMAT4_IDENTITY;
-	//for (int i = 0; i < 4; i++)	
-	//	fmat4_set (&t, i, i, 1.0f);
 	fmat4_set (&t, 0, 3, (*tran)[X]);
 	fmat4_set (&t, 1, 3, (*tran)[Y]);
 	fmat4_set (&t, 2, 3, (*tran)[Z]);
@@ -197,23 +184,12 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {
 		
-		//printf ("Row ");
-		int3 bar;		
-		for (int i = 0; i < 3; i++)
-			bar[i] = bar_row[i];
+		int3 bar;
+		for (int i = 0; i < 3; i++) bar[i] = bar_row[i];	
 		
         for (p.x = min_x; p.x < max_x; p.x++) {
 			// If p is on or inside all edges, render pixel.
-            //printf ("Draw Pixel? bar=%d:%d:%d\n", bar[0], bar[1], bar[2]);
             if ((bar[0] | bar[1] | bar[2]) > 0) {
-				
-				/*
-				TGAColor color2 = TGAColor (255, 255, 255, 255);
-				image.set (p.x, p.y, color2);
-				*/
-				
-				//z1 = v[0].coords.z + bar[1]*z1z0_over_sob + bar[2]*z2z0_over_sob; // TBD change to screenz_t or use p.z;
-				
 				sum_of_bars = 0.0f;
 				for (int i = 0; i < 3; i++) {
 					bar_clip[i] = (float) bar[i]/t.cw[i]; // not normalized
@@ -242,7 +218,6 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
         bar_row[1] += B20;
         bar_row[2] += B01;
     }
-    //printf ("\n");
 }
 
 

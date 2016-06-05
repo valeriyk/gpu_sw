@@ -1,11 +1,9 @@
 #pragma once 
 
-//#include "tgaimage.h"
 #include "tga.h"
 
 typedef struct WFobj {
-	//TGAImage *texture;
-	tbyte *texture2;
+	tbyte *texture;
 	int textw;
 	int texth;
 	int textbytespp;
@@ -13,9 +11,9 @@ typedef struct WFobj {
 } WFobj;
 
 
-WFobj * wfobj_new (const char *obj_file);
+WFobj * wfobj_new (const char *obj_file, const char *texture_file);
 void    wfobj_free (WFobj *obj);
-void    wfobj_load_texture (WFobj *obj, const char *texture_file);
+//void    wfobj_load_texture (WFobj *obj, const char *texture_file);
 void    wfobj_set_face_idx   (const WFobj *obj, const int face_idx);
 void    wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx);
 //float   wfobj_get_vtx_coord  (const WFobj *obj, const int coord_idx);

@@ -1,7 +1,5 @@
 #pragma once
 
-//#include "wavefront_obj.h"
-//#include "geometry.h"
 #include "gl.h"
 
 extern fmat4  UNIFORM_M;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "geometry.h"
-//#include "tgaimage.h"
 #include "wavefront_obj.h"
 
 #include <stdint.h>
@@ -76,3 +75,6 @@ void draw_triangle (ScreenTriangle *t, pixel_shader shader, screenz_t *zbuffer, 
 void draw_obj      (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void write_fbuffer (pixel_color_t *fbuffer, int x, int y, pixel_color_t *val);
+void write_zbuffer (screenz_t     *zbuffer, int x, int y, screenz_t     *val);

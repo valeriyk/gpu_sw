@@ -1,8 +1,5 @@
 #include "shader.h"
-//#include "wavefront_obj.h"
-//#include "geometry.h"
 #include "gl.h"
-//#include "main.h"
 
 // declare the following here instead of the header to make these variables local:
 float3 VARYING_U;
@@ -59,19 +56,13 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 
 bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
-	/*
-	int uu = (int) (obj->texture->get_width()  * float3_float3_smult (&VARYING_U, barw));
-	int vv = (int) (obj->texture->get_height() * float3_float3_smult (&VARYING_V, barw));
-	
-	TGAColor tmpcolor = obj->texture->get(uu, obj->texture->get_height()-vv-1);
-	*/
 	int uu = (int) (obj->textw * float3_float3_smult (&VARYING_U, barw));
 	int vv = (int) (obj->texth * float3_float3_smult (&VARYING_V, barw));
 	
 	pixel_color_t pix;
-	pix.r = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 0);
-	pix.g = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 1);
-	pix.b = *(obj->texture2 + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
+	pix.r = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 0);
+	pix.g = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 1);
+	pix.b = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
 	
 	float intensity = 0;
 	bool phong = 1;
@@ -102,4 +93,3 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	}
 	return false;
 }
-

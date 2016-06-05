@@ -1,16 +1,11 @@
 #include "geometry.h"
 #include <math.h>
 
+float det3x3 (fmat3 *m);
 
 void fmat4_set (fmat4 *mat, int row, int col, float val) {
 	(*mat)[row][col] = val;
 }
-
-/*
-float fmat4_get (fmat4& mat, int row, int col) {
-	return mat[row][col];
-}
-*/
 
 void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
 	for (int i = 0; i < 4; i++) {
@@ -22,7 +17,6 @@ void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
 }
 
 #include <stdio.h>
-
 void print_fmat4 (fmat4 *m, char *header) {
 	printf ("%s\n", header);
 	for (int i = 0; i < 4; i++) {
@@ -33,6 +27,7 @@ void print_fmat4 (fmat4 *m, char *header) {
 	}
 	printf("\n");
 }
+
 void print_fmat3 (fmat3 *m, char *header) {
 	printf ("%s\n", header);
 	for (int i = 0; i < 3; i++) {
@@ -79,14 +74,10 @@ void fmat4_cofactor (fmat4 *in, fmat4 *out) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			fmat4_get_minor (in, i, j, &minor);
-			int sign = ((i + j) % 2) ? -1 : 1; // TBD check sign
+			int sign = ((i + j) % 2) ? -1 : 1;
 			(*out)[i][j] = det3x3 (&minor) * sign;
-			/*printf ("i=%d j=%d ", i, j);
-			print_fmat3 (&minor, "Minor: ");
-			printf ("cof: %f\n\n", (*out)[i][j]);*/
 		}
 	}
-	//print_fmat4 (out, "Cof mtx: ");
 }
 
 void fmat4_adjugate (fmat4 *in, fmat4 *out) {
@@ -94,7 +85,6 @@ void fmat4_adjugate (fmat4 *in, fmat4 *out) {
 	fmat4 cof;
 	fmat4_cofactor (in, &cof);
 	fmat4_transpose (&cof, out);
-	//print_fmat4 (out, "Adj: ");
 }
 
 void fmat4_invert (fmat4 *in, fmat4 *out) {
@@ -105,9 +95,8 @@ void fmat4_invert (fmat4 *in, fmat4 *out) {
 	fmat3 minor;
 	for (int i = 0; i < 4; i++) {
 		fmat4_get_minor (&adj, 0, i, &minor);
-		det += adj[0][i] * det3x3 (&minor) * ((i % 2) ? -1 : 1); // TBD check sign
+		det += adj[0][i] * det3x3 (&minor) * ((i % 2) ? -1 : 1);
 	}
-	//printf ("Det is %f\n", det);
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			(*out)[i][j] = adj[i][j] / det;
@@ -129,19 +118,7 @@ float float3_float3_smult (float3 *a, float3 *b) {
 	for (int i = 0; i < 3; i++ ) smult += (*a)[i] * (*b)[i];
 	return smult;
 }
-/*
-float float3_int3_smult (float3 &a, int3 &b) {
-	float smult = 0;
-	for (int i = 0; i < 3; i++ ) smult += a[i] * (float) b[i];
-	return smult;
-}
 
-int int3_int3_smult (int3 &a, int3 &b) {
-	int smult = 0;
-	for (int i = 0; i < 3; i++ ) smult += a[i] * b[i];
-	return smult;
-}
-*/
 void float3_float3_crossprod(float3 *a, float3 *b, float3 *c) {
 	(*c)[0] = (*a)[1] * (*b)[2] - (*a)[2] * (*b)[1];
 	(*c)[1] = (*a)[2] * (*b)[0] - (*a)[0] * (*b)[2]; 

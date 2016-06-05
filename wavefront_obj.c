@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
 typedef union ObjData {
 	int i;
 	float f;
@@ -38,13 +36,10 @@ int    dyn_array_expand  (DynArray *a);
 void   dyn_array_destroy (DynArray *a);
 
 static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
-//static inline void * dyn_array_new (DynArray *a)        {return calloc(1, a->elem_size);}
 
-//void init_obj (WFobj *obj, const char *obj_file, const char *texture_file);
 int  read_obj_file (const char *filename, WFobj *obj);
 
-
-WFobj * wfobj_new (const char *obj_file) {
+WFobj * wfobj_new (const char *obj_file, const char *texture_file) {
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	
 	if (obj == NULL) return NULL;
@@ -60,11 +55,18 @@ WFobj * wfobj_new (const char *obj_file) {
     
 	read_obj_file (obj_file, obj);	        
     
-    /*obj->texture = TGAImage(1, 1, TGAImage::RGB);
-    obj->texture.read_tga_file(texture_file);    
-    obj->textw = obj->texture.get_width();
-    obj->texth = obj->texture.get_height();
-    */
+    TGA *tga = TGAOpen (texture_file, "r");
+	if (!tga || tga->last != TGA_OK) return 1;
+	
+	TGAData tgadata;
+	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return 1;	
+	obj->texture     = tgadata.img_data;
+	obj->textw       = tga->hdr.width;
+	obj->texth       = tga->hdr.height;
+	obj->textbytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
+	
     return obj;
 }
 
