@@ -1,5 +1,7 @@
 #include "geometry.h"
+
 #include <math.h>
+#include <stdarg.h>
 
 float det3x3 (fmat3 *m);
 
@@ -14,6 +16,59 @@ void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
 			for (int k = 0; k < 4; k++)	(*c)[i][j] += (*a)[i][k] * (*b)[k][j];
 		}
 	}
+}
+
+void fmat4_mult (int m_num, ...) {
+	
+	fmat4 tmp1 = FMAT4_IDENTITY;
+	fmat4 tmp2;
+	fmat4 *tmp_a;
+	fmat4 *tmp_b;
+	fmat4 *tmp_c;
+	fmat4 *tmp;
+	
+	va_list list;
+	va_start (list, m_num);
+	//tmp_in = &tmp1;
+	//tmp_out = &tmp2;
+	if (m_num < 2) return;
+	else if (m_num == 2) {
+		tmp_a = va_arg(list, fmat4*);
+		tmp_b = va_arg(list, fmat4*);
+		tmp_c = va_arg(list, fmat4*);
+		fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
+	}
+	else if (m_num > 2) {
+		tmp_a = va_arg(list, fmat4*);
+		tmp_b = va_arg(list, fmat4*);
+		tmp_c = &tmp1;
+		fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
+		tmp_a = &tmp2;
+		for (int i = 2; i < m_num; i++) {
+			if (i != (m_num-1)) {
+				//swap_ptrs (tmp_a, tmp_c);
+				tmp = tmp_a;
+				tmp_a = tmp_c;
+				tmp_c = tmp;
+				tmp_b = va_arg(list, fmat4*);
+				fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
+			}
+			else {
+				tmp_a = tmp_c;
+				tmp_b = va_arg(list, fmat4*);
+				tmp_c = va_arg(list, fmat4*);
+				fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
+			}
+		}
+	}
+	/*tmp_in = va_arg(list, fmat4*);
+	tmp = va_arg(list, fmat4*);
+	tmp_out = va_arg(list, fmat4*);
+	fmat4_fmat4_mult (tmp_in, tmp, tmp_out);
+	*/
+	
+	
+	va_end (list);
 }
 
 #include <stdio.h>
