@@ -79,7 +79,7 @@ void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
 void draw_triangle (ScreenTriangle *t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
-void draw_obj      (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv);
+//void draw_obj      (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
@@ -93,3 +93,4 @@ void obj_set_scale       (Object *obj, float x, float y, float z);
 void obj_set_rotation    (Object *obj, float x, float y, float z);
 void obj_set_translation (Object *obj, float x, float y, float z);
 void obj_transform       (Object *obj, fmat4 *model, float3 *light_dir);
+void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv);

@@ -224,13 +224,14 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
 }
 
 
-void draw_obj (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
-	for (int i = 0; i < wfobj_get_num_of_faces(obj); i++) {
+//void draw_obj (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
+void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
+	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
-			vshader (obj, i, j, mvpv, &t.vtx_coords[j]);
+			vshader (obj->wfobj, i, j, mvpv, &t.vtx_coords[j]);
 		}		
-		draw_triangle (&t, pshader, zbuffer, fbuffer, obj);        
+		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
     }
 }
 
