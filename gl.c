@@ -96,17 +96,17 @@ void init_model (fmat4 *m, float3 *scale, float3 *rotate, float3 *tran) {
 	fmat4_set (&s, 1, 1, (*scale)[Y]);
 	fmat4_set (&s, 2, 2, (*scale)[Z]);
 	// 2. rotate
-	fmat4 tmp1, tmp2, r;
-	rotate_coords (   &s, &tmp1, (*rotate)[X], X);
-	rotate_coords (&tmp1, &tmp2, (*rotate)[Y], Y);
-	rotate_coords (&tmp2,    &r, (*rotate)[Z], Z);
+	fmat4 rot_x, rot_xy, rot_xyz;
+	rotate_coords (&s,      &rot_x,   (*rotate)[X], X);
+	rotate_coords (&rot_x,  &rot_xy,  (*rotate)[Y], Y);
+	rotate_coords (&rot_xy, &rot_xyz, (*rotate)[Z], Z);
 	// 3. translate	
 	fmat4 t = FMAT4_IDENTITY;
 	fmat4_set (&t, 0, 3, (*tran)[X]);
 	fmat4_set (&t, 1, 3, (*tran)[Y]);
 	fmat4_set (&t, 2, 3, (*tran)[Z]);
 	
-	fmat4_fmat4_mult (&r, &t, m);
+	fmat4_fmat4_mult (&rot_xyz, &t, m);
 }
 
 void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)

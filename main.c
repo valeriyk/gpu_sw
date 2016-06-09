@@ -37,55 +37,60 @@ int main(int argc, char** argv) {
 	
 	float3 camera;	
 	float3_float3_sub(&eye, &center, &camera);
-	fmat4 view       = FMAT4_IDENTITY;
-	init_view       (&view, &eye, &center, &up);
 	
-	fmat4 projection = FMAT4_IDENTITY;
-	fmat4 viewport   = FMAT4_IDENTITY;
-		
-	init_projection (&projection, -1.0f/camera[Z]);
-	init_viewport   (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);//SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
-    fmat4 projview;
-    fmat4_fmat4_mult (&projection, &view, &projview);
-    
-    Object *head1 = obj_new (african_head);
-	obj_set_translation (head1, 0.f, 0.f, 0.6f);
-    obj_transform       (head1, &projview, &light_dir);
-    
+	
+	
 	// 1. Model - transform local coords to global
 	// 2. View - transform global coords to adjust for camera position
 	// 3. Projection - perspective correction
 	// 4. Viewport - move to screen coords
-	// Doing everyhting in reverse order:
-	//fmat4 tmp1, tmp2, mvpv;
-	//fmat4_fmat4_mult (&viewport, &projection, &tmp1);
-	//fmat4_fmat4_mult (&tmp1, &view, &tmp2);
-	//fmat4_fmat4_mult (&tmp2, &(head1->model), &mvpv); 
-	fmat4 vpv, mvpv;
-	fmat4_mult (3, &viewport, &projection, &view, &vpv); 
-	
-	fmat4_fmat4_mult (&vpv, &(head1->model), &mvpv); 
-	draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
-	
-    Object *floor1 = obj_new (my_floor);
-	obj_set_translation (floor1, 0.f, 0.f, 0.75f);
-    obj_transform       (floor1, &projview, &light_dir);
-	fmat4_fmat4_mult (&vpv, &(floor1->model), &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+	fmat4 viewport   = FMAT4_IDENTITY;
+	fmat4 projection = FMAT4_IDENTITY;
+	fmat4 view       = FMAT4_IDENTITY;	
+	init_viewport   (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);//SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
+    init_projection (&projection, -1.0f/camera[Z]);
+    init_view       (&view, &eye, &center, &up);
     
-    Object *floor2 = obj_new (my_floor);
-	obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
-    obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
-    obj_transform       (floor2, &projview, &light_dir);
-    fmat4_fmat4_mult (&vpv, &(floor2->model), &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+    fmat4 vpv;
+	fmat4_fmat4_fmat4_mult (&viewport, &projection, &view, &vpv);
 	
-	Object *floor3 = obj_new (my_floor);
-    obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
-    obj_set_translation (floor3, 0.f, 0.f, 0.75f);
-    obj_transform       (floor3, &projview, &light_dir);
-    fmat4_fmat4_mult (&vpv, &(floor3->model), &mvpv); 
-	draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+	fmat4 projview;
+    fmat4_fmat4_mult (&projection, &view, &projview);
+    
+	fmat4 mvpv; // computed for every object
+	
+	
+    Object *head1  = obj_new (african_head);
+    Object *floor1 = obj_new (my_floor);
+    Object *floor2 = obj_new (my_floor);
+    Object *floor3 = obj_new (my_floor);
+    
+    do {
+		obj_set_translation (head1, 0.f, 0.f, 0.6f);
+		obj_transform       (head1, &projview, &light_dir);
+		fmat4_fmat4_mult (&vpv, &(head1->model), &mvpv); 
+		draw_obj (african_head, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+		
+		
+		obj_set_translation (floor1, 0.f, 0.f, 0.75f);
+		obj_transform       (floor1, &projview, &light_dir);
+		fmat4_fmat4_mult (&vpv, &(floor1->model), &mvpv); 
+		draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+		
+		
+		obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
+		obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
+		obj_transform       (floor2, &projview, &light_dir);
+		fmat4_fmat4_mult (&vpv, &(floor2->model), &mvpv); 
+		draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+		
+		
+		obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
+		obj_set_translation (floor3, 0.f, 0.f, 0.75f);
+		obj_transform       (floor3, &projview, &light_dir);
+		fmat4_fmat4_mult (&vpv, &(floor3->model), &mvpv); 
+		draw_obj (my_floor, my_vertex_shader, my_pixel_shader, zbuffer, fbuffer, &mvpv);
+	} while (0);
 	
     // write down the framebuffer
 	TGAData frame_data;	

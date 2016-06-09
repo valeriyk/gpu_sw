@@ -18,6 +18,13 @@ void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
 	}
 }
 
+void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d) {
+	fmat4 tmp;
+	fmat4_fmat4_mult (a, b, &tmp);
+	fmat4_fmat4_mult (&tmp, c, d);
+}
+
+/*
 void fmat4_mult (int m_num, ...) {
 	
 	fmat4 tmp1 = FMAT4_IDENTITY;
@@ -61,15 +68,10 @@ void fmat4_mult (int m_num, ...) {
 			}
 		}
 	}
-	/*tmp_in = va_arg(list, fmat4*);
-	tmp = va_arg(list, fmat4*);
-	tmp_out = va_arg(list, fmat4*);
-	fmat4_fmat4_mult (tmp_in, tmp, tmp_out);
-	*/
-	
 	
 	va_end (list);
 }
+*/
 
 #include <stdio.h>
 void print_fmat4 (fmat4 *m, char *header) {
