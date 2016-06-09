@@ -225,11 +225,11 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
 
 
 //void draw_obj (WFobj *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
-void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv) {
+void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
-			vshader (obj->wfobj, i, j, mvpv, &t.vtx_coords[j]);
+			vshader (obj->wfobj, i, j, obj->mvpv, &t.vtx_coords[j]);
 		}		
 		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
     }
@@ -311,8 +311,10 @@ void obj_set_translation (Object *obj, float x, float y, float z) {
 	obj->tran[2] = z;
 }
 
-void obj_transform (Object *obj, fmat4 *projview, float3 *light_dir) {
+void obj_transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
+	
 	init_model       (&(obj->model), &(obj->scale), &(obj->rotate), &(obj->tran));
+	fmat4_fmat4_mult (vpv,      &(obj->model), &(obj->mvpv)); 
     fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
 	fmat4_invert     (&UNIFORM_M, &UNIFORM_MI);
 	fmat4_transpose  (&UNIFORM_MI, &UNIFORM_MIT);

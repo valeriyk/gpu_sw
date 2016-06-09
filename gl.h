@@ -59,6 +59,7 @@ typedef struct Object {
 	float3 rotate;
 	float3 tran;
 	fmat4  model;
+	fmat4  mvpv; // pre-multiplied ModelViewProjectionViewport matrix
 } Object;
 
 typedef void (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d);
@@ -92,5 +93,5 @@ Object* obj_new (WFobj *wfobj);
 void obj_set_scale       (Object *obj, float x, float y, float z);
 void obj_set_rotation    (Object *obj, float x, float y, float z);
 void obj_set_translation (Object *obj, float x, float y, float z);
-void obj_transform       (Object *obj, fmat4 *model, float3 *light_dir);
-void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *mvpv);
+void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
+void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);

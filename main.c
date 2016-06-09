@@ -75,29 +75,25 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
 		obj_set_translation (head1, 0.f, 0.f, 0.6f);
-		obj_transform       (head1, &projview, &light_dir);
-		fmat4_fmat4_mult    (&vpv, &(head1->model), &mvpv); 
-		obj_draw            (head1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer, &mvpv);
+		obj_transform       (head1, &vpv, &projview, &light_dir);
+		obj_draw            (head1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
 		
 		obj_set_translation (floor1, 0.f, 0.f, 0.75f);
-		obj_transform       (floor1, &projview, &light_dir);
-		fmat4_fmat4_mult    (&vpv, &(floor1->model), &mvpv); 
-		obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer, &mvpv);
+		obj_transform       (floor1, &vpv, &projview, &light_dir);
+		obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
 		
 		obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
 		obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
-		obj_transform       (floor2, &projview, &light_dir);
-		fmat4_fmat4_mult    (&vpv, &(floor2->model), &mvpv); 
-		obj_draw            (floor2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer, &mvpv);
+		obj_transform       (floor2, &vpv, &projview, &light_dir);
+		obj_draw            (floor2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
 		
 		obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
 		obj_set_translation (floor3, 0.f, 0.f, 0.75f);
-		obj_transform       (floor3, &projview, &light_dir);
-		fmat4_fmat4_mult    (&vpv, &(floor3->model), &mvpv); 
-		obj_draw            (floor3, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer, &mvpv);
+		obj_transform       (floor3, &vpv, &projview, &light_dir);
+		obj_draw            (floor3, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 	}// while (0);
 	
     
@@ -122,8 +118,7 @@ int main(int argc, char** argv) {
 	tga->hdr.alpha      = 0;
 	
 	//frame_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	//frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
-	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB;
+	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
 	frame_data.img_data = (tbyte*) fbuffer0;
 	frame_data.cmap = NULL;
 	frame_data.img_id = NULL;
@@ -151,8 +146,7 @@ int main(int argc, char** argv) {
 	tga->hdr.alpha      = 0;
 	
 	//frame_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	//frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
-	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB;
+	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
 	frame_data.img_data = (tbyte*) fbuffer1;
 	frame_data.cmap = NULL;
 	frame_data.img_id = NULL;
