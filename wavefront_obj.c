@@ -55,12 +55,12 @@ WFobj * wfobj_new (const char *obj_file, const char *texture_file) {
     
 	read_obj_file (obj_file, obj);	        
     
-    TGA *tga = TGAOpen (texture_file, "r");
-	if (!tga || tga->last != TGA_OK) return 1;
+    TGA *tga = TGAOpen ((char*) texture_file, "r");
+	if (!tga || tga->last != TGA_OK) return NULL;
 	
 	TGAData tgadata;
 	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return 1;	
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return NULL;	
 	obj->texture     = tgadata.img_data;
 	obj->textw       = tga->hdr.width;
 	obj->texth       = tga->hdr.height;

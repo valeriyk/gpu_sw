@@ -4,6 +4,8 @@
 #include "gl.h"
 #include "shader.h"
 
+#include <tga_addon.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -59,102 +61,47 @@ int main(int argc, char** argv) {
 	fmat4 projview;
     fmat4_fmat4_mult (&projection, &view, &projview);
     
-	fmat4 mvpv; // computed for every object
 	
 	
     Object *head1  = obj_new (african_head);
-    Object *floor1 = obj_new (my_floor);
-    Object *floor2 = obj_new (my_floor);
-    Object *floor3 = obj_new (my_floor);
+    obj_set_translation (head1, 0.f, 0.f, 0.6f);
+    obj_build_model     (head1);
     
+    Object *floor1 = obj_new (my_floor);
+    obj_set_translation (floor1, 0.f, 0.f, 0.75f);
+	obj_build_model     (floor1);
+	
+	Object *floor2 = obj_new (my_floor);
+    obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
+	obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
+	obj_build_model     (floor2);
+	
+	Object *floor3 = obj_new (my_floor);
+    obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
+	obj_set_translation (floor3, 0.f, 0.f, 0.75f);
+	obj_build_model     (floor3);
+					
     //do {
     for (int i = 0; i < 2; i++) {
-		if (active_fbuffer == fbuffer0) active_fbuffer = fbuffer1;
-		else active_fbuffer = fbuffer0;
+		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
-		obj_set_translation (head1, 0.f, 0.f, 0.6f);
 		obj_transform       (head1, &vpv, &projview, &light_dir);
 		obj_draw            (head1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		
-		
-		obj_set_translation (floor1, 0.f, 0.f, 0.75f);
+			
 		obj_transform       (floor1, &vpv, &projview, &light_dir);
 		obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		
-		
-		obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
-		obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
+			
 		obj_transform       (floor2, &vpv, &projview, &light_dir);
 		obj_draw            (floor2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		
-		
-		obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
-		obj_set_translation (floor3, 0.f, 0.f, 0.75f);
+			
 		obj_transform       (floor3, &vpv, &projview, &light_dir);
 		obj_draw            (floor3, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 	}// while (0);
 	
-    
-	TGAData frame_data;	
-	TGA *tga;
-	
-	// write down the framebuffer0
-	tga = TGAOpen ("output_fb0.tga", "w");
-	tga->hdr.id_len 	= 0;
-	tga->hdr.map_t		= 0;
-	tga->hdr.img_t 		= 2;
-	tga->hdr.map_first 	= 0;
-	tga->hdr.map_entry 	= 0;
-	tga->hdr.map_len	= 0;
-	tga->hdr.x 			= 0;
-	tga->hdr.y 			= 0;
-	tga->hdr.width 		= WIDTH;//SCREEN_SIZE[0];
-	tga->hdr.height 	= HEIGHT;//SCREEN_SIZE[1];
-	tga->hdr.depth 		= 24;
-	tga->hdr.vert 	    = 1;
-	tga->hdr.horz   	= 0;
-	tga->hdr.alpha      = 0;
-	
-	//frame_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
-	frame_data.img_data = (tbyte*) fbuffer0;
-	frame_data.cmap = NULL;
-	frame_data.img_id = NULL;
-	if (TGAWriteImage (tga, &frame_data) != TGA_OK) {
-		printf ("TGA error code 2!\n");
-		return 1;
-	}
-	TGAClose(tga);
-	
-	// write down the framebuffer1
-	tga = TGAOpen ("output_fb1.tga", "w");
-	tga->hdr.id_len 	= 0;
-	tga->hdr.map_t		= 0;
-	tga->hdr.img_t 		= 2;
-	tga->hdr.map_first 	= 0;
-	tga->hdr.map_entry 	= 0;
-	tga->hdr.map_len	= 0;
-	tga->hdr.x 			= 0;
-	tga->hdr.y 			= 0;
-	tga->hdr.width 		= WIDTH;//SCREEN_SIZE[0];
-	tga->hdr.height 	= HEIGHT;//SCREEN_SIZE[1];
-	tga->hdr.depth 		= 24;
-	tga->hdr.vert 	    = 1;
-	tga->hdr.horz   	= 0;
-	tga->hdr.alpha      = 0;
-	
-	//frame_data.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	frame_data.flags = TGA_IMAGE_DATA | TGA_RGB | TGA_RLE_ENCODE;
-	frame_data.img_data = (tbyte*) fbuffer1;
-	frame_data.cmap = NULL;
-	frame_data.img_id = NULL;
-	if (TGAWriteImage (tga, &frame_data) != TGA_OK) {
-		printf ("TGA error code 2!\n");
-		return 1;
-	}
-	TGAClose(tga);
+    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, 1);
+    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, 1);
 	
 	wfobj_free(african_head);
 	wfobj_free(my_floor);
