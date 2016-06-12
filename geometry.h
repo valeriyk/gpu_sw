@@ -24,8 +24,11 @@ void  float3_float3_sub       (float3 *a, float3 *b, float3 *c);
 float float3_float3_smult     (float3 *a, float3 *b);
 void  float3_float3_crossprod (float3 *a, float3 *b, float3 *c);
 
-void  float3_float4_conv      (float3 *in, float4 *out);
-void  float4_float3_conv      (float4 *in, float3 *out);
+void  float3_float4_pt_conv      (float3 *in, float4 *out);
+void  float4_float3_pt_conv      (float4 *in, float3 *out);
+
+void  float3_float4_vect_conv    (float3 *in, float4 *out);
+void  float4_float3_vect_conv    (float4 *in, float3 *out);
 
 void  float3_normalize (float3 *v);
 

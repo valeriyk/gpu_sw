@@ -38,13 +38,13 @@ void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
 	fmat4_transpose  (&UNIFORM_MI, &UNIFORM_MIT);
 	
 	float4 light_dir4, light_new;
-	float3_float4_conv (light_dir, &light_dir4);
+	float3_float4_vect_conv (light_dir, &light_dir4);
 	fmat4_float4_mult  (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+	float4_float3_vect_conv (&light_new, &UNIFORM_LIGHT);
     float3_normalize   (&UNIFORM_LIGHT);
-    for (int i = 0; i < 3; i++) {
-		UNIFORM_LIGHT[i] = (*light_dir)[i];
-	}
+    /*for (int i = 0; i < 3; i++) {
+		;//UNIFORM_LIGHT[i] = (*light_dir)[i]; // TBD remove this hack
+	}*/
 }
 
 int main(int argc, char** argv) {

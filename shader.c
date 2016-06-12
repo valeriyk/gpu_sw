@@ -25,8 +25,9 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 	float4 mc; // model coordinates
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
-	float3_float4_conv (&obj_coords, &mc);
+	float3_float4_pt_conv (&obj_coords, &mc);
 	fmat4_float4_mult (mvpv, &mc, &sc);
+	//float4_float3_pt_conv (&sc, vtx4d);
 	(*vtx4d)[0] = sc[0]/sc[3];
 	(*vtx4d)[1] = sc[1]/sc[3];
 	(*vtx4d)[2] = sc[2]/sc[3];
@@ -46,7 +47,7 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 		n[0] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
 		n[1] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
 		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
-		n[3] = 0.0f;
+		n[3] = 0.0f; // set to 0 since a normal is a vector
 		fmat4_float4_mult (&UNIFORM_MIT, &n, &nr);
 		//VARYING_NX[vtx_idx] = nr[0]/nr[3];
 		//VARYING_NY[vtx_idx] = nr[1]/nr[3];

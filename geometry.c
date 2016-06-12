@@ -187,12 +187,22 @@ void float3_normalize (float3 *v) {
 	for (int i = 0; i < 3; i++) (*v)[i] = (*v)[i] / length;
 }
 
-void float3_float4_conv (float3 *in, float4 *out) {
+void float3_float4_pt_conv (float3 *in, float4 *out) {
 	for (int k = 0; k < 4; k++)
 		(*out)[k] = (k < 3) ? (*in)[k] : 1.0f;
 }
 
-void float4_float3_conv (float4 *in, float3 *out) {
+void float3_float4_vect_conv (float3 *in, float4 *out) {
+	for (int k = 0; k < 4; k++)
+		(*out)[k] = (k < 3) ? (*in)[k] : 0.0f;
+}
+
+void float4_float3_pt_conv (float4 *in, float3 *out) {
 	for (int k = 0; k < 3; k++)
 		(*out)[k] = (*in)[k] / (*in)[3];
+}
+
+void float4_float3_vect_conv (float4 *in, float3 *out) {
+	for (int k = 0; k < 3; k++)
+		(*out)[k] = (*in)[k];
 }
