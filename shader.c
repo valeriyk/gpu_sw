@@ -46,11 +46,15 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 		n[0] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
 		n[1] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
 		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
-		n[3] = 1.0f;
+		n[3] = 0.0f;
 		fmat4_float4_mult (&UNIFORM_MIT, &n, &nr);
-		VARYING_NX[vtx_idx] = nr[0]/nr[3];
-		VARYING_NY[vtx_idx] = nr[1]/nr[3];
-		VARYING_NZ[vtx_idx] = nr[2]/nr[3];
+		//VARYING_NX[vtx_idx] = nr[0]/nr[3];
+		//VARYING_NY[vtx_idx] = nr[1]/nr[3];
+		//VARYING_NZ[vtx_idx] = nr[2]/nr[3];
+		VARYING_NX[vtx_idx] = nr[0];
+		VARYING_NY[vtx_idx] = nr[1];
+		VARYING_NZ[vtx_idx] = nr[2];
+		
 	}
 }
 

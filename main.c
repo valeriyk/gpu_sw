@@ -10,11 +10,13 @@
 #include <stdlib.h>
 #include <math.h>
 
+// POSITIVE Z TOWARDS ME
+
 
 // globals:
 
-float3 light_dir  = { -1.0f,   -0.2f,   -1.1f};
-float3 eye        = { 2.0f,   3.0f,   5.0f};
+float3 light_dir  = { 0.0f,   0.0f,  -1.0f};
+float3 eye        = { 5.0f,   0.0f,   5.0f};
 float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 
@@ -28,6 +30,23 @@ struct scene {
 }
 */
   
+void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
+	
+	fmat4_fmat4_mult (vpv,      &(obj->model), &(obj->mvpv)); 
+    fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
+	fmat4_invert     (&UNIFORM_M, &UNIFORM_MI);
+	fmat4_transpose  (&UNIFORM_MI, &UNIFORM_MIT);
+	
+	float4 light_dir4, light_new;
+	float3_float4_conv (light_dir, &light_dir4);
+	fmat4_float4_mult  (&UNIFORM_M, &light_dir4, &light_new);
+	float4_float3_conv (&light_new, &UNIFORM_LIGHT);
+    float3_normalize   (&UNIFORM_LIGHT);
+    for (int i = 0; i < 3; i++) {
+		UNIFORM_LIGHT[i] = (*light_dir)[i];
+	}
+}
+
 int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;//SCREEN_SIZE[0]*SCREEN_SIZE[1];
@@ -64,13 +83,19 @@ int main(int argc, char** argv) {
 	
 	
     Object *head1  = obj_new (african_head);
-    obj_set_translation (head1, 0.f, 0.f, 0.6f);
+    obj_set_translation (head1, 1.f, 0.f, 0.6f);
     obj_build_model     (head1);
+    
+    Object *head2  = obj_new (african_head);
+    obj_set_translation (head2, -1.f, 0.f, 0.6f);
+    obj_build_model     (head2);
+    
     
     Object *floor1 = obj_new (my_floor);
     obj_set_translation (floor1, 0.f, 0.f, 0.75f);
 	obj_build_model     (floor1);
 	
+	/*
 	Object *floor2 = obj_new (my_floor);
     obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
 	obj_set_translation (floor2, 0.f, 0.75f, 0.0f);
@@ -80,6 +105,7 @@ int main(int argc, char** argv) {
     obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
 	obj_set_translation (floor3, 0.f, 0.f, 0.75f);
 	obj_build_model     (floor3);
+	*/
 					
     //do {
     for (int i = 0; i < 2; i++) {
@@ -87,17 +113,21 @@ int main(int argc, char** argv) {
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
-		obj_transform       (head1, &vpv, &projview, &light_dir);
+		transform       (head1, &vpv, &projview, &light_dir);
 		obj_draw            (head1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 			
-		obj_transform       (floor1, &vpv, &projview, &light_dir);
+		transform       (head2, &vpv, &projview, &light_dir);
+		obj_draw            (head2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
+		
+		transform       (floor1, &vpv, &projview, &light_dir);
 		obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-			
+		/*
 		obj_transform       (floor2, &vpv, &projview, &light_dir);
 		obj_draw            (floor2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 			
 		obj_transform       (floor3, &vpv, &projview, &light_dir);
 		obj_draw            (floor3, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
+		*/
 	}// while (0);
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, 1);

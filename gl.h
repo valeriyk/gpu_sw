@@ -27,11 +27,6 @@ typedef struct Point2D {
     int x, y;
 } Point2D;
 
-/*typedef struct Point2Df {
-    float u, v;
-} Point2Df;
-*/
-
 typedef struct Face {
 	int3 vtx_idx; // vertex indices
 	int3 txt_idx; // texture indices
@@ -93,5 +88,5 @@ void obj_set_scale       (Object *obj, float x, float y, float z);
 void obj_set_rotation    (Object *obj, float x, float y, float z);
 void obj_set_translation (Object *obj, float x, float y, float z);
 void obj_build_model     (Object *obj);
-void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
+//void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
