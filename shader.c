@@ -37,6 +37,7 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 	VARYING_V[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 1);
 	
 	
+	
 	if (0) {
 		VARYING_NX[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
 		VARYING_NY[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
@@ -49,13 +50,9 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
 		n[3] = 0.0f; // set to 0 since a normal is a vector
 		fmat4_float4_mult (&UNIFORM_MIT, &n, &nr);
-		//VARYING_NX[vtx_idx] = nr[0]/nr[3];
-		//VARYING_NY[vtx_idx] = nr[1]/nr[3];
-		//VARYING_NZ[vtx_idx] = nr[2]/nr[3];
 		VARYING_NX[vtx_idx] = nr[0];
 		VARYING_NY[vtx_idx] = nr[1];
 		VARYING_NZ[vtx_idx] = nr[2];
-		
 	}
 }
 
@@ -70,8 +67,9 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	pix.b = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
 	
 	float intensity = 0;
-	bool phong = 1;
-	bool gouraud = !phong;	
+	bool normalmap = 1;
+	bool phong = 0;
+	bool gouraud = 0;	
 	
 	if (phong) {
 		float3 interp_norm;
@@ -88,6 +86,18 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 			interp_intens[i] = float3_float3_smult (&ii, &UNIFORM_LIGHT);
 		}
 		intensity = -float3_float3_smult (&interp_intens, barw);
+	}
+	else if (normalmap) {
+		float4 nm, tmp;
+		float3 normal;
+		nm[0] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
+		nm[1] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);
+		nm[2] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 2);
+		nm[3] = 0.0f; // 0 means a vector
+		fmat4_float4_mult (&UNIFORM_MIT, &nm, &tmp);
+		float4_float3_vect_conv (&tmp, &normal);
+		float3_normalize (&normal);
+		intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
 	}
 	if (intensity > 0) {
 		if (intensity < 0.1) intensity = 0.1; // ambient light

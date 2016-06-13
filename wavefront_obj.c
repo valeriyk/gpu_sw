@@ -39,7 +39,7 @@ static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
 
 int  read_obj_file (const char *filename, WFobj *obj);
 
-WFobj * wfobj_new (const char *obj_file, const char *texture_file) {
+WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *normalmap_file) {
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	
 	if (obj == NULL) return NULL;
@@ -65,6 +65,17 @@ WFobj * wfobj_new (const char *obj_file, const char *texture_file) {
 	obj->textw       = tga->hdr.width;
 	obj->texth       = tga->hdr.height;
 	obj->textbytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
+	
+	tga = TGAOpen ((char*) normalmap_file, "r");
+	if (!tga || tga->last != TGA_OK) return NULL;
+	
+	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return NULL;	
+	obj->normalmap   = tgadata.img_data;
+	obj->nmw       = tga->hdr.width;
+	obj->nmh       = tga->hdr.height;
+	obj->nmbytespp = tga->hdr.depth / 8;
 	TGAClose(tga);
 	
     return obj;

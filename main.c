@@ -15,8 +15,8 @@
 
 // globals:
 
-float3 light_dir  = { 0.0f,   0.0f,  -1.0f};
-float3 eye        = { 5.0f,   0.0f,   5.0f};
+float3 light_dir  = { 0.0f,   -1.0f,  -1.0f};
+float3 eye        = { 2.0f,   0.0f,   5.0f};
 float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 
@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     pixel_color_t *active_fbuffer = NULL;
     
-    WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga");
-	WFobj *my_floor     = wfobj_new ("obj/floor.obj"       , "obj/floor_diffuse.tga");
+    WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga", "obj/african_head_nm.tga");
+	WFobj *my_floor     = wfobj_new ("obj/floor.obj"       , "obj/floor_diffuse.tga"       , "obj/floor_nm_tangent.tga");
 	
 	float3 camera;	
 	float3_float3_sub(&eye, &center, &camera);
