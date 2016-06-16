@@ -15,8 +15,8 @@
 
 // globals:
 
-float3 light_dir  = { 0.0f,   -1.0f,  -1.0f};
-float3 eye        = { 2.0f,   0.0f,   5.0f};
+float3 light_dir  = { 0.0f,   -1.0f,  -0.2f};
+float3 eye        = { 2.0f,   1.0f,   5.0f};
 float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 
@@ -42,9 +42,6 @@ void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
 	fmat4_float4_mult  (&UNIFORM_M, &light_dir4, &light_new);
 	float4_float3_vect_conv (&light_new, &UNIFORM_LIGHT);
     float3_normalize   (&UNIFORM_LIGHT);
-    /*for (int i = 0; i < 3; i++) {
-		;//UNIFORM_LIGHT[i] = (*light_dir)[i]; // TBD remove this hack
-	}*/
 }
 
 int main(int argc, char** argv) {

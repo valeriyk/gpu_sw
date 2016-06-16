@@ -90,9 +90,9 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	else if (normalmap) {
 		float4 nm, tmp;
 		float3 normal;
-		nm[0] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
-		nm[1] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);
-		nm[2] = *(obj->normalmap + (uu + obj->nmw*vv) * (obj->nmbytespp) + 2);
+		nm[0] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
+		nm[1] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);
+		nm[2] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 2);
 		nm[3] = 0.0f; // 0 means a vector
 		fmat4_float4_mult (&UNIFORM_MIT, &nm, &tmp);
 		float4_float3_vect_conv (&tmp, &normal);
@@ -100,7 +100,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
 	}
 	if (intensity > 0) {
-		if (intensity < 0.1) intensity = 0.1; // ambient light
+		//if (intensity < 0.1) intensity = 0.1; // ambient light
 		//*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
 		*color = set_color (pix.r * intensity, pix.g * intensity, pix.b * intensity, 0);
 		//color = set_color (255 * intensity, 255 * intensity, 255 * intensity, 0);
