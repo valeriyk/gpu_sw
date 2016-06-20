@@ -97,7 +97,18 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		fmat4_float4_mult (&UNIFORM_MIT, &nm, &tmp);
 		float4_float3_vect_conv (&tmp, &normal);
 		float3_normalize (&normal);
-		intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
+		float nl = float3_float3_smult (&normal, &UNIFORM_LIGHT);
+		float3 nnr2;
+		float3_float_mult (&normal, nl * 2.0f, &nnr2);
+		float3 r;
+		float3_float3_sub (&normal, &UNIFORM_LIGHT, &r);
+		float3_normalize (&r);
+		float spec;
+		if (obj->specmap != NULL) spec = pow (r[Z], *(obj->specmap + (uu + obj->smw*vv)));
+		else spec = 0;
+		float diff = -nl;
+		//intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
+		intensity = diff + spec;
 	}
 	if (intensity > 0) {
 		//if (intensity < 0.1) intensity = 0.1; // ambient light

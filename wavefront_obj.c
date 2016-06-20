@@ -77,7 +77,8 @@ WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *n
 	obj->nmh       = tga->hdr.height;
 	obj->nmbytespp = tga->hdr.depth / 8;
 	TGAClose(tga);
-	
+
+	obj->specmap = NULL;
     return obj;
 }
 
@@ -91,12 +92,19 @@ void wfobj_free (WFobj *obj) {
 	free (obj);
 }
 
-/*void wfobj_load_texture (WFobj *obj, const char *texture_file) {
-	obj->texture = new TGAImage(1, 1, TGAImage::RGB);
-    obj->texture->read_tga_file(texture_file);    
-    obj->textw = obj->texture->get_width();
-    obj->texth = obj->texture->get_height();
-}*/
+void wfobj_load_specular_map (WFobj *obj, const char *specmap_file) {
+	TGA *tga = TGAOpen ((char*) specmap_file, "r");
+	if (!tga || tga->last != TGA_OK) return;
+	
+	TGAData tgadata;
+	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
+	obj->specmap   = tgadata.img_data;
+	obj->smw       = tga->hdr.width;
+	obj->smh       = tga->hdr.height;
+	obj->smbytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
+}
 
 /*void wfobj_set_face_idx   (const WFobj *obj, const int face_idx) {
 	obj->face_offset = face_idx*9;

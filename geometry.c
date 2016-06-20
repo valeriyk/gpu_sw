@@ -182,6 +182,12 @@ void float3_float3_crossprod(float3 *a, float3 *b, float3 *c) {
 	(*c)[2] = (*a)[0] * (*b)[1] - (*a)[1] * (*b)[0];
 }
 
+void float3_float_mult(float3 *a, float b, float3 *c) {
+	(*c)[0] = (*a)[1] * b;
+	(*c)[1] = (*a)[2] * b; 
+	(*c)[2] = (*a)[0] * b;
+}
+
 void float3_normalize (float3 *v) {
 	float length = (float) sqrt(pow((*v)[0], 2) + pow((*v)[1], 2) + pow((*v)[2], 2));
 	for (int i = 0; i < 3; i++) (*v)[i] = (*v)[i] / length;

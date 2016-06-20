@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
     pixel_color_t *active_fbuffer = NULL;
     
     WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga", "obj/african_head_nm.tga");
+    wfobj_load_specular_map (african_head, "obj/african_head_spec.tga");
 	WFobj *my_floor     = wfobj_new ("obj/floor.obj"       , "obj/floor_diffuse.tga"       , "obj/floor_nm_tangent.tga");
 	
 	float3 camera;	
