@@ -1,6 +1,13 @@
 #include "shader.h"
 #include "gl.h"
 
+#include <math.h>
+
+
+#define VSHADER_DEBUG 0
+
+
+
 // declare the following here instead of the header to make these variables local:
 float3 VARYING_U;
 float3 VARYING_V;
@@ -14,6 +21,7 @@ fmat4  UNIFORM_M;
 fmat4  UNIFORM_MI;
 fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
+
 
 
 void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d) {
@@ -53,6 +61,11 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 		VARYING_NX[vtx_idx] = nr[0];
 		VARYING_NY[vtx_idx] = nr[1];
 		VARYING_NZ[vtx_idx] = nr[2];
+		
+		if (VSHADER_DEBUG) {
+			printf ("\t\tvtx shader face%d vtx%d: obj norm (%f, %f, %f), transformed normal (%f, %f, %f)\n", face_idx, vtx_idx, n[0], n[1], n[2], nr[0], nr[1], nr[2]);
+			printf ("\t\tuniform light (%f, %f, %f)\n", UNIFORM_LIGHT[0], UNIFORM_LIGHT[1], UNIFORM_LIGHT[2]);
+		}
 	}
 }
 
@@ -67,17 +80,21 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	pix.b = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
 	
 	float intensity = 0;
-	bool normalmap = 1;
-	bool phong = 0;
+	float diff_intensity = 0;
+	float spec_intensity = 0;
+	
+	bool normalmap = 0;
+	bool phong = 1;
 	bool gouraud = 0;	
 	
+	float3 normal;
+	
 	if (phong) {
-		float3 interp_norm;
-		interp_norm[0] = float3_float3_smult (&VARYING_NX, barw);
-		interp_norm[1] = float3_float3_smult (&VARYING_NY, barw);
-		interp_norm[2] = float3_float3_smult (&VARYING_NZ, barw);
-		float3_normalize(&interp_norm);
-		intensity = -float3_float3_smult (&interp_norm, &UNIFORM_LIGHT);
+		normal[0] = float3_float3_smult (&VARYING_NX, barw);
+		normal[1] = float3_float3_smult (&VARYING_NY, barw);
+		normal[2] = float3_float3_smult (&VARYING_NZ, barw);
+		float3_normalize(&normal);
+		diff_intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
 	}
 	else if (gouraud) {
 		float3 interp_intens;
@@ -85,11 +102,10 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 			float3 ii = {VARYING_NX[i], VARYING_NY[i], VARYING_NZ[i]};
 			interp_intens[i] = float3_float3_smult (&ii, &UNIFORM_LIGHT);
 		}
-		intensity = -float3_float3_smult (&interp_intens, barw);
+		diff_intensity = -float3_float3_smult (&interp_intens, barw);
 	}
 	else if (normalmap) {
 		float4 nm, tmp;
-		float3 normal;
 		nm[0] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
 		nm[1] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);
 		nm[2] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 2);
@@ -97,24 +113,39 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		fmat4_float4_mult (&UNIFORM_MIT, &nm, &tmp);
 		float4_float3_vect_conv (&tmp, &normal);
 		float3_normalize (&normal);
-		float nl = float3_float3_smult (&normal, &UNIFORM_LIGHT);
-		float3 nnr2;
-		float3_float_mult (&normal, nl * 2.0f, &nnr2);
-		float3 r;
-		float3_float3_sub (&normal, &UNIFORM_LIGHT, &r);
-		float3_normalize (&r);
-		float spec;
-		if (obj->specmap != NULL) spec = pow (r[Z], *(obj->specmap + (uu + obj->smw*vv)));
-		else spec = 0;
-		float diff = -nl;
-		//intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
-		intensity = diff + spec;
+		diff_intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
 	}
+	
+	bool lighting = 1;
+	if (lighting) {
+		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
+		float3 nnl2;
+		float3_float_mult (&normal, nl * 2.0f, &nnl2);
+		//float3_normalize (&nnl2);
+		float3 r;
+		float3_float3_sub (&nnl2, &UNIFORM_LIGHT, &r);
+		float3_normalize (&r);
+		int spec_factor;
+		if (obj->specmap != NULL) spec_factor = *(obj->specmap + (uu + obj->smw*vv) * (obj->smbytespp));
+		else spec_factor = 0;
+		//if (spec_factor > 0) printf ("spec_factor %d, r[Z]=%f ", spec_factor, r[Z]);
+		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);//(uu+vv)/256.0);
+		//spec_intensity = pow (r[Z], spec_factor);//(uu+vv)/256.0);
+		//if (spec_intensity > 0.5) printf ("%f ", spec_intensity);
+		//spec_intensity = 0;
+		//pix.r = spec_factor;
+		//pix.g = spec_factor;
+	//	pix.b = spec_factor;
+	}
+	
+	intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
+	if (intensity > 1.0) intensity = 1.0;
+		
 	if (intensity > 0) {
-		//if (intensity < 0.1) intensity = 0.1; // ambient light
+		if (intensity < 0.1) intensity = 0.1; // ambient light
 		//*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
 		*color = set_color (pix.r * intensity, pix.g * intensity, pix.b * intensity, 0);
-		//color = set_color (255 * intensity, 255 * intensity, 255 * intensity, 0);
+		//*color = set_color (255 * intensity, 0 * intensity, 255 * intensity, 0);
 		return true;
 	}
 	return false;

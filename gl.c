@@ -235,7 +235,12 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
 			vshader (obj->wfobj, i, j, &(obj->mvpv), &t.vtx_coords[j]);
-		}		
+		}
+		if (GL_DEBUG) {
+			printf ("call draw_triangle\n");
+			for (int j = 0; j < 3; j++)
+				printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", j, t.vtx_coords[j][0], t.vtx_coords[j][1], t.vtx_coords[j][2], t.vtx_coords[j][3]);
+		}
 		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
     }
 }

@@ -10,4 +10,4 @@ const int depth  = 1000000;//16000000;//30000;//65536;
 //const int SCREEN_SIZE[3] = {WIDTH, HEIGHT, DEPTH};
 
 
-
+#define GL_DEBUG 0

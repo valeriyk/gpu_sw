@@ -103,6 +103,7 @@ void wfobj_load_specular_map (WFobj *obj, const char *specmap_file) {
 	obj->smw       = tga->hdr.width;
 	obj->smh       = tga->hdr.height;
 	obj->smbytespp = tga->hdr.depth / 8;
+	printf ("specmap: w=%d, h=%d, bpp=%d\n", obj->smw, obj->smh, obj->smbytespp);
 	TGAClose(tga);
 }
 
