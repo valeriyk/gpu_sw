@@ -20,6 +20,7 @@ void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d);
 void  fmat4_fmat4_mult  (fmat4 *a, fmat4 *b,  fmat4 *c);
 void  fmat4_float4_mult (fmat4 *a, float4 *b, float4 *c);
 
+void  float3_float3_add       (float3 *a, float3 *b, float3 *c);
 void  float3_float3_sub       (float3 *a, float3 *b, float3 *c);
 float float3_float3_smult     (float3 *a, float3 *b);
 void  float3_float3_crossprod (float3 *a, float3 *b, float3 *c);

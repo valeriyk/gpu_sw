@@ -89,6 +89,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
 	float3 normal;
 	
+		
 	if (phong) {
 		normal[0] = float3_float3_smult (&VARYING_NX, barw);
 		normal[1] = float3_float3_smult (&VARYING_NY, barw);
@@ -121,15 +122,23 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		float3 nnl2;
 		float3_float_mult (&normal, nl * 2.0f, &nnl2);
-		//float3_normalize (&nnl2);
 		float3 r;
-		float3_float3_sub (&nnl2, &UNIFORM_LIGHT, &r);
+		
+		float3_float3_add (&nnl2, &UNIFORM_LIGHT, &r);
 		float3_normalize (&r);
 		int spec_factor;
 		if (obj->specmap != NULL) spec_factor = *(obj->specmap + (uu + obj->smw*vv) * (obj->smbytespp));
 		else spec_factor = 0;
 		//if (spec_factor > 0) printf ("spec_factor %d, r[Z]=%f ", spec_factor, r[Z]);
-		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);//(uu+vv)/256.0);
+		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);
+		//spec_intensity = pow (r[Z], 10);//spec_factor);//(uu+vv)/256.0);
+		if (spec_intensity >= 0.5) {
+			;//printf ("n=(%f;%f;%f) nl=%f nnl2=(%f;%f;%f) r=(%f;%f;%f) spec_f=%d spec_i=%f\n", normal[0], normal[1], normal[2], nl, nnl2[0], nnl2[1], nnl2[2], r[0], r[1], r[2], spec_factor, spec_intensity);
+		}
+		
+		//if ((uu > 400) && (uu < 500)) spec_intensity = 1;
+		//else spec_intensity = 0;
+		
 		//spec_intensity = pow (r[Z], spec_factor);//(uu+vv)/256.0);
 		//if (spec_intensity > 0.5) printf ("%f ", spec_intensity);
 		//spec_intensity = 0;
@@ -139,12 +148,19 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	}
 	
 	intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
-	if (intensity > 1.0) intensity = 1.0;
+	//if (intensity > 1.0) intensity = 1.0;
+	int r = pix.r * intensity + 5;
+	int g = pix.g * intensity + 5;
+	int b = pix.b * intensity + 5;
 		
+	if (r > 255) r = 255;
+	if (g > 255) g = 255;
+	if (b > 255) b = 255;
+	
 	if (intensity > 0) {
 		if (intensity < 0.1) intensity = 0.1; // ambient light
 		//*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
-		*color = set_color (pix.r * intensity, pix.g * intensity, pix.b * intensity, 0);
+		*color = set_color (r, g, b, 0);
 		//*color = set_color (255 * intensity, 0 * intensity, 255 * intensity, 0);
 		return true;
 	}

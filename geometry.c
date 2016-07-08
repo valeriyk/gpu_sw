@@ -166,6 +166,10 @@ void  fmat4_float4_mult (fmat4 *a, float4 *b, float4 *c) {
 	}
 }
 
+void float3_float3_add (float3 *a, float3 *b, float3 *c) {
+	for (int i = 0; i < 3; i++) (*c)[i] = (*a)[i] + (*b)[i];
+}
+
 void float3_float3_sub (float3 *a, float3 *b, float3 *c) {
 	for (int i = 0; i < 3; i++) (*c)[i] = (*a)[i] - (*b)[i];
 }
@@ -183,9 +187,13 @@ void float3_float3_crossprod(float3 *a, float3 *b, float3 *c) {
 }
 
 void float3_float_mult(float3 *a, float b, float3 *c) {
-	(*c)[0] = (*a)[1] * b;
+	/*(*c)[0] = (*a)[1] * b;
 	(*c)[1] = (*a)[2] * b; 
 	(*c)[2] = (*a)[0] * b;
+	*/
+	(*c)[0] = (*a)[0] * b;
+	(*c)[1] = (*a)[1] * b; 
+	(*c)[2] = (*a)[2] * b;
 }
 
 void float3_normalize (float3 *v) {

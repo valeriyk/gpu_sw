@@ -15,10 +15,10 @@
 
 // globals:
 
-float3 light_dir  = { 0.00,   0.00f,  -1.00};
+float3 light_dir  = { -0.50,   -0.50f,  -1.00};
 //float3 light_dir  = { -1.20,   -1.0f,  -2.80};
 //float3 eye        = { 1.4f,   1.2f,   3.0f};
-float3 eye        = { 0.0f,   0.0f,   5.0f};
+float3 eye        = { 3.0f,   2.0f,   5.0f};
 float3 center     = { 0.0f,   0.0f,   0.0f};
 float3 up         = { 0.0f,   1.0f,   0.0f};
 
@@ -85,8 +85,9 @@ int main(int argc, char** argv) {
 	
 	
     Object *head1  = obj_new (african_head);
-    obj_set_translation (head1, 1.f, 0.f, 0.6f);
-    obj_set_scale (head1, 0.6, 0.6, 0.6);
+    //obj_set_translation (head1, 1.f, 0.f, 0.6f);
+    //obj_set_scale (head1, 0.6, 0.6, 0.6);
+    //obj_set_rotation    (head1, 0.f, 0.f, 0.f);
     obj_build_model     (head1);
     
     Object *head2  = obj_new (african_head);
