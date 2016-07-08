@@ -5,7 +5,7 @@
 
 
 #define VSHADER_DEBUG 0
-
+#define PSHADER_DEBUG 0
 
 
 // declare the following here instead of the header to make these variables local:
@@ -129,26 +129,15 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		int spec_factor;
 		if (obj->specmap != NULL) spec_factor = *(obj->specmap + (uu + obj->smw*vv) * (obj->smbytespp));
 		else spec_factor = 0;
-		//if (spec_factor > 0) printf ("spec_factor %d, r[Z]=%f ", spec_factor, r[Z]);
 		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);
-		//spec_intensity = pow (r[Z], 10);//spec_factor);//(uu+vv)/256.0);
-		if (spec_intensity >= 0.5) {
-			;//printf ("n=(%f;%f;%f) nl=%f nnl2=(%f;%f;%f) r=(%f;%f;%f) spec_f=%d spec_i=%f\n", normal[0], normal[1], normal[2], nl, nnl2[0], nnl2[1], nnl2[2], r[0], r[1], r[2], spec_factor, spec_intensity);
-		}
-		
-		//if ((uu > 400) && (uu < 500)) spec_intensity = 1;
-		//else spec_intensity = 0;
-		
-		//spec_intensity = pow (r[Z], spec_factor);//(uu+vv)/256.0);
-		//if (spec_intensity > 0.5) printf ("%f ", spec_intensity);
-		//spec_intensity = 0;
-		//pix.r = spec_factor;
-		//pix.g = spec_factor;
-	//	pix.b = spec_factor;
+		if (PSHADER_DEBUG)
+			if (spec_intensity >= 0.5)
+				printf ("n=(%f;%f;%f) nl=%f nnl2=(%f;%f;%f) r=(%f;%f;%f) spec_f=%d spec_i=%f\n",
+					normal[0], normal[1], normal[2], nl, nnl2[0], nnl2[1], nnl2[2], r[0], r[1], r[2], spec_factor, spec_intensity);
 	}
 	
 	intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
-	//if (intensity > 1.0) intensity = 1.0;
+	if (intensity < 0) return false;
 	int r = pix.r * intensity + 5;
 	int g = pix.g * intensity + 5;
 	int b = pix.b * intensity + 5;
@@ -157,12 +146,6 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	if (g > 255) g = 255;
 	if (b > 255) b = 255;
 	
-	if (intensity > 0) {
-		if (intensity < 0.1) intensity = 0.1; // ambient light
-		//*color = set_color (tmpcolor.r * intensity, tmpcolor.g * intensity, tmpcolor.b * intensity, 0);
-		*color = set_color (r, g, b, 0);
-		//*color = set_color (255 * intensity, 0 * intensity, 255 * intensity, 0);
-		return true;
-	}
-	return false;
+	*color = set_color (r, g, b, 0);
+	return true;
 }
