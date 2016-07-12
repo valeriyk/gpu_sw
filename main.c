@@ -3,7 +3,7 @@
 #include "geometry.h"
 #include "gl.h"
 #include "shader.h"
-
+#include "bitmap.h"
 #include <tga_addon.h>
 
 #include <stdint.h>
@@ -55,11 +55,12 @@ int main(int argc, char** argv) {
     
     pixel_color_t *active_fbuffer = NULL;
     
-    WFobj *african_head = wfobj_new ("obj/african_head.obj");
-    wfobj_load_texture      (african_head, "obj/african_head_diffuse.tga");
-    wfobj_load_normal_map   (african_head, "obj/african_head_nm.tga");
-    wfobj_load_specular_map (african_head, "obj/african_head_spec.tga");
+    Bitmap *african_head_diffuse      = load_tga_to_bitmap ("obj/african_head_diffuse.tga");
+    Bitmap *african_head_normal_map   = load_tga_to_bitmap ("obj/african_head_nm.tga");
+    Bitmap *african_head_specular_map = load_tga_to_bitmap ("obj/african_head_spec.tga");
+    WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
 	
+	/*
 	WFobj *my_floor = wfobj_new ("obj/floor.obj");
 	wfobj_load_texture      (my_floor, "obj/floor_diffuse.tga");
 	wfobj_load_normal_map   (my_floor, "obj/floor_nm_tangent.tga");
@@ -67,7 +68,7 @@ int main(int argc, char** argv) {
 	WFobj *my_cube = wfobj_new ("obj/cube.obj");
 	wfobj_load_texture      (my_cube, "obj/floor_diffuse.tga");
 	wfobj_load_normal_map   (my_cube, "obj/floor_nm_tangent.tga");
-	
+	*/
 	
 	float3 camera;	
 	float3_float3_sub(&eye, &center, &camera);
@@ -93,17 +94,19 @@ int main(int argc, char** argv) {
     
 	
 	
+	
+	
     Object *head1  = obj_new (african_head);
-    //obj_set_translation (head1, 1.f, 0.f, 0.6f);
-    //obj_set_scale (head1, 0.6, 0.6, 0.6);
-    //obj_set_rotation    (head1, 0.f, 0.f, 0.f);
+    obj_set_translation (head1, 1.f, 0.f, 0.6f);
+    obj_set_scale (head1, 0.6, 0.6, 0.6);
+    obj_set_rotation    (head1, 0.f, 0.f, 0.f);
     obj_build_model     (head1);
     
     Object *head2  = obj_new (african_head);
     obj_set_translation (head2, -1.f, 0.f, 0.6f);
     obj_build_model     (head2);
     
-    
+   /* 
     Object *floor1 = obj_new (my_floor);
     obj_set_translation (floor1, 0.f, 0.f, 0.75f);
 	obj_build_model     (floor1);
@@ -112,6 +115,7 @@ int main(int argc, char** argv) {
 	//obj_set_translation (cube1, -1.f, 0.f, 0.6f);
 	obj_set_rotation (cube1, 45, 0, 0);
 	obj_build_model (cube1);
+	*/
 	
 	/*
 	Object *floor2 = obj_new (my_floor);
@@ -126,22 +130,22 @@ int main(int argc, char** argv) {
 	*/
 					
     //do {
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
 		transform           (head1, &vpv, &projview, &light_dir);
 		obj_draw            (head1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		/*	
+			
 		transform       (head2, &vpv, &projview, &light_dir);
 		obj_draw            (head2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
-		transform       (floor1, &vpv, &projview, &light_dir);
-		obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
+		//transform       (floor1, &vpv, &projview, &light_dir);
+		//obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
 		light_dir[2] = -light_dir[2];
-		
+		/*
 		transform	       (cube1, &vpv, &projview, &light_dir);
 		obj_draw           (cube1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		*/
@@ -154,11 +158,11 @@ int main(int argc, char** argv) {
 		*/
 	}// while (0);
 	
-    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, 1);
-    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, 1);
+    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 1);
+    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 1);
 	
 	wfobj_free(african_head);
-	wfobj_free(my_floor);
+	//wfobj_free(my_floor);
 	
 	free(zbuffer);
 	free(fbuffer0);

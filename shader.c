@@ -60,11 +60,11 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 
 bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
-	int uu = (int) (obj->texture.w * float3_float3_smult (&VARYING_UV[0], barw));
-	int vv = (int) (obj->texture.h * float3_float3_smult (&VARYING_UV[1], barw));
+	int uu = (int) (obj->texture->w * float3_float3_smult (&VARYING_UV[0], barw));
+	int vv = (int) (obj->texture->h * float3_float3_smult (&VARYING_UV[1], barw));
 	
 	pixel_color_t pix;
-	wfobj_get_bitmap_rgb (&(obj->texture), uu, vv, &pix.r, &pix.g, &pix.b);
+	wfobj_get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
 	
 	float intensity = 0;
 	float diff_intensity = 0;
@@ -93,7 +93,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	else if (shader_type == 2) {
 		float3 nm3;
 		float4 nm4, tmp;
-		wfobj_get_bitmap_xyz (&(obj->normalmap), uu, vv, &nm3[0], &nm3[1], &nm3[2]);
+		wfobj_get_normal_from_map (obj, uu, vv, &nm3[0], &nm3[1], &nm3[2]);
 		float3_float4_vect_conv (&nm3, &nm4);
 		fmat4_float4_mult (&UNIFORM_MIT, &nm4, &tmp);
 		float4_float3_vect_conv (&tmp, &normal);
@@ -111,7 +111,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		float3_float3_add (&nnl2, &UNIFORM_LIGHT, &r);
 		float3_normalize (&r);
 		
-		int spec_factor = wfobj_get_bitmap_int (&(obj->specularmap), uu, vv);		
+		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
 		
 		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);
 		if (PSHADER_DEBUG)

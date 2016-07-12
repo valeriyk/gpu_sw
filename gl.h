@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef enum {X = 0, Y, Z, W} axis;
 

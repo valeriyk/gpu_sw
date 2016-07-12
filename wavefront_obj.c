@@ -1,4 +1,5 @@
 #include "wavefront_obj.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,8 +40,14 @@ static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
 
 int  read_obj_file (const char *filename, WFobj *obj);
 
+void wfobj_get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
+void wfobj_get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z);
+int  wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v);
+
+
+
 //WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *normalmap_file) {
-WFobj * wfobj_new (const char *obj_file) {
+WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
 	
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	if (obj == NULL) return NULL;
@@ -56,9 +63,9 @@ WFobj * wfobj_new (const char *obj_file) {
     
 	read_obj_file (obj_file, obj);	        
     
-	obj->texture.data     = NULL;
-	obj->normalmap.data   = NULL;
-	obj->specularmap.data = NULL;
+	obj->texture     = texture;
+	obj->normalmap   = normalmap;
+	obj->specularmap = specularmap;
 	
     return obj;
 }
@@ -70,54 +77,10 @@ void wfobj_free (WFobj *obj) {
 	dyn_array_destroy (obj->priv->face);
 	
 	free (obj->priv);
+	free (obj->texture);
+	free (obj->normalmap);
+	free (obj->specularmap);
 	free (obj);
-}
-
-
-void wfobj_load_texture (WFobj *obj, const char *texture_file) {
-    
-    TGA *tga = TGAOpen ((char*) texture_file, "r");
-	if (!tga || tga->last != TGA_OK) return;
-	
-	TGAData tgadata;
-	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
-	obj->texture.data    = tgadata.img_data;
-	obj->texture.w       = tga->hdr.width;
-	obj->texture.h       = tga->hdr.height;
-	obj->texture.bytespp = tga->hdr.depth / 8;
-	TGAClose(tga);
-}
-
-void wfobj_load_normal_map (WFobj *obj, const char *normal_map_file) {
-	
-	TGA *tga = TGAOpen ((char*) normal_map_file, "r");
-	if (!tga || tga->last != TGA_OK) return;
-	
-	TGAData tgadata;
-	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
-	obj->normalmap.data    = tgadata.img_data;
-	obj->normalmap.w       = tga->hdr.width;
-	obj->normalmap.h       = tga->hdr.height;
-	obj->normalmap.bytespp = tga->hdr.depth / 8;
-	TGAClose(tga);
-}
-
-void wfobj_load_specular_map (WFobj *obj, const char *specular_map_file) {
-	
-	TGA *tga = TGAOpen ((char*) specular_map_file, "r");
-	if (!tga || tga->last != TGA_OK) return;
-	
-	TGAData tgadata;
-	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
-	obj->specularmap.data    = tgadata.img_data;
-	obj->specularmap.w       = tga->hdr.width;
-	obj->specularmap.h       = tga->hdr.height;
-	obj->specularmap.bytespp = tga->hdr.depth / 8;
-	//printf ("specmap: w=%d, h=%d, bpp=%d\n", obj->specularmap.w, obj->specularmap.h, obj->specularmap.bytespp);
-	TGAClose(tga);
 }
 
 /*void wfobj_set_face_idx   (const WFobj *obj, const int face_idx) {
@@ -174,6 +137,18 @@ int wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
 		return (int) *(bmp->data + (u + bmp->w * v) * (bmp->bytespp));
 	else
 		return 0;
+}
+
+void wfobj_get_rgb_from_texture     (const WFobj *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
+	wfobj_get_bitmap_rgb (obj->texture, u, v, r, g, b);
+}
+
+void wfobj_get_normal_from_map     (const WFobj *obj, const int u, const int v, float *x, float *y, float *z) {
+	wfobj_get_bitmap_xyz (obj->normalmap, u, v, x, y, z);
+}
+
+int  wfobj_get_specularity_from_map (const WFobj *obj, const int u, const int v) {
+	return wfobj_get_bitmap_int (obj->specularmap, u, v);
 }
 
 // Parse Wavefront OBJ format
@@ -246,16 +221,14 @@ int read_obj_file (const char *filename, WFobj *obj) {
 					line_field = VALUE1;
 				}
 			}
-			// After line type detected, read values VALUE1...VALUE4
-			// accordingly
+			// After line type detected, read values VALUE1...VALUE4 accordingly
 			else {
 				if (((c >= '0') && (c <= '9')) || (c == '.') || (c == '-') || (c == 'e')) {
 					alpha_num[alpha_idx++] = c;	
 				}
 				else if ((c == ' ') || (c == '\t') || (c == '\n') || (c == '/') || (c == '\r')) {
 					if (alpha_num[0] == '\0') {
-						 // skip heading white spaces
-						 // if unexpected delimeter is found then fail
+						 // skip heading white spaces, if unexpected delimeter is found then fail
 						 if ((c != ' ') && (c != '\t')) return 2;
 					}
 					else {
@@ -264,63 +237,31 @@ int read_obj_file (const char *filename, WFobj *obj) {
 						if (V_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								
-								//float *data = (float*) dyn_array_new(obj.vtx);
-								//*data = af;
-								//printf ("obj_vtx = %f\n", obj_vtx->data);
-								
 								data.f = af;
 								dyn_array_push (obj->priv->vtx, &data);
 							}
-							//if      (line_field == VALUE1) obj_vtx[vtx_idx][1] = af;
-							//else if (line_field == VALUE2) obj_vtx[vtx_idx][1] = af;
-							//else if (line_field == VALUE3) obj_vtx[vtx_idx][2] = af;
 						}
 						else if (F_DATA == line_type) {
 							int ai = atoi (alpha_num);
 							ai--; // decrement all indices because in OBJ they start at 1
 							if ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX)) {
-								//int *data = (int*) dyn_array_new(obj.face);
-								//*data = ai;
-								//printf ("obj_vtx = %f\n", obj_vtx->data);
 								data.i = ai;
 								dyn_array_push (obj->priv->face, &data);
 							}
-							/*if (VERTEX_IDX == face_elem) {							
-								//if      (line_field == VALUE1) obj_face[face_idx].vtx_idx[0] = ai;
-								//else if (line_field == VALUE2) obj_face[face_idx].vtx_idx[1] = ai;
-								//else if (line_field == VALUE3) obj_face[face_idx].vtx_idx[2] = ai;
-							}
-							else if (TEXTURE_IDX == face_elem) {							
-								//if      (line_field == VALUE1) obj_face[face_idx].txt_idx[0] = ai;
-								//else if (line_field == VALUE2) obj_face[face_idx].txt_idx[1] = ai;
-								//else if (line_field == VALUE3) obj_face[face_idx].txt_idx[2] = ai;
-							}
-							else if (NORMAL_IDX == face_elem) {
-							}*/
 						}
 						else if (VT_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2)) {
-								//float *data = (float*) dyn_array_new(obj.text);
-								//*data = af;
 								data.f = af;
 								dyn_array_push (obj->priv->text, &data);
 							}
-							//if      (line_field == VALUE1) obj_text[text_idx].u = af;
-							//else if (line_field == VALUE2) obj_text[text_idx].v = af;
 						}
 						else if (VN_DATA == line_type) {
 							float af = (float) atof (alpha_num);
 							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								//float *data = (float*) dyn_array_new(obj.norm);
-								//*data = af;
 								data.f = af;
 								dyn_array_push (obj->priv->norm, &data);
 							}
-							//if      (line_field == VALUE1) obj_norm[norm_idx][0] = af;
-							//else if (line_field == VALUE2) obj_norm[norm_idx][1] = af;
-							//else if (line_field == VALUE3) obj_norm[norm_idx][2] = af;
 						}
 						
 						if (c == '/') {
