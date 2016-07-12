@@ -3,7 +3,6 @@
 #include "gl.h"
 
 extern fmat4  UNIFORM_M;
-extern fmat4  UNIFORM_MI;
 extern fmat4  UNIFORM_MIT;
 extern float3 UNIFORM_LIGHT;
 

@@ -9,16 +9,11 @@
 
 
 // declare the following here instead of the header to make these variables local:
-float3 VARYING_U;
-float3 VARYING_V;
-float3 VARYING_NX;
-float3 VARYING_NY;
-float3 VARYING_NZ;
-float3 VARYING_INTENSITY;
+float3 VARYING_UV [2];
+float3 VARYING_N [3];
 
 // these are global:
 fmat4  UNIFORM_M;
-fmat4  UNIFORM_MI;
 fmat4  UNIFORM_MIT;
 float3 UNIFORM_LIGHT;
 
@@ -41,38 +36,32 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 	(*vtx4d)[2] = sc[2]/sc[3];
 	(*vtx4d)[3] = sc[3];
 	
-	VARYING_U[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 0);
-	VARYING_V[vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, 1);
+	for (int i = 0; i < 2; i++)
+		VARYING_UV[i][vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, i);	
 	
+	float3 n3;
+	float4 n4, nr;
 	
-	
-	if (0) {
-		VARYING_NX[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
-		VARYING_NY[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
-		VARYING_NZ[vtx_idx] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
-	}
-	else {
-		float4 n, nr;
-		n[0] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 0);
-		n[1] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 1);
-		n[2] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, 2);
-		n[3] = 0.0f; // set to 0 since a normal is a vector
-		fmat4_float4_mult (&UNIFORM_MIT, &n, &nr);
-		VARYING_NX[vtx_idx] = nr[0];
-		VARYING_NY[vtx_idx] = nr[1];
-		VARYING_NZ[vtx_idx] = nr[2];
+	for (int i = 0; i < 3; i++)
+		n3[i] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, i);
 		
-		if (VSHADER_DEBUG) {
-			printf ("\t\tvtx shader face%d vtx%d: obj norm (%f, %f, %f), transformed normal (%f, %f, %f)\n", face_idx, vtx_idx, n[0], n[1], n[2], nr[0], nr[1], nr[2]);
-			printf ("\t\tuniform light (%f, %f, %f)\n", UNIFORM_LIGHT[0], UNIFORM_LIGHT[1], UNIFORM_LIGHT[2]);
-		}
+	float3_float4_vect_conv (&n3, &n4);
+	
+	fmat4_float4_mult (&UNIFORM_MIT, &n4, &nr);
+	
+	for (int i = 0; i < 3; i++)
+		VARYING_N[i][vtx_idx] = nr[i];
+	
+	if (VSHADER_DEBUG) {
+		printf ("\t\tvtx shader face%d vtx%d: obj norm (%f, %f, %f), transformed normal (%f, %f, %f)\n", face_idx, vtx_idx, n3[0], n3[1], n3[2], nr[0], nr[1], nr[2]);
+		printf ("\t\tuniform light (%f, %f, %f)\n", UNIFORM_LIGHT[0], UNIFORM_LIGHT[1], UNIFORM_LIGHT[2]);
 	}
 }
 
 bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
-	int uu = (int) (obj->textw * float3_float3_smult (&VARYING_U, barw));
-	int vv = (int) (obj->texth * float3_float3_smult (&VARYING_V, barw));
+	int uu = (int) (obj->textw * float3_float3_smult (&VARYING_UV[0], barw));
+	int vv = (int) (obj->texth * float3_float3_smult (&VARYING_UV[1], barw));
 	
 	pixel_color_t pix;
 	pix.r = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 0);
@@ -83,29 +72,28 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	float diff_intensity = 0;
 	float spec_intensity = 0;
 	
-	bool normalmap = 0;
-	bool phong = 1;
-	bool gouraud = 0;	
+	// 0 - phong
+	// 1 - gouraud
+	// 2 - normalmap
+	int shader_type = 2;
 	
 	float3 normal;
 	
 		
-	if (phong) {
-		normal[0] = float3_float3_smult (&VARYING_NX, barw);
-		normal[1] = float3_float3_smult (&VARYING_NY, barw);
-		normal[2] = float3_float3_smult (&VARYING_NZ, barw);
+	if (shader_type == 0) {
+		for (int i = 0; i < 3; i++) normal[i] = float3_float3_smult (&VARYING_N[i], barw);
 		float3_normalize(&normal);
 		diff_intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
 	}
-	else if (gouraud) {
+	else if (shader_type == 1) {
 		float3 interp_intens;
 		for (int i = 0; i < 3; i++) {
-			float3 ii = {VARYING_NX[i], VARYING_NY[i], VARYING_NZ[i]};
+			float3 ii = {VARYING_N[0][i], VARYING_N[1][i], VARYING_N[2][i]};
 			interp_intens[i] = float3_float3_smult (&ii, &UNIFORM_LIGHT);
 		}
 		diff_intensity = -float3_float3_smult (&interp_intens, barw);
 	}
-	else if (normalmap) {
+	else if (shader_type == 2) {
 		float4 nm, tmp;
 		nm[0] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
 		nm[1] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);

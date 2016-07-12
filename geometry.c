@@ -24,55 +24,6 @@ void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d) {
 	fmat4_fmat4_mult (&tmp, c, d);
 }
 
-/*
-void fmat4_mult (int m_num, ...) {
-	
-	fmat4 tmp1 = FMAT4_IDENTITY;
-	fmat4 tmp2;
-	fmat4 *tmp_a;
-	fmat4 *tmp_b;
-	fmat4 *tmp_c;
-	fmat4 *tmp;
-	
-	va_list list;
-	va_start (list, m_num);
-	//tmp_in = &tmp1;
-	//tmp_out = &tmp2;
-	if (m_num < 2) return;
-	else if (m_num == 2) {
-		tmp_a = va_arg(list, fmat4*);
-		tmp_b = va_arg(list, fmat4*);
-		tmp_c = va_arg(list, fmat4*);
-		fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
-	}
-	else if (m_num > 2) {
-		tmp_a = va_arg(list, fmat4*);
-		tmp_b = va_arg(list, fmat4*);
-		tmp_c = &tmp1;
-		fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
-		tmp_a = &tmp2;
-		for (int i = 2; i < m_num; i++) {
-			if (i != (m_num-1)) {
-				//swap_ptrs (tmp_a, tmp_c);
-				tmp = tmp_a;
-				tmp_a = tmp_c;
-				tmp_c = tmp;
-				tmp_b = va_arg(list, fmat4*);
-				fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
-			}
-			else {
-				tmp_a = tmp_c;
-				tmp_b = va_arg(list, fmat4*);
-				tmp_c = va_arg(list, fmat4*);
-				fmat4_fmat4_mult (tmp_a, tmp_b, tmp_c);
-			}
-		}
-	}
-	
-	va_end (list);
-}
-*/
-
 #include <stdio.h>
 void print_fmat4 (fmat4 *m, char *header) {
 	printf ("%s\n", header);
@@ -144,7 +95,7 @@ void fmat4_adjugate (fmat4 *in, fmat4 *out) {
 	fmat4_transpose (&cof, out);
 }
 
-void fmat4_invert (fmat4 *in, fmat4 *out) {
+void fmat4_inv_transp (fmat4 *in, fmat4 *out) {
 	// inverse of M = adjoint of M / det M
 	fmat4 adj;
 	fmat4_adjugate(in, &adj);
@@ -156,7 +107,7 @@ void fmat4_invert (fmat4 *in, fmat4 *out) {
 	}
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			(*out)[i][j] = adj[i][j] / det;
+			(*out)[i][j] = adj[j][i] / det; // also transpose right here
 }
 
 void  fmat4_float4_mult (fmat4 *a, float4 *b, float4 *c) {

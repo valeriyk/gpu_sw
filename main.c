@@ -36,8 +36,7 @@ void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
 	
 	fmat4_fmat4_mult (vpv,      &(obj->model), &(obj->mvpv)); 
     fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
-	fmat4_invert     (&UNIFORM_M, &UNIFORM_MI);
-	fmat4_transpose  (&UNIFORM_MI, &UNIFORM_MIT);
+	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
 	float4 light_dir4, light_new;
 	float3_float4_vect_conv (light_dir, &light_dir4);
@@ -49,9 +48,11 @@ void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
 int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;//SCREEN_SIZE[0]*SCREEN_SIZE[1];
-    screenz_t     *zbuffer = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
+
+    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t)    );
     pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    
     pixel_color_t *active_fbuffer = NULL;
     
     WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga", "obj/african_head_nm.tga");

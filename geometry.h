@@ -11,10 +11,9 @@ typedef float float4 [4];
 typedef float fmat3 [3][3];
 typedef float fmat4 [4][4];
 
-void  fmat4_set       (fmat4 *mat, int row, int col, float val);
-void  fmat4_transpose (fmat4 *in, fmat4 *out);
-void  fmat4_invert    (fmat4 *in, fmat4 *out);
-//void  fmat4_mult      (int m_num, ...);
+void  fmat4_set        (fmat4 *mat, int row, int col, float val);
+void  fmat4_transpose  (fmat4 *in, fmat4 *out);
+void  fmat4_inv_transp (fmat4 *in, fmat4 *out);
 
 void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d);
 void  fmat4_fmat4_mult  (fmat4 *a, fmat4 *b,  fmat4 *c);
