@@ -91,19 +91,24 @@ void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx) {
 	obj->vtx_offset = obj->face_offset + vtx_idx*3;
 }*/
 
-float   wfobj_get_vtx_coord  (const WFobj *obj, const int face_idx,  const int vtx_idx, const int coord_idx) {
+void wfobj_get_vtx_coords  (const WFobj *obj, const int face_idx,  const int vtx_idx, float *x, float *y, float *z) {
 	int vtx_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3));
-	return *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + coord_idx));
+	*x = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 0));
+	*y = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 1));
+	*z = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 2));
 }
 
-float   wfobj_get_text_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
+void wfobj_get_texture_coords (const WFobj *obj, const int face_idx, const int vtx_idx, float *u, float *v) {
 	int text_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 1));
-	return *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + coord_idx));
+	*u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0));
+	*v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1));
 }
 
-float   wfobj_get_norm_coord (const WFobj *obj, const int face_idx, const int vtx_idx, const int coord_idx) {
+void wfobj_get_norm_coords (const WFobj *obj, const int face_idx, const int vtx_idx, float *x, float *y, float *z) {
 	int norm_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 2));
-	return *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + coord_idx));
+	*x = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 0));
+	*y = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 1));
+	*z = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 2));
 }
 
 int wfobj_get_num_of_faces (const WFobj *obj) {

@@ -55,9 +55,9 @@ int main(int argc, char** argv) {
     
     pixel_color_t *active_fbuffer = NULL;
     
-    Bitmap *african_head_diffuse      = load_tga_to_bitmap ("obj/african_head_diffuse.tga");
-    Bitmap *african_head_normal_map   = load_tga_to_bitmap ("obj/african_head_nm.tga");
-    Bitmap *african_head_specular_map = load_tga_to_bitmap ("obj/african_head_spec.tga");
+    Bitmap *african_head_diffuse      = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
+    Bitmap *african_head_normal_map   = new_bitmap_from_tga ("obj/african_head_nm.tga");
+    Bitmap *african_head_specular_map = new_bitmap_from_tga ("obj/african_head_spec.tga");
     WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
 	
 	/*

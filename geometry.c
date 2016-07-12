@@ -24,29 +24,6 @@ void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d) {
 	fmat4_fmat4_mult (&tmp, c, d);
 }
 
-#include <stdio.h>
-void print_fmat4 (fmat4 *m, char *header) {
-	printf ("%s\n", header);
-	for (int i = 0; i < 4; i++) {
-		printf("row %d: ", i);
-		for (int j = 0; j < 4; j++)
-			printf ("%f ", (*m)[i][j]);
-		printf("\n");
-	}
-	printf("\n");
-}
-
-void print_fmat3 (fmat3 *m, char *header) {
-	printf ("%s\n", header);
-	for (int i = 0; i < 3; i++) {
-		printf("row %d: ", i);
-		for (int j = 0; j < 3; j++)
-			printf ("%f ", (*m)[i][j]);
-		printf("\n");
-	}
-	printf("\n");
-}
-
 float det3x3 (fmat3 *m) {
 	return (*m)[0][0] * (*m)[1][1] * (*m)[2][2] -
 	       (*m)[0][0] * (*m)[1][2] * (*m)[2][1] -
@@ -138,10 +115,6 @@ void float3_float3_crossprod(float3 *a, float3 *b, float3 *c) {
 }
 
 void float3_float_mult(float3 *a, float b, float3 *c) {
-	/*(*c)[0] = (*a)[1] * b;
-	(*c)[1] = (*a)[2] * b; 
-	(*c)[2] = (*a)[0] * b;
-	*/
 	(*c)[0] = (*a)[0] * b;
 	(*c)[1] = (*a)[1] * b; 
 	(*c)[2] = (*a)[2] * b;
@@ -170,4 +143,31 @@ void float4_float3_pt_conv (float4 *in, float3 *out) {
 void float4_float3_vect_conv (float4 *in, float3 *out) {
 	for (int k = 0; k < 3; k++)
 		(*out)[k] = (*in)[k];
+}
+
+
+
+
+
+#include <stdio.h>
+void print_fmat4 (fmat4 *m, char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 4; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 4; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+void print_fmat3 (fmat3 *m, char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 3; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 3; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
 }

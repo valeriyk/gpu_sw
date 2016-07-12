@@ -9,8 +9,9 @@
 
 
 // declare the following here instead of the header to make these variables local:
-float3 VARYING_UV [2];
-float3 VARYING_N [3];
+float3 VARYING_U;
+float3 VARYING_V;
+float3 VARYING_N[3];
 
 // these are global:
 fmat4  UNIFORM_M;
@@ -21,14 +22,13 @@ float3 UNIFORM_LIGHT;
 
 void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d) {
 	
-	float3 obj_coords;
-	for (int k = 0; k < 3; k++)
-		obj_coords[k] = wfobj_get_vtx_coord (obj, face_idx, vtx_idx, k);
+	float3 vtx_coords;
+	wfobj_get_vtx_coords (obj, face_idx, vtx_idx, &vtx_coords[X], &vtx_coords[Y], &vtx_coords[Z]);
 	
 	float4 mc; // model coordinates
 	float4 sc; // screen coordinates	
 	// 0. transform 3d coords to homogenous coords
-	float3_float4_pt_conv (&obj_coords, &mc);
+	float3_float4_pt_conv (&vtx_coords, &mc);
 	fmat4_float4_mult (mvpv, &mc, &sc);
 	//float4_float3_pt_conv (&sc, vtx4d);
 	(*vtx4d)[0] = sc[0]/sc[3];
@@ -36,17 +36,13 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 	(*vtx4d)[2] = sc[2]/sc[3];
 	(*vtx4d)[3] = sc[3];
 	
-	for (int i = 0; i < 2; i++)
-		VARYING_UV[i][vtx_idx] = wfobj_get_text_coord (obj, face_idx, vtx_idx, i);	
+	wfobj_get_texture_coords (obj, face_idx, vtx_idx, &VARYING_U[vtx_idx], &VARYING_V[vtx_idx]);	
 	
 	float3 n3;
-	float4 n4, nr;
-	
-	for (int i = 0; i < 3; i++)
-		n3[i] = wfobj_get_norm_coord (obj, face_idx, vtx_idx, i);
-		
+	wfobj_get_norm_coords (obj, face_idx, vtx_idx, &n3[X], &n3[Y], &n3[Z]);
+	float4 n4;
 	float3_float4_vect_conv (&n3, &n4);
-	
+	float4 nr;
 	fmat4_float4_mult (&UNIFORM_MIT, &n4, &nr);
 	
 	for (int i = 0; i < 3; i++)
@@ -60,8 +56,8 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 
 bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
-	int uu = (int) (obj->texture->w * float3_float3_smult (&VARYING_UV[0], barw));
-	int vv = (int) (obj->texture->h * float3_float3_smult (&VARYING_UV[1], barw));
+	int uu = (int) (obj->texture->w * float3_float3_smult (&VARYING_U, barw));
+	int vv = (int) (obj->texture->h * float3_float3_smult (&VARYING_V, barw));
 	
 	pixel_color_t pix;
 	wfobj_get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
@@ -109,7 +105,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		float3 r;
 		
 		float3_float3_add (&nnl2, &UNIFORM_LIGHT, &r);
-		float3_normalize (&r);
+		float3_normalize  (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
 		
