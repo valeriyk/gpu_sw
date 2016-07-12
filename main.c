@@ -55,11 +55,19 @@ int main(int argc, char** argv) {
     
     pixel_color_t *active_fbuffer = NULL;
     
-    WFobj *african_head = wfobj_new ("obj/african_head.obj", "obj/african_head_diffuse.tga", "obj/african_head_nm.tga");
+    WFobj *african_head = wfobj_new ("obj/african_head.obj");
+    wfobj_load_texture      (african_head, "obj/african_head_diffuse.tga");
+    wfobj_load_normal_map   (african_head, "obj/african_head_nm.tga");
     wfobj_load_specular_map (african_head, "obj/african_head_spec.tga");
-	WFobj *my_floor     = wfobj_new ("obj/floor.obj"       , "obj/floor_diffuse.tga"       , "obj/floor_nm_tangent.tga");
 	
-	WFobj *my_cube     = wfobj_new ("obj/cube.obj"       , "obj/floor_diffuse.tga"       , "obj/floor_nm_tangent.tga");
+	WFobj *my_floor = wfobj_new ("obj/floor.obj");
+	wfobj_load_texture      (my_floor, "obj/floor_diffuse.tga");
+	wfobj_load_normal_map   (my_floor, "obj/floor_nm_tangent.tga");
+	
+	WFobj *my_cube = wfobj_new ("obj/cube.obj");
+	wfobj_load_texture      (my_cube, "obj/floor_diffuse.tga");
+	wfobj_load_normal_map   (my_cube, "obj/floor_nm_tangent.tga");
+	
 	
 	float3 camera;	
 	float3_float3_sub(&eye, &center, &camera);

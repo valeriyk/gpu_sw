@@ -60,13 +60,11 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 
 bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	
-	int uu = (int) (obj->textw * float3_float3_smult (&VARYING_UV[0], barw));
-	int vv = (int) (obj->texth * float3_float3_smult (&VARYING_UV[1], barw));
+	int uu = (int) (obj->texture.w * float3_float3_smult (&VARYING_UV[0], barw));
+	int vv = (int) (obj->texture.h * float3_float3_smult (&VARYING_UV[1], barw));
 	
 	pixel_color_t pix;
-	pix.r = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 0);
-	pix.g = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 1);
-	pix.b = *(obj->texture + (uu + obj->textw*vv) * (obj->textbytespp) + 2);
+	wfobj_get_bitmap_rgb (&(obj->texture), uu, vv, &pix.r, &pix.g, &pix.b);
 	
 	float intensity = 0;
 	float diff_intensity = 0;
@@ -78,8 +76,7 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 	int shader_type = 2;
 	
 	float3 normal;
-	
-		
+			
 	if (shader_type == 0) {
 		for (int i = 0; i < 3; i++) normal[i] = float3_float3_smult (&VARYING_N[i], barw);
 		float3_normalize(&normal);
@@ -94,12 +91,11 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		diff_intensity = -float3_float3_smult (&interp_intens, barw);
 	}
 	else if (shader_type == 2) {
-		float4 nm, tmp;
-		nm[0] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 0);
-		nm[1] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 1);
-		nm[2] = *((obj->normalmap) + (uu + obj->nmw*vv) * (obj->nmbytespp) + 2);
-		nm[3] = 0.0f; // 0 means a vector
-		fmat4_float4_mult (&UNIFORM_MIT, &nm, &tmp);
+		float3 nm3;
+		float4 nm4, tmp;
+		wfobj_get_bitmap_xyz (&(obj->normalmap), uu, vv, &nm3[0], &nm3[1], &nm3[2]);
+		float3_float4_vect_conv (&nm3, &nm4);
+		fmat4_float4_mult (&UNIFORM_MIT, &nm4, &tmp);
 		float4_float3_vect_conv (&tmp, &normal);
 		float3_normalize (&normal);
 		diff_intensity = -float3_float3_smult (&normal, &UNIFORM_LIGHT);
@@ -114,9 +110,9 @@ bool my_pixel_shader (WFobj *obj, float3 *barw, pixel_color_t *color) {
 		
 		float3_float3_add (&nnl2, &UNIFORM_LIGHT, &r);
 		float3_normalize (&r);
-		int spec_factor;
-		if (obj->specmap != NULL) spec_factor = *(obj->specmap + (uu + obj->smw*vv) * (obj->smbytespp));
-		else spec_factor = 0;
+		
+		int spec_factor = wfobj_get_bitmap_int (&(obj->specularmap), uu, vv);		
+		
 		spec_intensity = (r[Z] < 0) ? 0 : pow (r[Z], spec_factor);
 		if (PSHADER_DEBUG)
 			if (spec_intensity >= 0.5)

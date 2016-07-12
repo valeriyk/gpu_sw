@@ -39,9 +39,10 @@ static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
 
 int  read_obj_file (const char *filename, WFobj *obj);
 
-WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *normalmap_file) {
-	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
+//WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *normalmap_file) {
+WFobj * wfobj_new (const char *obj_file) {
 	
+	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	if (obj == NULL) return NULL;
 	
 	obj->priv = (WFobjPrivate*) malloc (sizeof(WFobjPrivate));
@@ -55,30 +56,10 @@ WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *n
     
 	read_obj_file (obj_file, obj);	        
     
-    TGA *tga = TGAOpen ((char*) texture_file, "r");
-	if (!tga || tga->last != TGA_OK) return NULL;
+	obj->texture.data     = NULL;
+	obj->normalmap.data   = NULL;
+	obj->specularmap.data = NULL;
 	
-	TGAData tgadata;
-	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return NULL;	
-	obj->texture     = tgadata.img_data;
-	obj->textw       = tga->hdr.width;
-	obj->texth       = tga->hdr.height;
-	obj->textbytespp = tga->hdr.depth / 8;
-	TGAClose(tga);
-	
-	tga = TGAOpen ((char*) normalmap_file, "r");
-	if (!tga || tga->last != TGA_OK) return NULL;
-	
-	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
-	if (TGAReadImage (tga, &tgadata) != TGA_OK) return NULL;	
-	obj->normalmap   = tgadata.img_data;
-	obj->nmw       = tga->hdr.width;
-	obj->nmh       = tga->hdr.height;
-	obj->nmbytespp = tga->hdr.depth / 8;
-	TGAClose(tga);
-
-	obj->specmap = NULL;
     return obj;
 }
 
@@ -92,18 +73,50 @@ void wfobj_free (WFobj *obj) {
 	free (obj);
 }
 
-void wfobj_load_specular_map (WFobj *obj, const char *specmap_file) {
-	TGA *tga = TGAOpen ((char*) specmap_file, "r");
+
+void wfobj_load_texture (WFobj *obj, const char *texture_file) {
+    
+    TGA *tga = TGAOpen ((char*) texture_file, "r");
 	if (!tga || tga->last != TGA_OK) return;
 	
 	TGAData tgadata;
 	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
 	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
-	obj->specmap   = tgadata.img_data;
-	obj->smw       = tga->hdr.width;
-	obj->smh       = tga->hdr.height;
-	obj->smbytespp = tga->hdr.depth / 8;
-	printf ("specmap: w=%d, h=%d, bpp=%d\n", obj->smw, obj->smh, obj->smbytespp);
+	obj->texture.data    = tgadata.img_data;
+	obj->texture.w       = tga->hdr.width;
+	obj->texture.h       = tga->hdr.height;
+	obj->texture.bytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
+}
+
+void wfobj_load_normal_map (WFobj *obj, const char *normal_map_file) {
+	
+	TGA *tga = TGAOpen ((char*) normal_map_file, "r");
+	if (!tga || tga->last != TGA_OK) return;
+	
+	TGAData tgadata;
+	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
+	obj->normalmap.data    = tgadata.img_data;
+	obj->normalmap.w       = tga->hdr.width;
+	obj->normalmap.h       = tga->hdr.height;
+	obj->normalmap.bytespp = tga->hdr.depth / 8;
+	TGAClose(tga);
+}
+
+void wfobj_load_specular_map (WFobj *obj, const char *specular_map_file) {
+	
+	TGA *tga = TGAOpen ((char*) specular_map_file, "r");
+	if (!tga || tga->last != TGA_OK) return;
+	
+	TGAData tgadata;
+	tgadata.flags = TGA_IMAGE_DATA | TGA_IMAGE_ID | TGA_RGB;
+	if (TGAReadImage (tga, &tgadata) != TGA_OK) return;	
+	obj->specularmap.data    = tgadata.img_data;
+	obj->specularmap.w       = tga->hdr.width;
+	obj->specularmap.h       = tga->hdr.height;
+	obj->specularmap.bytespp = tga->hdr.depth / 8;
+	//printf ("specmap: w=%d, h=%d, bpp=%d\n", obj->specularmap.w, obj->specularmap.h, obj->specularmap.bytespp);
 	TGAClose(tga);
 }
 
@@ -130,8 +143,37 @@ float   wfobj_get_norm_coord (const WFobj *obj, const int face_idx, const int vt
 	return *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + coord_idx));
 }
 
-int     wfobj_get_num_of_faces (const WFobj *obj) {
+int wfobj_get_num_of_faces (const WFobj *obj) {
 	return obj->priv->face->end / 9;
+}
+
+void wfobj_get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
+	if (bmp->data != NULL) {
+		*r = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0);
+		*g = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1);
+		*b = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2);
+	}
+	else {
+		*r = *g = *b = 0;
+	}
+}
+
+void wfobj_get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z) {
+	if (bmp->data != NULL) {
+		*x = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0) / 255.f * 2.f - 1.f;
+		*y = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1) / 255.f * 2.f - 1.f;
+		*z = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2) / 255.f * 2.f - 1.f;
+	}
+	else {
+		*x = *y = *z = 0.f;
+	}
+}
+
+int wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
+	if (bmp->data != NULL)
+		return (int) *(bmp->data + (u + bmp->w * v) * (bmp->bytespp));
+	else
+		return 0;
 }
 
 // Parse Wavefront OBJ format
