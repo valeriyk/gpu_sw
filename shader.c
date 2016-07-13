@@ -25,23 +25,23 @@ void my_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float
 	float3 vtx_coords;
 	wfobj_get_vtx_coords (obj, face_idx, vtx_idx, &vtx_coords[X], &vtx_coords[Y], &vtx_coords[Z]);
 	
-	float4 mc; // model coordinates
-	float4 sc; // screen coordinates	
-	// 0. transform 3d coords to homogenous coords
+	// transform 3d coords to homogenous coords
+	float4 mc;	
 	float3_float4_pt_conv (&vtx_coords, &mc);
+	float4 sc;
 	fmat4_float4_mult (mvpv, &mc, &sc);
 	//float4_float3_pt_conv (&sc, vtx4d);
-	(*vtx4d)[0] = sc[0]/sc[3];
-	(*vtx4d)[1] = sc[1]/sc[3];
-	(*vtx4d)[2] = sc[2]/sc[3];
+	(*vtx4d)[0] = sc[0] / sc[3];
+	(*vtx4d)[1] = sc[1] / sc[3];
+	(*vtx4d)[2] = sc[2] / sc[3];
 	(*vtx4d)[3] = sc[3];
 	
 	wfobj_get_texture_coords (obj, face_idx, vtx_idx, &VARYING_U[vtx_idx], &VARYING_V[vtx_idx]);	
 	
 	float3 n3;
-	wfobj_get_norm_coords (obj, face_idx, vtx_idx, &n3[X], &n3[Y], &n3[Z]);
+	wfobj_get_norm_coords    (obj, face_idx, vtx_idx, &n3[X], &n3[Y], &n3[Z]);
 	float4 n4;
-	float3_float4_vect_conv (&n3, &n4);
+	float3_float4_vect_conv  (&n3, &n4);
 	float4 nr;
 	fmat4_float4_mult (&UNIFORM_MIT, &n4, &nr);
 	
