@@ -5,6 +5,14 @@
 
 float det3x3 (fmat3 *m);
 
+Float3 Float3_set (float a, float b, float c) {
+	Float3 v;
+	v.as_array[0] = a;
+	v.as_array[1] = b;
+	v.as_array[2] = c;
+	return v;
+}
+
 void fmat4_set (fmat4 *mat, int row, int col, float val) {
 	(*mat)[row][col] = val;
 }
@@ -87,11 +95,13 @@ void fmat4_inv_transp (fmat4 *in, fmat4 *out) {
 			(*out)[i][j] = adj[j][i] / det; // also transpose right here
 }
 
-void  fmat4_float4_mult (fmat4 *a, float4 *b, float4 *c) {
+Float4 fmat4_Float4_mult (fmat4 *a, Float4 *b) {
+	Float4 f4;
 	for (int i = 0; i < 4; i++) {
-		(*c)[i] = 0;
-		for (int j = 0; j < 4; j++) (*c)[i] += (*a)[i][j] * (*b)[j];
+		f4.as_array[i] = 0;
+		for (int j = 0; j < 4; j++) f4.as_array[i] += (*a)[i][j] * b->as_array[j];
 	}
+	return f4;
 }
 
 void float3_float3_add (float3 *a, float3 *b, float3 *c) {
@@ -120,34 +130,38 @@ void float3_float_mult(float3 *a, float b, float3 *c) {
 	(*c)[2] = (*a)[2] * b;
 }
 
-void float3_normalize (float3 *v) {
-	float length = (float) sqrt(pow((*v)[0], 2) + pow((*v)[1], 2) + pow((*v)[2], 2));
-	for (int i = 0; i < 3; i++) (*v)[i] = (*v)[i] / length;
+void Float3_normalize (Float3 *v) {
+	float length = (float) sqrt(pow(v->as_struct.x, 2) + pow(v->as_struct.y, 2) + pow(v->as_struct.z, 2));
+	for (int i = 0; i < 3; i++) v->as_array[i] = v->as_array[i] / length;
 }
 
-void float3_float4_pt_conv (float3 *in, float4 *out) {
+Float4 Float3_Float4_pt_conv (Float3 *in) {
+	Float4 f4;
 	for (int k = 0; k < 4; k++)
-		(*out)[k] = (k < 3) ? (*in)[k] : 1.0f;
+		f4.as_array[k] = (k < 3) ? in->as_array[k] : 1.0f;
+	return f4;
 }
 
-void float3_float4_vect_conv (float3 *in, float4 *out) {
+Float4 Float3_Float4_vect_conv (Float3 *in) {
+	Float4 f4;
 	for (int k = 0; k < 4; k++)
-		(*out)[k] = (k < 3) ? (*in)[k] : 0.0f;
+		f4.as_array[k] = (k < 3) ? in->as_array[k] : 0.0f;
+	return f4;
 }
 
-void float4_float3_pt_conv (float4 *in, float3 *out) {
+Float3 Float4_Float3_pt_conv (Float4 *in) {
+	Float3 f3;
 	for (int k = 0; k < 3; k++)
-		(*out)[k] = (*in)[k] / (*in)[3];
+		f3.as_array[k] = in->as_array[k] / in->as_struct.w;
+	return f3;
 }
 
-void float4_float3_vect_conv (float4 *in, float3 *out) {
+Float3 Float4_Float3_vect_conv (Float4 *in) {
+	Float3 f3;
 	for (int k = 0; k < 3; k++)
-		(*out)[k] = (*in)[k];
+		f3.as_array[k] = in->as_array[k];
+	return f3;
 }
-
-
-
-
 
 #include <stdio.h>
 void print_fmat4 (fmat4 *m, char *header) {

@@ -15,7 +15,6 @@
 
 // globals:
 
-float3 light_dir  = { -0.50,   -0.50f,  -1.00};
 //float3 light_dir  = { -1.20,   -1.0f,  -2.80};
 //float3 eye        = { 1.4f,   1.2f,   3.0f};
 float3 eye        = { 3.0f,   2.0f,   5.0f};
@@ -32,22 +31,23 @@ struct scene {
 }
 */
   
-void transform (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir) {
+void transform (Object *obj, fmat4 *vpv, fmat4 *projview, Float3 *light_dir) {
 	
 	fmat4_fmat4_mult (vpv,      &(obj->model), &(obj->mvpv)); 
     fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
-	float4 light_dir4, light_new;
-	float3_float4_vect_conv (light_dir, &light_dir4);
-	fmat4_float4_mult  (&UNIFORM_M, &light_dir4, &light_new);
-	float4_float3_vect_conv (&light_new, &UNIFORM_LIGHT);
-    float3_normalize   (&UNIFORM_LIGHT);
+	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
+	Float4 light_new = fmat4_Float4_mult  (&UNIFORM_M, &light_dir4);
+	UNIFORM_LIGHT = Float4_Float3_vect_conv (&light_new);
+    Float3_normalize   (&UNIFORM_LIGHT);
 }
 
 int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;//SCREEN_SIZE[0]*SCREEN_SIZE[1];
+    
+    Float3 light_dir = Float3_set ( -0.50,   -0.50f,  -1.00);
 
     screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t)    );
     pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 		//transform       (floor1, &vpv, &projview, &light_dir);
 		//obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		
-		light_dir[2] = -light_dir[2];
+		light_dir.as_struct.z = -light_dir.as_struct.z;
 		/*
 		transform	       (cube1, &vpv, &projview, &light_dir);
 		obj_draw           (cube1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);

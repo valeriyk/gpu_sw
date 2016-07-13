@@ -40,7 +40,7 @@ typedef struct Vertex {
 } Vertex;
 
 typedef struct ScreenTriangle {
-	float4 vtx_coords[3];
+	Float4 vtx_coords[3];
 } ScreenTriangle;
 
 typedef struct Triangle {
@@ -59,7 +59,7 @@ typedef struct Object {
 	fmat4  mvpv; // pre-multiplied ModelViewProjectionViewport matrix
 } Object;
 
-typedef void (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, float4 *vtx4d);
+typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv);
 typedef bool (*pixel_shader)  (WFobj *obj, float3 *barc, pixel_color_t *color);
 
 int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);

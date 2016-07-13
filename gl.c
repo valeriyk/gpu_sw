@@ -44,10 +44,10 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
 {
     // Compute triangle bounding box
-    screenxy_t min_x = tri_min_bound (st->vtx_coords[0][X], st->vtx_coords[1][X], st->vtx_coords[2][X], 0);
-    screenxy_t max_x = tri_max_bound (st->vtx_coords[0][X], st->vtx_coords[1][X], st->vtx_coords[2][X], WIDTH);
-    screenxy_t min_y = tri_min_bound (st->vtx_coords[0][Y], st->vtx_coords[1][Y], st->vtx_coords[2][Y], 0);
-    screenxy_t max_y = tri_max_bound (st->vtx_coords[0][Y], st->vtx_coords[1][Y], st->vtx_coords[2][Y], HEIGHT);
+    screenxy_t min_x = tri_min_bound (st->vtx_coords[0].as_struct.x, st->vtx_coords[1].as_struct.x, st->vtx_coords[2].as_struct.x, 0);
+    screenxy_t max_x = tri_max_bound (st->vtx_coords[0].as_struct.x, st->vtx_coords[1].as_struct.x, st->vtx_coords[2].as_struct.x, WIDTH);
+    screenxy_t min_y = tri_min_bound (st->vtx_coords[0].as_struct.y, st->vtx_coords[1].as_struct.y, st->vtx_coords[2].as_struct.y, 0);
+    screenxy_t max_y = tri_max_bound (st->vtx_coords[0].as_struct.y, st->vtx_coords[1].as_struct.y, st->vtx_coords[2].as_struct.y, HEIGHT);
     
     if ((min_x == max_x) || (min_y == max_y)) {
 		printf ("Degenerate triangle\n");
@@ -58,16 +58,16 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {	
         for (p.x = min_x; p.x < max_x; p.x++) {
-			bar[0] = edge_func(&st->vtx_coords[1], &st->vtx_coords[2], &p); // not normalized
-			bar[1] = edge_func(&st->vtx_coords[2], &st->vtx_coords[0], &p); // not normalized
-			bar[2] = edge_func(&st->vtx_coords[0], &st->vtx_coords[1], &p); // not normalized
+			bar[0] = edge_func(&st->vtx_coords[1].as_array, &st->vtx_coords[2].as_array, &p); // not normalized
+			bar[1] = edge_func(&st->vtx_coords[2].as_array, &st->vtx_coords[0].as_array, &p); // not normalized
+			bar[2] = edge_func(&st->vtx_coords[0].as_array, &st->vtx_coords[1].as_array, &p); // not normalized
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
 				float sum_of_bars = 0.0f;
 				float3 bar_clip;
 				for (int i = 0; i < 3; i++) {
-					bar_clip[i] = (float) bar[i]/st->vtx_coords[i][W]; // not normalized
+					bar_clip[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
 					sum_of_bars += bar_clip[i];
 				}
 				if (sum_of_bars == 0) {
@@ -75,7 +75,7 @@ void draw_triangle (ScreenTriangle *st, pixel_shader pshader, screenz_t *zbuffer
 					return;
 				}				
 				for (int i = 0; i < 3; i++) bar_clip[i] /= sum_of_bars;
-				p.z = (int) st->vtx_coords[0][Z] + bar_clip[1]*(st->vtx_coords[1][Z] - st->vtx_coords[0][Z]) + bar_clip[2]*(st->vtx_coords[2][Z] - st->vtx_coords[0][Z]);
+				p.z = (int) st->vtx_coords[0].as_struct.z + bar_clip[1]*(st->vtx_coords[1].as_struct.z - st->vtx_coords[0].as_struct.z) + bar_clip[2]*(st->vtx_coords[2].as_struct.z - st->vtx_coords[0].as_struct.z);
 				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
@@ -138,22 +138,22 @@ void init_projection (fmat4 *m, float val) {
 
 void init_view (fmat4 *m, float3 *eye, float3 *center, float3 *up) {
 	
-	float3 z, x, y;
+	Float3 z, x, y;
 	
-	float3_float3_sub(eye, center, &z);
-	float3_normalize (&z);
-	float3_float3_crossprod(up, &z, &x);
-	float3_normalize (&x);
-	float3_float3_crossprod(&z, &x, &y);
-	float3_normalize (&y);
+	float3_float3_sub(eye, center, &z.as_array);
+	Float3_normalize (&z);
+	float3_float3_crossprod(up, &z.as_array, &x.as_array);
+	Float3_normalize (&x);
+	float3_float3_crossprod(&z.as_array, &x.as_array, &y.as_array);
+	Float3_normalize (&y);
 	
 	fmat4 Minv = FMAT4_IDENTITY;
 	fmat4 Tr   = FMAT4_IDENTITY;
 	
 	for (int i = 0; i < 3; i++)	{
-		fmat4_set (&Minv, 0, i, x[i]);
-		fmat4_set (&Minv, 1, i, y[i]);
-		fmat4_set (&Minv, 2, i, z[i]);
+		fmat4_set (&Minv, 0, i, x.as_array[i]);
+		fmat4_set (&Minv, 1, i, y.as_array[i]);
+		fmat4_set (&Minv, 2, i, z.as_array[i]);
 		fmat4_set (&Tr, i, 3, -(*center)[i]);
 	}
 	fmat4_fmat4_mult(&Minv, &Tr, m);
@@ -234,12 +234,12 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		ScreenTriangle t;
 		for (int j = 0; j < 3; j++) {
-			vshader (obj->wfobj, i, j, &(obj->mvpv), &t.vtx_coords[j]);
+			t.vtx_coords[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 		}
 		if (GL_DEBUG) {
 			printf ("call draw_triangle\n");
 			for (int j = 0; j < 3; j++)
-				printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", j, t.vtx_coords[j][0], t.vtx_coords[j][1], t.vtx_coords[j][2], t.vtx_coords[j][3]);
+				printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", j, t.vtx_coords[j].as_struct.x, t.vtx_coords[j].as_struct.y, t.vtx_coords[j].as_struct.z, t.vtx_coords[j].as_struct.w);
 		}
 		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
     }
