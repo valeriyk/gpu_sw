@@ -5,16 +5,8 @@
 
 float det3x3 (fmat3 *m);
 
-Float3 Float3_set (float a, float b, float c) {
-	Float3 v;
-	v.as_array[0] = a;
-	v.as_array[1] = b;
-	v.as_array[2] = c;
-	return v;
-}
-
-void fmat4_set (fmat4 *mat, int row, int col, float val) {
-	(*mat)[row][col] = val;
+void fmat3_set_col (fmat3 *mat, Float3 *in, int col_idx) {
+	for (int i = 0; i < 3; i++) fmat3_set (mat, i, col_idx, in->as_array[i]);
 }
 
 void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
@@ -104,48 +96,65 @@ Float4 fmat4_Float4_mult (fmat4 *a, Float4 *b) {
 	return f4;
 }
 
-void float3_float3_add (float3 *a, float3 *b, float3 *c) {
-	for (int i = 0; i < 3; i++) (*c)[i] = (*a)[i] + (*b)[i];
+Float3 Float3_Float3_add (Float3 *a, Float3 *b) {
+	Float3 c;
+	for (int i = 0; i < 3; i++) {
+		c.as_array[i] = a->as_array[i] + b->as_array[i];
+	}
+	return c;
 }
 
-void float3_float3_sub (float3 *a, float3 *b, float3 *c) {
-	for (int i = 0; i < 3; i++) (*c)[i] = (*a)[i] - (*b)[i];
+Float3 Float3_Float3_sub (Float3 *a, Float3 *b) {
+	Float3 c;
+	for (int i = 0; i < 3; i++) {
+		c.as_array[i] = a->as_array[i] - b->as_array[i];
+	}
+	return c;
 }
 
-float float3_float3_smult (float3 *a, float3 *b) {
+
+float Float3_Float3_smult (Float3 *a, Float3 *b) {
 	float smult = 0;
-	for (int i = 0; i < 3; i++ ) smult += (*a)[i] * (*b)[i];
+	for (int i = 0; i < 3; i++ ) smult += a->as_array[i] * b->as_array[i];
 	return smult;
 }
 
-void float3_float3_crossprod(float3 *a, float3 *b, float3 *c) {
-	(*c)[0] = (*a)[1] * (*b)[2] - (*a)[2] * (*b)[1];
-	(*c)[1] = (*a)[2] * (*b)[0] - (*a)[0] * (*b)[2]; 
-	(*c)[2] = (*a)[0] * (*b)[1] - (*a)[1] * (*b)[0];
+Float3 Float3_Float3_crossprod (Float3 *a, Float3 *b) {
+	Float3 c;
+	c.as_struct.x = a->as_struct.y * b->as_struct.z - a->as_struct.z * b->as_struct.y;
+	c.as_struct.y = a->as_struct.z * b->as_struct.x - a->as_struct.x * b->as_struct.z; 
+	c.as_struct.z = a->as_struct.x * b->as_struct.y - a->as_struct.y * b->as_struct.x;
+	return c;
 }
 
-void float3_float_mult(float3 *a, float b, float3 *c) {
-	(*c)[0] = (*a)[0] * b;
-	(*c)[1] = (*a)[1] * b; 
-	(*c)[2] = (*a)[2] * b;
+Float3 Float3_float_mult(Float3 *a, float b) {
+	Float3 c;
+	for (int i = 0; i < 3; i++) {
+		c.as_array[i] = a->as_array[i] * b;
+	}
+	return c;
 }
 
 void Float3_normalize (Float3 *v) {
 	float length = (float) sqrt(pow(v->as_struct.x, 2) + pow(v->as_struct.y, 2) + pow(v->as_struct.z, 2));
-	for (int i = 0; i < 3; i++) v->as_array[i] = v->as_array[i] / length;
+	for (int i = 0; i < 3; i++) {
+		v->as_array[i] = v->as_array[i] / length;
+	}
 }
 
 Float4 Float3_Float4_pt_conv (Float3 *in) {
 	Float4 f4;
-	for (int k = 0; k < 4; k++)
+	for (int k = 0; k < 4; k++) {
 		f4.as_array[k] = (k < 3) ? in->as_array[k] : 1.0f;
+	}
 	return f4;
 }
 
 Float4 Float3_Float4_vect_conv (Float3 *in) {
 	Float4 f4;
-	for (int k = 0; k < 4; k++)
+	for (int k = 0; k < 4; k++) {
 		f4.as_array[k] = (k < 3) ? in->as_array[k] : 0.0f;
+	}
 	return f4;
 }
 

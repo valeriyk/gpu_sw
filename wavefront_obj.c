@@ -91,24 +91,30 @@ void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx) {
 	obj->vtx_offset = obj->face_offset + vtx_idx*3;
 }*/
 
-void wfobj_get_vtx_coords  (const WFobj *obj, const int face_idx,  const int vtx_idx, float *x, float *y, float *z) {
+Float3 wfobj_get_vtx_coords  (const WFobj *obj, const int face_idx,  const int vtx_idx) {
+	Float3 c;
 	int vtx_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3));
-	*x = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 0));
-	*y = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 1));
-	*z = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 2));
+	c.as_struct.x = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 0));
+	c.as_struct.y = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 1));
+	c.as_struct.z = *((float*) dyn_array_get (obj->priv->vtx, vtx_coords_offset*3 + 2));
+	return c;
 }
 
-void wfobj_get_texture_coords (const WFobj *obj, const int face_idx, const int vtx_idx, float *u, float *v) {
+Float2 wfobj_get_texture_coords (const WFobj *obj, const int face_idx, const int vtx_idx) {
+	Float2 c;
 	int text_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 1));
-	*u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0));
-	*v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1));
+	c.as_struct.u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0)) * (float) obj->texture->w;
+	c.as_struct.v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1)) * (float) obj->texture->h;
+	return c;
 }
 
-void wfobj_get_norm_coords (const WFobj *obj, const int face_idx, const int vtx_idx, float *x, float *y, float *z) {
+Float3 wfobj_get_norm_coords (const WFobj *obj, const int face_idx, const int vtx_idx) {
+	Float3 c;
 	int norm_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 2));
-	*x = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 0));
-	*y = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 1));
-	*z = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 2));
+	c.as_struct.x = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 0));
+	c.as_struct.y = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 1));
+	c.as_struct.z = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 2));
+	return c;
 }
 
 int wfobj_get_num_of_faces (const WFobj *obj) {
@@ -148,8 +154,10 @@ void wfobj_get_rgb_from_texture     (const WFobj *obj, const int u, const int v,
 	wfobj_get_bitmap_rgb (obj->texture, u, v, r, g, b);
 }
 
-void wfobj_get_normal_from_map     (const WFobj *obj, const int u, const int v, float *x, float *y, float *z) {
-	wfobj_get_bitmap_xyz (obj->normalmap, u, v, x, y, z);
+Float3 wfobj_get_normal_from_map     (const WFobj *obj, const int u, const int v) {
+	Float3 n;
+	wfobj_get_bitmap_xyz (obj->normalmap, u, v, &n.as_struct.x, &n.as_struct.y, &n.as_struct.z);
+	return n;
 }
 
 int  wfobj_get_specularity_from_map (const WFobj *obj, const int u, const int v) {

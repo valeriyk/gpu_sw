@@ -39,9 +39,11 @@ typedef struct Vertex {
 	ScreenPt coords;
 } Vertex;
 
+/*
 typedef struct ScreenTriangle {
 	Float4 vtx_coords[3];
 } ScreenTriangle;
+*/
 
 typedef struct Triangle {
 	int3 cx;
@@ -60,7 +62,7 @@ typedef struct Object {
 } Object;
 
 typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv);
-typedef bool (*pixel_shader)  (WFobj *obj, float3 *barc, pixel_color_t *color);
+typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
 int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
 
@@ -69,13 +71,13 @@ int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
 screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 
-void init_view       (fmat4 *m, float3 *eye,   float3 *center, float3 *up);
+void init_view       (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_projection (fmat4 *m, float val);
 void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (ScreenTriangle *t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
+void draw_triangle (Float4 *vtx0, Float4 *vtx1, Float4 *vtx2, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
