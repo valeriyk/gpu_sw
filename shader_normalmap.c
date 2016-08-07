@@ -15,6 +15,7 @@ Float3 NM_VARYING_V;
 //Float3 VARYING_N[3];
 fmat3 NM_VARYING_N; // cols are normals to vertices; rows are XYZ of each normal
 
+// returns normalized device coordinates (NDC)
 Float4 nm_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
 	
 	// transform 3d coords of the vertex to homogenous coords
@@ -29,23 +30,7 @@ Float4 nm_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
 	Float2 vtx_uv = wfobj_get_texture_coords (obj, face_idx, vtx_idx);
 	NM_VARYING_U.as_array[vtx_idx] = vtx_uv.as_struct.u;
 	NM_VARYING_V.as_array[vtx_idx] = vtx_uv.as_struct.v;
-	/*
-	// transform the normal vector to the vertex
-	Float3 norm3d = wfobj_get_norm_coords    (obj, face_idx, vtx_idx);
-	Float4 norm4d = Float3_Float4_vect_conv  (&norm3d);
-	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d); 
-	for (int i = 0; i < 3; i++) {
-		VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
-	}
 	
-	
-	if (NM_VSHADER_DEBUG) {
-		printf ("\t\tvtx shader face %d vtx %d: ", face_idx, vtx_idx);
-		printf ("obj norm (%f, %f, %f) ",            norm3d.as_struct.x, norm3d.as_struct.y, norm3d.as_struct.z);
-		printf ("transformed normal (%f, %f, %f)\n", norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z);
-		printf ("\t\tuniform light (%f, %f, %f)\n",  UNIFORM_LIGHT.as_struct.x, UNIFORM_LIGHT.as_struct.y, UNIFORM_LIGHT.as_struct.z);
-	}
-	*/
 	return vtx4d;
 }
 

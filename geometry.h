@@ -38,6 +38,8 @@ typedef union Float4 {
 typedef float fmat3 [3][3];
 typedef float fmat4 [4][4];
 
+#define FMAT4_IDENTITY {{1.f, 0.f, 0.f, 0.f}, {0.f, 1.f, 0.f, 0.f}, {0.f, 0.f, 1.f, 0.f}, {0.f, 0.f, 0.f, 1.f}}
+
 typedef union Fmat4 {
 	fmat4 as_array;
 	float4 row[4];
@@ -86,4 +88,4 @@ void   Float3_normalize (Float3 *v);
 
 void   print_fmat4 (fmat4 *m, char *header);
 
-#define FMAT4_IDENTITY {{1.f, 0.f, 0.f, 0.f}, {0.f, 1.f, 0.f, 0.f}, {0.f, 0.f, 1.f, 0.f}, {0.f, 0.f, 0.f, 1.f}}
+

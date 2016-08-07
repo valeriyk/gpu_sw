@@ -90,6 +90,6 @@ Object* obj_new (WFobj *wfobj);
 void obj_set_scale       (Object *obj, float x, float y, float z);
 void obj_set_rotation    (Object *obj, float x, float y, float z);
 void obj_set_translation (Object *obj, float x, float y, float z);
-void obj_build_model     (Object *obj);
+void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);

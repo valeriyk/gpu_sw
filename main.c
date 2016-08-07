@@ -13,29 +13,18 @@
 
 // POSITIVE Z TOWARDS ME
 
-
-// globals:
-
-
-/*
-struct scene {
-	float3 light;
-	float3 eye;
-	float3 center;
-	float3 up;
-	float3 camera;
-}
-*/
-
 // these are global:
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
 Float3 UNIFORM_LIGHT;
-  
-void transform (Object *obj, fmat4 *vpv, fmat4 *projview, Float3 *light_dir) {
+
+// Object transform, aka world transform funciton.  
+// Computes matrices that will be used to transform a model's vertices and normals
+// from the object space to the world space
+void obj_transform (Object *obj, fmat4 *vpv, fmat4 *pv, Float3 *light_dir) {
 	
-	fmat4_fmat4_mult (vpv,      &(obj->model), &(obj->mvpv)); 
-    fmat4_fmat4_mult (projview, &(obj->model), &UNIFORM_M);
+	fmat4_fmat4_mult (vpv, &(obj->model), &(obj->mvpv)); 
+    fmat4_fmat4_mult ( pv, &(obj->model), &UNIFORM_M);
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
 	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
@@ -46,7 +35,7 @@ void transform (Object *obj, fmat4 *vpv, fmat4 *projview, Float3 *light_dir) {
 
 int main(int argc, char** argv) {
        
-    size_t screen_size = WIDTH*HEIGHT;//SCREEN_SIZE[0]*SCREEN_SIZE[1];
+    size_t screen_size = WIDTH*HEIGHT;
     
     Float3 light_dir = Float3_set (-0.5f,  -0.5f,  -1.0f);
     Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
@@ -82,31 +71,27 @@ int main(int argc, char** argv) {
 	// 3. Projection - perspective correction
 	// 4. Viewport - move to screen coords
 	fmat4 viewport   = FMAT4_IDENTITY;
-	fmat4 projection = FMAT4_IDENTITY;
+	fmat4 proj       = FMAT4_IDENTITY;
 	fmat4 view       = FMAT4_IDENTITY;	
-	init_viewport   (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);//SCREEN_SIZE[0], SCREEN_SIZE[1], SCREEN_SIZE[2]);
-    init_projection (&projection, -1.0f/camera.as_struct.z);
+	init_viewport   (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
+    init_projection (&proj, -1.0f/camera.as_struct.z);
     init_view       (&view, &eye, &center, &up);
     
-    fmat4 vpv;
-	fmat4_fmat4_fmat4_mult (&viewport, &projection, &view, &vpv);
+    fmat4 viewport_proj_view;
+	fmat4_fmat4_fmat4_mult (&viewport, &proj, &view, &viewport_proj_view);
 	
-	fmat4 projview;
-    fmat4_fmat4_mult (&projection, &view, &projview);
-    
-	
-	
-	
+	fmat4 proj_view;
+    fmat4_fmat4_mult (&proj, &view, &proj_view);	
 	
     Object *head1  = obj_new (african_head);
     obj_set_translation (head1, 1.f, 0.f, 0.6f);
     obj_set_scale       (head1, 0.6, 0.6, 0.6);
     obj_set_rotation    (head1, 0.f, 0.f, 0.f);
-    obj_build_model     (head1);
+    obj_init_model      (head1);
     
     Object *head2  = obj_new (african_head);
     obj_set_translation (head2, -1.f, 0.f, 0.6f);
-    obj_build_model     (head2);
+    obj_init_model      (head2);
     
    /* 
     Object *floor1 = obj_new (my_floor);
@@ -137,11 +122,11 @@ int main(int argc, char** argv) {
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
-		transform           (head1, &vpv, &projview, &light_dir);
+		obj_transform           (head1, &viewport_proj_view, &proj_view, &light_dir);
 		//obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
 		obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 			
-		transform           (head2, &vpv, &projview, &light_dir);
+		obj_transform           (head2, &viewport_proj_view, &proj_view, &light_dir);
 		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
 		//transform       (floor1, &vpv, &projview, &light_dir);

@@ -3,7 +3,7 @@ TCF          = ../../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
 SYSCONF_LINK_x86 = gcc -g -std=c99 -I.
 
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF)
-SYSCONF_LINK_ARC = ccac -g ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt
+SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.
 CPPFLAGS     =
 LDFLAGS_x86  = -lm
 LDFLAGS_ARC  =

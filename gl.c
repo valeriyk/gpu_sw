@@ -64,22 +64,22 @@ void draw_triangle (Float4 *vtx0, Float4 *vtx1, Float4 *vtx2, pixel_shader pshad
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
 				float sum_of_bars = 0.0f;
-				float3 bar_clip;
+				Float3 bar_clip;
 				/*
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
 					sum_of_bars += bar_clip.as_array[i];
 				}*/
-				bar_clip[0] = (float) bar[0] / vtx0->as_struct.w;
-				bar_clip[1] = (float) bar[1] / vtx1->as_struct.w;
-				bar_clip[2] = (float) bar[2] / vtx2->as_struct.w;
-				sum_of_bars = bar_clip[0] + bar_clip[1] + bar_clip[2];
+				bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
+				bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
+				bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
+				sum_of_bars = bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2];
 				if (sum_of_bars == 0) {
 					printf ("Im gonna die!!!\n");
 					return;
 				}				
-				for (int i = 0; i < 3; i++) bar_clip[i] /= sum_of_bars;
-				p.z = (int) vtx0->as_struct.z + bar_clip[1] * (vtx1->as_struct.z - vtx0->as_struct.z) + bar_clip[2] * (vtx2->as_struct.z - vtx0->as_struct.z);
+				for (int i = 0; i < 3; i++) bar_clip.as_array[i] /= sum_of_bars;
+				p.z = (int) vtx0->as_struct.z + bar_clip.as_array[1] * (vtx1->as_struct.z - vtx0->as_struct.z) + bar_clip.as_array[2] * (vtx2->as_struct.z - vtx0->as_struct.z);
 				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
@@ -212,7 +212,7 @@ void obj_set_translation (Object *obj, float x, float y, float z) {
 	obj->tran[2] = z;
 }
 
-void obj_build_model (Object *obj) {
+void obj_init_model (Object *obj) {
 	// 1. scale	
 	fmat4 s = FMAT4_IDENTITY;
 	fmat4_set (&s, 0, 0, obj->scale[X]);

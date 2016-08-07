@@ -16,8 +16,10 @@ WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bit
 
 void wfobj_free (WFobj *obj);
 
+/*
 void wfobj_set_face_idx   (const WFobj *obj, const int face_idx);
 void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx);
+*/
 
 Float3 wfobj_get_vtx_coords           (const WFobj *obj, const int face_idx, const int vtx_idx);
 Float3 wfobj_get_norm_coords          (const WFobj *obj, const int face_idx, const int vtx_idx);

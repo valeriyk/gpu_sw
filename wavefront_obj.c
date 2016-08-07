@@ -45,8 +45,6 @@ void wfobj_get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x
 int  wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v);
 
 
-
-//WFobj * wfobj_new (const char *obj_file, const char *texture_file, const char *normalmap_file) {
 WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
 	
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
@@ -247,34 +245,21 @@ int read_obj_file (const char *filename, WFobj *obj) {
 					else {
 						objdata data;
 						// convert string to number and save it
-						if (V_DATA == line_type) {
-							float af = (float) atof (alpha_num);
-							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								data.f = af;
-								dyn_array_push (obj->priv->vtx, &data);
-							}
+						if ((V_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+							data.f = (float) atof (alpha_num);
+							dyn_array_push (obj->priv->vtx, &data);
 						}
-						else if (F_DATA == line_type) {
-							int ai = atoi (alpha_num);
-							ai--; // decrement all indices because in OBJ they start at 1
-							if ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX)) {
-								data.i = ai;
-								dyn_array_push (obj->priv->face, &data);
-							}
+						else if ((F_DATA == line_type) && ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX))) {
+							data.i = atoi (alpha_num) - 1; // decrement all indices because in OBJ they start at 1
+							dyn_array_push (obj->priv->face, &data);
 						}
-						else if (VT_DATA == line_type) {
-							float af = (float) atof (alpha_num);
-							if ((line_field == VALUE1) || (line_field == VALUE2)) {
-								data.f = af;
-								dyn_array_push (obj->priv->text, &data);
-							}
+						else if ((VT_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2))) {
+							data.f = (float) atof (alpha_num);
+							dyn_array_push (obj->priv->text, &data);
 						}
-						else if (VN_DATA == line_type) {
-							float af = (float) atof (alpha_num);
-							if ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3)) {
-								data.f = af;
-								dyn_array_push (obj->priv->norm, &data);
-							}
+						else if ((VN_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+							data.f = (float) atof (alpha_num);
+							dyn_array_push (obj->priv->norm, &data);
 						}
 						
 						if (c == '/') {
@@ -297,7 +282,9 @@ int read_obj_file (const char *filename, WFobj *obj) {
 						}
 											
 						// cleanup before moving on to the next value
-						for (int i = 0; i < ALPHA_SIZE; i++) alpha_num[i] = '\0';
+						for (int i = 0; i < ALPHA_SIZE; i++) {
+							alpha_num[i] = '\0';
+						}
 						alpha_idx = 0;
 						
 						if (c == '\n') {
