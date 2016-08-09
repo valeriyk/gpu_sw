@@ -40,26 +40,34 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (Float4 *vtx0, Float4 *vtx1, Float4 *vtx2, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
-{
+void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
+{    
+	if (GL_DEBUG_0) {
+		printf ("call draw_triangle()\n");
+		for (int i = 0; i < 3; i++) {
+			printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
+		}
+	}
     // Compute triangle bounding box
-    screenxy_t min_x = tri_min_bound (vtx0->as_struct.x, vtx1->as_struct.x, vtx2->as_struct.x, 0);
-    screenxy_t max_x = tri_max_bound (vtx0->as_struct.x, vtx1->as_struct.x, vtx2->as_struct.x, WIDTH);
-    screenxy_t min_y = tri_min_bound (vtx0->as_struct.y, vtx1->as_struct.y, vtx2->as_struct.y, 0);
-    screenxy_t max_y = tri_max_bound (vtx0->as_struct.y, vtx1->as_struct.y, vtx2->as_struct.y, HEIGHT);
+    screenxy_t min_x = tri_min_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, 0);
+    screenxy_t max_x = tri_max_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, WIDTH);
+    screenxy_t min_y = tri_min_bound (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y, 0);
+    screenxy_t max_y = tri_max_bound (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y, HEIGHT);
     
     if ((min_x == max_x) || (min_y == max_y)) {
-		printf ("Degenerate triangle\n");
+		if (GL_DEBUG_0) printf ("Degenerate triangle\n");
 		return;
     }
     int3 bar;
     ScreenPt p;
     p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {	
+		if (GL_DEBUG_1) printf ("for y %d\n", p.y);
         for (p.x = min_x; p.x < max_x; p.x++) {
-			bar[0] = edge_func(vtx1, vtx2, &p); // not normalized
-			bar[1] = edge_func(vtx2, vtx0, &p); // not normalized
-			bar[2] = edge_func(vtx0, vtx1, &p); // not normalized
+			if (GL_DEBUG_2) printf ("\tfor x %d\n", p.x);
+			bar[0] = edge_func(&(t->vtx[1]), &(t->vtx[2]), &p); // not normalized
+			bar[1] = edge_func(&(t->vtx[2]), &(t->vtx[0]), &p); // not normalized
+			bar[2] = edge_func(&(t->vtx[0]), &(t->vtx[1]), &p); // not normalized
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
@@ -70,21 +78,33 @@ void draw_triangle (Float4 *vtx0, Float4 *vtx1, Float4 *vtx2, pixel_shader pshad
 					bar_clip.as_array[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
 					sum_of_bars += bar_clip.as_array[i];
 				}*/
-				bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
-				bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
-				bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
+				//if (vtx0->as_struct.w == 0) printf ("vtx0 W is 0, I'm gonna die!!!\n");
+				//if (vtx1->as_struct.w == 0) printf ("vtx1 W is 0, I'm gonna die!!!\n");
+				//if (vtx2->as_struct.w == 0) printf ("vtx2 W is 0, I'm gonna die!!!\n");
+				for (int i = 0; i < 3; i++) {
+					bar_clip.as_array[i] = (float) bar[i] / t->vtx[i].as_struct.w;
+				}
+				//bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
+				//bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
+				//bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
 				sum_of_bars = bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2];
 				if (sum_of_bars == 0) {
 					printf ("Im gonna die!!!\n");
 					return;
 				}				
-				for (int i = 0; i < 3; i++) bar_clip.as_array[i] /= sum_of_bars;
-				p.z = (int) vtx0->as_struct.z + bar_clip.as_array[1] * (vtx1->as_struct.z - vtx0->as_struct.z) + bar_clip.as_array[2] * (vtx2->as_struct.z - vtx0->as_struct.z);
+				for (int i = 0; i < 3; i++) {
+					bar_clip.as_array[i] /= sum_of_bars;
+				}
+				p.z = (int) t->vtx[0].as_struct.z + bar_clip.as_array[1] * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_array[2] * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
 				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
 					bool draw = pshader (obj, &bar_clip, &color);
-					if (draw) fbuffer[p.x + (719 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+					if (draw) {
+						//color = set_color(255, 0, 0, 0);
+						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
+						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+					}
 				}
 			}
         }
@@ -234,15 +254,10 @@ void obj_init_model (Object *obj) {
 
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
-		Float4 tri[3];
+		Triangle t;
 		for (int j = 0; j < 3; j++) {
-			tri[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
+			t.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 		}
-		/*if (GL_DEBUG) {
-			printf ("call draw_triangle\n");
-			for (int j = 0; j < 3; j++)
-				printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", j, t.vtx_coords[j].as_struct.x, t.vtx_coords[j].as_struct.y, t.vtx_coords[j].as_struct.z, t.vtx_coords[j].as_struct.w);
-		}*/
-		draw_triangle (&tri[0], &tri[1], &tri[2], pshader, zbuffer, fbuffer, obj->wfobj);        
+		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
     }
 }

@@ -12,9 +12,6 @@
 Float3 NM_VARYING_U;
 Float3 NM_VARYING_V;
 
-//Float3 VARYING_N[3];
-fmat3 NM_VARYING_N; // cols are normals to vertices; rows are XYZ of each normal
-
 // returns normalized device coordinates (NDC)
 Float4 nm_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
 	
@@ -55,7 +52,7 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	Float3_normalize (&normal);
 	diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT);
 	
-	bool lighting = 1;
+	bool lighting = 0;
 	if (lighting) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
@@ -77,6 +74,7 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	}
 	
 	intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
+	//intensity = diff_intensity;
 	if (NM_PSHADER_DEBUG) {
 		if (spec_intensity > 0.5) printf ("spec%f diff%f total%f\n", spec_intensity, diff_intensity, intensity);
 	}

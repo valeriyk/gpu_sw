@@ -39,18 +39,17 @@ typedef struct Vertex {
 	ScreenPt coords;
 } Vertex;
 
-/*
-typedef struct ScreenTriangle {
-	Float4 vtx_coords[3];
-} ScreenTriangle;
-*/
-
 typedef struct Triangle {
+	Float4 vtx[3];
+} Triangle;
+
+/*typedef struct Triangle {
 	int3 cx;
 	int3 cy;
 	int3 cz;
 	float4 cw;
 } Triangle;
+*/
 
 typedef struct Object {
 	WFobj *wfobj;
@@ -77,7 +76,7 @@ void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (Float4 *vtx0, Float4 *vtx1, Float4 *vtx2, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
+void draw_triangle (Triangle *t, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
