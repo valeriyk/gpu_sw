@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-#define PHONG_VSHADER_DEBUG 0
+#define PHONG_VSHADER_DEBUG 1
 
 #define PHONG_PSHADER_DEBUG_0 0
 #define PHONG_PSHADER_DEBUG_1 0
@@ -23,15 +23,26 @@ Float3 PHONG_VARYING_N[3];
 //Float3 UNIFORM_LIGHT;
 
 
-Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
-	
+bool phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, Float4 *vtx4d) {
+	if (PHONG_VSHADER_DEBUG) printf ("\tcall phong_vertex_shader()\n");
 	// transform 3d coords of the vertex to homogenous coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
+	if (PHONG_VSHADER_DEBUG) printf ("\t\tvtx coord: %f, %f, %f\n", vtx3d.as_struct.x, vtx3d.as_struct.y, vtx3d.as_struct.z);
 	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
-	Float4 vtx4d = fmat4_Float4_mult (mvpv, &mc);
-	vtx4d.as_struct.x /= vtx4d.as_struct.w;
-	vtx4d.as_struct.y /= vtx4d.as_struct.w;
-	vtx4d.as_struct.z /= vtx4d.as_struct.w;
+	*vtx4d = fmat4_Float4_mult (mvpv, &mc);
+	if (PHONG_VSHADER_DEBUG) printf ("\t\tclip coord: %f, %f, %f, %f\n", vtx4d->as_struct.x, vtx4d->as_struct.y, vtx4d->as_struct.z, vtx4d->as_struct.w);
+	//vtx4d.as_struct.x /= vtx4d.as_struct.w;
+	//vtx4d.as_struct.y /= vtx4d.as_struct.w;
+	//vtx4d.as_struct.z /= vtx4d.as_struct.w;
+	for (int i = 0; i < 3; i++) {
+		if ((vtx4d->as_array[i] >= vtx4d->as_array[W]) || (vtx4d->as_array[i] <= -vtx4d->as_array[W])) {
+			if (PHONG_VSHADER_DEBUG) printf ("\t\tfrustrum culling for coord %i\n", i);
+			//return false; // outside of the frustrum, invisible
+		}
+		// convert to normalized device coordinates (NDC)
+		vtx4d->as_array[i] /= vtx4d->as_struct.w;
+	}		
+	if (PHONG_VSHADER_DEBUG) printf ("\t\tNDC coord: %f, %f, %f, %f\n", vtx4d->as_struct.x, vtx4d->as_struct.y, vtx4d->as_struct.z);
 	
 	// extract the texture UV coordinates of the vertex
 	Float2 vtx_uv = wfobj_get_texture_coords (obj, face_idx, vtx_idx);
@@ -41,7 +52,7 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) 
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_vect_conv  (&norm3d);
-	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d); 
+	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
 	for (int i = 0; i < 3; i++) {
 		PHONG_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
 	}

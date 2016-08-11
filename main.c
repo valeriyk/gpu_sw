@@ -18,17 +18,19 @@ fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
 Float3 UNIFORM_LIGHT;
 
-// Object transform, aka world transform funciton.  
+// Object transform, aka world transform function.  
 // Computes matrices that will be used to transform a model's vertices and normals
 // from the object space to the world space
 void obj_transform (Object *obj, fmat4 *vpv, fmat4 *pv, Float3 *light_dir) {
 	
-	fmat4_fmat4_mult (vpv, &(obj->model), &(obj->mvpv)); 
+	fmat4_fmat4_mult ( pv, &(obj->model), &(obj->mvpv)); 
     fmat4_fmat4_mult ( pv, &(obj->model), &UNIFORM_M);
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
 	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
 	//Float4 light_new = fmat4_Float4_mult  (&UNIFORM_M, &light_dir4);
+	// Light vector changes after View and Projection transformations only,
+	// it does not depend on Model transformation
 	Float4 light_new = fmat4_Float4_mult  (pv, &light_dir4);
 	UNIFORM_LIGHT = Float4_Float3_vect_conv (&light_new);
     Float3_normalize   (&UNIFORM_LIGHT);
@@ -39,6 +41,7 @@ int main(int argc, char** argv) {
     size_t screen_size = WIDTH*HEIGHT;
     
     Float3 light_dir = Float3_set (-0.2f,  -0.3f,  -1.0f);
+    //Float3 light_dir = Float3_set ( 0.0f,   0.0f,  -1.0f);
     //Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
     Float3 eye       = Float3_set ( 0.0f,   0.0f,   5.0f);
 	Float3 center    = Float3_set ( 0.0f,   0.0f,   0.0f);
@@ -78,8 +81,9 @@ int main(int argc, char** argv) {
 	fmat4 viewport   = FMAT4_IDENTITY;
 	fmat4 proj       = FMAT4_IDENTITY;
 	fmat4 view       = FMAT4_IDENTITY;	
-	init_viewport   (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
+	init_viewport     (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
     init_projection (&proj, -1.0f/camera.as_struct.z);
+    //init_projection (&proj, -1.0f/5);
     init_view       (&view, &eye, &center, &up);
     
     fmat4 viewport_proj_view;
@@ -106,9 +110,9 @@ int main(int argc, char** argv) {
 	obj_build_model     (floor1);
 	*/
 	Object *cube1 = obj_new (my_cube);
-	obj_set_translation (cube1, 0.f, 0.f, 0.0f);
-	obj_set_rotation (cube1, 45, 45, 0);
 	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
+	obj_set_rotation (cube1, 45, 45, 0);
+	obj_set_translation (cube1, 0.f, 0.f, -0.5f);
 	obj_init_model (cube1);
 	
 	
@@ -145,7 +149,7 @@ int main(int argc, char** argv) {
 		
 		obj_transform	       (cube1, &viewport_proj_view, &proj_view, &light_dir);
 		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-		obj_draw           (cube1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
+		obj_draw           (cube1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
 		
 		/*
 		obj_transform       (floor2, &vpv, &projview, &light_dir);

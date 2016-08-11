@@ -43,9 +43,9 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
 {    
 	if (GL_DEBUG_0) {
-		printf ("call draw_triangle()\n");
+		printf ("\tcall draw_triangle()\n");
 		for (int i = 0; i < 3; i++) {
-			printf ("\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
+			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
 		}
 	}
     // Compute triangle bounding box
@@ -155,10 +155,29 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 3, 3, 1.0f);
 }
 
-void init_projection (fmat4 *m, float val) {
+void init_projection1 (fmat4 *m, float val) {
 	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
 	fmat4_set (m, 3, 2, val);
 }
+
+void init_projection (fmat4 *m, float val) {
+	float left = -20;
+	float right = -left;
+	float top = 20;
+	float bot = -top;
+	float near = 0.1;
+	float far  = 1000;
+
+	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
+	fmat4_set (m, 0, 2,       (right + left) / (right - left));
+	fmat4_set (m, 1, 1,       ( 2.0f * near) / (  top -  bot));
+	fmat4_set (m, 1, 2,       (  top +  bot) / (  top -  bot));
+	fmat4_set (m, 2, 2,      -(  far + near) / (  far - near));
+	fmat4_set (m, 2, 3, (-2.0f * far * near) / (  far - near));
+	fmat4_set (m, 3, 2,  -1.0f);
+	fmat4_set (m, 3, 3,   0.0f);
+}
+
 
 void init_view (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up) {
 	
@@ -233,31 +252,57 @@ void obj_set_translation (Object *obj, float x, float y, float z) {
 }
 
 void obj_init_model (Object *obj) {
-	// 1. scale	
-	fmat4 s = FMAT4_IDENTITY;
-	fmat4_set (&s, 0, 0, obj->scale[X]);
-	fmat4_set (&s, 1, 1, obj->scale[Y]);
-	fmat4_set (&s, 2, 2, obj->scale[Z]);
-	// 2. rotate
-	fmat4 rot_x, rot_xy, rot_xyz;
-	rotate_coords (&s,      &rot_x,   obj->rotate[X], X);
-	rotate_coords (&rot_x,  &rot_xy,  obj->rotate[Y], Y);
-	rotate_coords (&rot_xy, &rot_xyz, obj->rotate[Z], Z);
-	// 3. translate	
+	// 1. translate	
 	fmat4 t = FMAT4_IDENTITY;
 	fmat4_set (&t, 0, 3, obj->tran[X]);
 	fmat4_set (&t, 1, 3, obj->tran[Y]);
 	fmat4_set (&t, 2, 3, obj->tran[Z]);
-	
-	fmat4_fmat4_mult (&rot_xyz, &t, &(obj->model));
+	// 2. rotate
+	fmat4 rot_x, rot_xy, rot_xyz;
+	rotate_coords (&t,      &rot_x,   obj->rotate[X], X);
+	rotate_coords (&rot_x,  &rot_xy,  obj->rotate[Y], Y);
+	rotate_coords (&rot_xy, &rot_xyz, obj->rotate[Z], Z);
+	// 3. scale	
+	fmat4 s = FMAT4_IDENTITY;
+	fmat4_set (&s, 0, 0, obj->scale[X]);
+	fmat4_set (&s, 1, 1, obj->scale[Y]);
+	fmat4_set (&s, 2, 2, obj->scale[Z]);
+
+	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+/*void obj_draw1 (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		Triangle t;
 		for (int j = 0; j < 3; j++) {
 			t.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 		}
 		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
+    }
+}*/
+
+void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport) {
+	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
+		if (GL_DEBUG_0) printf("call obj_draw()\n");
+		Triangle ndc;
+		Triangle screen;
+		bool is_visible[3];
+		for (int j = 0; j < 3; j++) {
+			is_visible[j] = vshader (obj->wfobj, i, j, &(obj->mvpv), &(ndc.vtx[j]));
+			if (is_visible[j]) {
+				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
+				screen.vtx[j].as_struct.x = ndc.vtx[j].as_struct.x * 360 + 640;
+				screen.vtx[j].as_struct.y = ndc.vtx[j].as_struct.y * 360 + 360;
+				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * 500000 + 500000;
+				screen.vtx[j].as_struct.w = ndc.vtx[j].as_struct.w;
+				if (GL_DEBUG_0) {
+					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+					//print_fmat4 (viewport, "viewport");
+				}
+			}	
+		}
+		if (is_visible[0] & is_visible[1] & is_visible[2]) {
+			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
+		}
     }
 }
