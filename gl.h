@@ -60,7 +60,7 @@ typedef struct Object {
 	fmat4  mvpv; // pre-multiplied ModelViewProjectionViewport matrix
 } Object;
 
-typedef bool (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, Float4 *vtx4d);
+typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv);
 typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
 int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
@@ -71,7 +71,8 @@ screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 
 void init_view       (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
-void init_projection (fmat4 *m, float val);
+//void init_projection (fmat4 *m, float val);
+void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);

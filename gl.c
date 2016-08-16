@@ -48,6 +48,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
 		}
 	}
+	
     // Compute triangle bounding box
     screenxy_t min_x = tri_min_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, 0);
     screenxy_t max_x = tri_max_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, WIDTH);
@@ -58,6 +59,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 		if (GL_DEBUG_0) printf ("Degenerate triangle\n");
 		return;
     }
+    
     int3 bar;
     ScreenPt p;
     p.z = 0;
@@ -78,12 +80,13 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					bar_clip.as_array[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
 					sum_of_bars += bar_clip.as_array[i];
 				}*/
-				//if (vtx0->as_struct.w == 0) printf ("vtx0 W is 0, I'm gonna die!!!\n");
-				//if (vtx1->as_struct.w == 0) printf ("vtx1 W is 0, I'm gonna die!!!\n");
-				//if (vtx2->as_struct.w == 0) printf ("vtx2 W is 0, I'm gonna die!!!\n");
+				if (t->vtx[0].as_struct.w == 0) printf ("vtx0 W is 0, I'm gonna die!!!\n");
+				if (t->vtx[1].as_struct.w == 0) printf ("vtx1 W is 0, I'm gonna die!!!\n");
+				if (t->vtx[2].as_struct.w == 0) printf ("vtx2 W is 0, I'm gonna die!!!\n");
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] = (float) bar[i] / t->vtx[i].as_struct.w;
 				}
+				if (GL_DEBUG_3) printf("checkpoint 1\n");
 				//bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
 				//bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
 				//bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
@@ -95,17 +98,21 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
+				if (GL_DEBUG_3) printf("checkpoint 2\n");
 				p.z = (int) t->vtx[0].as_struct.z + bar_clip.as_array[1] * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_array[2] * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
 				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
+					if (GL_DEBUG_3) printf("checkpoint 3\n");
 					bool draw = pshader (obj, &bar_clip, &color);
+					if (GL_DEBUG_3) printf("checkpoint 4\n");
 					if (draw) {
 						//color = set_color(255, 0, 0, 0);
 						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
 						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 					}
 				}
+				if (GL_DEBUG_3) printf("checkpoint 10\n");
 			}
         }
     }
@@ -153,21 +160,15 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 2, 2, d / 2.0f);
 	fmat4_set (m, 2, 3, d / 2.0f);
 	fmat4_set (m, 3, 3, 1.0f);
+	print_fmat4 (m, "viewport matrix");
 }
 
-void init_projection1 (fmat4 *m, float val) {
+/*void init_projection (fmat4 *m, float val) {
 	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
 	fmat4_set (m, 3, 2, val);
-}
+}*/
 
-void init_projection (fmat4 *m, float val) {
-	float left = -20;
-	float right = -left;
-	float top = 20;
-	float bot = -top;
-	float near = 0.1;
-	float far  = 1000;
-
+void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
 	fmat4_set (m, 0, 2,       (right + left) / (right - left));
 	fmat4_set (m, 1, 1,       ( 2.0f * near) / (  top -  bot));
@@ -252,56 +253,71 @@ void obj_set_translation (Object *obj, float x, float y, float z) {
 }
 
 void obj_init_model (Object *obj) {
+	
 	// 1. translate	
 	fmat4 t = FMAT4_IDENTITY;
 	fmat4_set (&t, 0, 3, obj->tran[X]);
 	fmat4_set (&t, 1, 3, obj->tran[Y]);
 	fmat4_set (&t, 2, 3, obj->tran[Z]);
+	
 	// 2. rotate
 	fmat4 rot_x, rot_xy, rot_xyz;
 	rotate_coords (&t,      &rot_x,   obj->rotate[X], X);
 	rotate_coords (&rot_x,  &rot_xy,  obj->rotate[Y], Y);
 	rotate_coords (&rot_xy, &rot_xyz, obj->rotate[Z], Z);
+	
 	// 3. scale	
 	fmat4 s = FMAT4_IDENTITY;
 	fmat4_set (&s, 0, 0, obj->scale[X]);
 	fmat4_set (&s, 1, 1, obj->scale[Y]);
 	fmat4_set (&s, 2, 2, obj->scale[Z]);
-
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-/*void obj_draw1 (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
-	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
-		Triangle t;
-		for (int j = 0; j < 3; j++) {
-			t.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
-		}
-		draw_triangle (&t, pshader, zbuffer, fbuffer, obj->wfobj);        
-    }
-}*/
-
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport) {
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
-		if (GL_DEBUG_0) printf("call obj_draw()\n");
+		
+		if (GL_DEBUG_0) {
+			printf("call obj_draw()\n");
+		}
+		
 		Triangle ndc;
 		Triangle screen;
-		bool is_visible[3];
+		
+		bool is_clipped = false; // sticky bit
+		
 		for (int j = 0; j < 3; j++) {
-			is_visible[j] = vshader (obj->wfobj, i, j, &(obj->mvpv), &(ndc.vtx[j]));
-			if (is_visible[j]) {
+			ndc.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
+			
+			// clip & normalize:
+			if (ndc.vtx[j].as_struct.w <= 0) {
+				is_clipped = true;
+			}
+			else {
+				for (int k = 0; k < 3; k++) {
+					ndc.vtx[j].as_array[k] /= ndc.vtx[j].as_struct.w; // normalize
+					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+						is_clipped = true;
+					}
+				}
+			}
+			
+			// NDC -> screen
+			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
 				screen.vtx[j].as_struct.x = ndc.vtx[j].as_struct.x * 360 + 640;
 				screen.vtx[j].as_struct.y = ndc.vtx[j].as_struct.y * 360 + 360;
-				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * 500000 + 500000;
+				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * 32768 + 32768; // TBD - remove magic numbers
 				screen.vtx[j].as_struct.w = ndc.vtx[j].as_struct.w;
+				
 				if (GL_DEBUG_0) {
+					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-					//print_fmat4 (viewport, "viewport");
 				}
 			}	
 		}
-		if (is_visible[0] & is_visible[1] & is_visible[2]) {
+		
+		if (!is_clipped) {
 			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
 		}
     }

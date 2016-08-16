@@ -1,13 +1,11 @@
 #include "shader_phong.h"
 #include "gl.h"
 
+#include "main.h"
+
 #include <math.h>
 
 
-#define PHONG_VSHADER_DEBUG 1
-
-#define PHONG_PSHADER_DEBUG_0 0
-#define PHONG_PSHADER_DEBUG_1 0
 
 
 // declare the following here instead of the header to make these variables local:
@@ -23,26 +21,16 @@ Float3 PHONG_VARYING_N[3];
 //Float3 UNIFORM_LIGHT;
 
 
-bool phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, Float4 *vtx4d) {
-	if (PHONG_VSHADER_DEBUG) printf ("\tcall phong_vertex_shader()\n");
-	// transform 3d coords of the vertex to homogenous coords
+Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
+	
+	if (PHONG_VSHADER_DEBUG) {
+		printf ("\tcall phong_vertex_shader()\n");
+	}
+	
+	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
-	if (PHONG_VSHADER_DEBUG) printf ("\t\tvtx coord: %f, %f, %f\n", vtx3d.as_struct.x, vtx3d.as_struct.y, vtx3d.as_struct.z);
 	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
-	*vtx4d = fmat4_Float4_mult (mvpv, &mc);
-	if (PHONG_VSHADER_DEBUG) printf ("\t\tclip coord: %f, %f, %f, %f\n", vtx4d->as_struct.x, vtx4d->as_struct.y, vtx4d->as_struct.z, vtx4d->as_struct.w);
-	//vtx4d.as_struct.x /= vtx4d.as_struct.w;
-	//vtx4d.as_struct.y /= vtx4d.as_struct.w;
-	//vtx4d.as_struct.z /= vtx4d.as_struct.w;
-	for (int i = 0; i < 3; i++) {
-		if ((vtx4d->as_array[i] >= vtx4d->as_array[W]) || (vtx4d->as_array[i] <= -vtx4d->as_array[W])) {
-			if (PHONG_VSHADER_DEBUG) printf ("\t\tfrustrum culling for coord %i\n", i);
-			//return false; // outside of the frustrum, invisible
-		}
-		// convert to normalized device coordinates (NDC)
-		vtx4d->as_array[i] /= vtx4d->as_struct.w;
-	}		
-	if (PHONG_VSHADER_DEBUG) printf ("\t\tNDC coord: %f, %f, %f, %f\n", vtx4d->as_struct.x, vtx4d->as_struct.y, vtx4d->as_struct.z);
+	Float4 vtx4d = fmat4_Float4_mult (mvpv, &mc);
 	
 	// extract the texture UV coordinates of the vertex
 	Float2 vtx_uv = wfobj_get_texture_coords (obj, face_idx, vtx_idx);
@@ -53,12 +41,14 @@ bool phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, Fl
 	Float3 norm3d = wfobj_get_norm_coords    (obj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_vect_conv  (&norm3d);
 	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
+	
 	for (int i = 0; i < 3; i++) {
 		PHONG_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
 	}
-	
-	
+		
 	if (PHONG_VSHADER_DEBUG) {
+		printf ("\t\tclip coord: %f, %f, %f, %f\n", vtx4d.as_struct.x, vtx4d.as_struct.y, vtx4d.as_struct.z, vtx4d.as_struct.w);
+		printf ("\t\tvtx coord:  %f, %f, %f\n",     vtx3d.as_struct.x, vtx3d.as_struct.y, vtx3d.as_struct.z);
 		printf ("\t\tvtx shader face %d vtx %d: ", face_idx, vtx_idx);
 		printf ("obj norm (%f, %f, %f) ",            norm3d.as_struct.x, norm3d.as_struct.y, norm3d.as_struct.z);
 		printf ("transformed normal (%f, %f, %f)\n", norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z);
@@ -69,13 +59,15 @@ bool phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv, Fl
 }
 
 bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
-	
+	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcall phong_pixel_shader()\n");
 	int uu = (int) Float3_Float3_smult (&PHONG_VARYING_U, barw);
 	int vv = (int) Float3_Float3_smult (&PHONG_VARYING_V, barw);
-	
+	if (uu < 0 || vv < 0) return false;
+	if (uu >= obj->texture->w || vv >= obj->texture->h) return false;
+	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 1: uu=%d, vv=%d\n", uu, vv);
 	pixel_color_t pix;
 	wfobj_get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
-	
+	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 2\n");
 	float intensity      = 0;
 	float diff_intensity = 0;
 	float spec_intensity = 0;
@@ -85,9 +77,10 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	for (int i = 0; i < 3; i++) {
 		normal.as_array[i] = Float3_Float3_smult (&PHONG_VARYING_N[i], barw);
 	}
+	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 3\n");
 	Float3_normalize(&normal);
 	diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT);
-	
+	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 4\n");
 	bool lighting = 0;
 	if (lighting) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
