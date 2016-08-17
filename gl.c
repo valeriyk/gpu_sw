@@ -75,22 +75,12 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
 				float sum_of_bars = 0.0f;
 				Float3 bar_clip;
-				/*
-				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
-					sum_of_bars += bar_clip.as_array[i];
-				}*/
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
 					sum_of_bars += bar_clip.as_array[i];
 				}
-				//if (GL_DEBUG_3) printf("checkpoint 1\n");
-				//bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
-				//bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
-				//bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
-				//sum_of_bars = bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2];
 				if (sum_of_bars == 0) {
-					printf ("Im gonna die!!!\n");
+					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
 					return;
 				}				
 				for (int i = 0; i < 3; i++) {
@@ -102,9 +92,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
 					//if (GL_DEBUG_3) printf("checkpoint 3\n");
-					bool draw = pshader (obj, &bar_clip, &color);
-					//if (GL_DEBUG_3) printf("checkpoint 4\n");
-					if (draw) {
+					if (pshader (obj, &bar_clip, &color)) {
 						//color = set_color(255, 0, 0, 0);
 						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
 						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
@@ -273,6 +261,7 @@ void obj_init_model (Object *obj) {
 }
 
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport) {
+	
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		
 		if (GL_DEBUG_0) {
@@ -286,25 +275,23 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		bool is_clipped = false; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
+			
 			clip.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 			
-			// clip & normalize:
+			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w <= 0) {
 				is_clipped = true;
-			}
-			else {
-				//Float3 tmp = Float4_Float3_pt_conv (&(clip.vtx[j]));
-				//ndc.vtx[j] = Float3_Float4_pt_conv (&tmp);
-				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w;
-				for (int k = 0; k < 3; k++) {
-					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
-						is_clipped = true;
-						break;
-					}
+				break;
+			}			
+			float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
+			for (int k = 0; k < 3; k++) {
+				ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
+				if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+					is_clipped = true; // clip
+					break;
 				}
-				ndc.vtx[j].as_struct.w = reciprocal_w;
 			}
+			ndc.vtx[j].as_struct.w = reciprocal_w;	
 			
 			// NDC -> screen
 			if (!is_clipped) {
