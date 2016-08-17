@@ -80,17 +80,15 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					bar_clip.as_array[i] = (float) bar[i]/st->vtx_coords[i].as_struct.w; // not normalized
 					sum_of_bars += bar_clip.as_array[i];
 				}*/
-				if (t->vtx[0].as_struct.w == 0) printf ("vtx0 W is 0, I'm gonna die!!!\n");
-				if (t->vtx[1].as_struct.w == 0) printf ("vtx1 W is 0, I'm gonna die!!!\n");
-				if (t->vtx[2].as_struct.w == 0) printf ("vtx2 W is 0, I'm gonna die!!!\n");
 				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) bar[i] / t->vtx[i].as_struct.w;
+					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
+					sum_of_bars += bar_clip.as_array[i];
 				}
-				if (GL_DEBUG_3) printf("checkpoint 1\n");
+				//if (GL_DEBUG_3) printf("checkpoint 1\n");
 				//bar_clip.as_array[0] = (float) bar[0] / vtx0->as_struct.w;
 				//bar_clip.as_array[1] = (float) bar[1] / vtx1->as_struct.w;
 				//bar_clip.as_array[2] = (float) bar[2] / vtx2->as_struct.w;
-				sum_of_bars = bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2];
+				//sum_of_bars = bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2];
 				if (sum_of_bars == 0) {
 					printf ("Im gonna die!!!\n");
 					return;
@@ -98,21 +96,21 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
-				if (GL_DEBUG_3) printf("checkpoint 2\n");
-				p.z = (int) t->vtx[0].as_struct.z + bar_clip.as_array[1] * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_array[2] * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
+				//if (GL_DEBUG_3) printf("checkpoint 2\n");
+				p.z = (int) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
 				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
-					if (GL_DEBUG_3) printf("checkpoint 3\n");
+					//if (GL_DEBUG_3) printf("checkpoint 3\n");
 					bool draw = pshader (obj, &bar_clip, &color);
-					if (GL_DEBUG_3) printf("checkpoint 4\n");
+					//if (GL_DEBUG_3) printf("checkpoint 4\n");
 					if (draw) {
 						//color = set_color(255, 0, 0, 0);
 						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
 						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 					}
 				}
-				if (GL_DEBUG_3) printf("checkpoint 10\n");
+				//if (GL_DEBUG_3) printf("checkpoint 10\n");
 			}
         }
     }
@@ -281,25 +279,31 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			printf("call obj_draw()\n");
 		}
 		
+		Triangle clip;
 		Triangle ndc;
 		Triangle screen;
 		
 		bool is_clipped = false; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
-			ndc.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
+			clip.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 			
 			// clip & normalize:
-			if (ndc.vtx[j].as_struct.w <= 0) {
+			if (clip.vtx[j].as_struct.w <= 0) {
 				is_clipped = true;
 			}
 			else {
+				//Float3 tmp = Float4_Float3_pt_conv (&(clip.vtx[j]));
+				//ndc.vtx[j] = Float3_Float4_pt_conv (&tmp);
+				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w;
 				for (int k = 0; k < 3; k++) {
-					ndc.vtx[j].as_array[k] /= ndc.vtx[j].as_struct.w; // normalize
+					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
 						is_clipped = true;
+						break;
 					}
 				}
+				ndc.vtx[j].as_struct.w = reciprocal_w;
 			}
 			
 			// NDC -> screen
@@ -314,7 +318,8 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
-			}	
+			}
+			else break;
 		}
 		
 		if (!is_clipped) {
