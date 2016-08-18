@@ -7,8 +7,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-int edge_func(Float4 *a, Float4 *b, ScreenPt *c) {
-    return (int) (b->as_struct.x - a->as_struct.x) * (c->y - a->as_struct.y) - (b->as_struct.y - a->as_struct.y) * (c->x - a->as_struct.x);
+screenxy_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy) {
+    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
 }
 
 static inline screenxy_t min_of_two (screenxy_t a, screenxy_t b) {
@@ -26,22 +26,6 @@ screenxy_t min_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
 screenxy_t max_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
 	return max_of_two (a, max_of_two (b, c));
 }
-
-/*screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
-	int min = a;
-	if (b < min) min = b;
-	if (c < min) min = c;
-	if (min < cutoff) min = cutoff;
-	return min;
-}
-
-screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
-	int max = a;
-	if (b > max) max = b;
-	if (c > max) max = c;
-	if (max > cutoff) max = cutoff;
-	return max;
-}*/
 
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
@@ -64,28 +48,34 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 		}
 	}
 	
-    // Compute triangle bounding box. Triangles are already clipped to the screen, so no need to do additional checks
-    screenxy_t min_x = min_of_three (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x);
-    screenxy_t max_x = max_of_three (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x);
-    screenxy_t min_y = min_of_three (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y);
-    screenxy_t max_y = max_of_three (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y);
+	// fixed point coordinates with subpixel precision
+	screenxy_t x[3];
+	screenxy_t y[3];
+	for (int i = 0; i < 3; i++) {
+		x[i] = (screenxy_t) t->vtx[i].as_struct.x * 16.0;
+		y[i] = (screenxy_t) t->vtx[i].as_struct.y * 16.0;
+	}
+	
+    // Compute triangle bounding box.
+    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> 4);
+    screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> 4);
+    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> 4);
+    screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> 4);
         
-    int3 bar;
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
-		if (GL_DEBUG_1) printf ("for y %d\n", p.y);
-        for (p.x = min_x; p.x < max_x; p.x++) {
-			if (GL_DEBUG_2) printf ("\tfor x %d\n", p.x);
-			bar[0] = edge_func(&(t->vtx[1]), &(t->vtx[2]), &p); // not normalized
-			bar[1] = edge_func(&(t->vtx[2]), &(t->vtx[0]), &p); // not normalized
-			bar[2] = edge_func(&(t->vtx[0]), &(t->vtx[1]), &p); // not normalized
+		for (p.x = min_x; p.x < max_x; p.x++) {
+			int3 bar;
+			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << 4, p.y << 4); // not normalized
+			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << 4, p.y << 4); // not normalized
+			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << 4, p.y << 4); // not normalized
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
 				float sum_of_bars = 0.0f;
 				Float3 bar_clip;
 				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
+					bar_clip.as_array[i] = (float) (bar[i] >> 4)* t->vtx[i].as_struct.w; // W here actually contains 1/W
 					sum_of_bars += bar_clip.as_array[i];
 				}
 				if (sum_of_bars == 0) {
@@ -93,25 +83,20 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					return;
 				}				
 				
-				//if (GL_DEBUG_3) printf("checkpoint 2\n");
 				//p.z = (screenz_t) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
 				float duck = 0;
-				//for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar[i];//bar_clip.as_array[i];
 				for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar_clip.as_array[i];
-				duck /= (bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2]);
+				duck /= sum_of_bars;
 				p.z = (screenz_t) duck; 
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
-				if (GL_DEBUG_4) if ((p.x > 45) && (p.x < 55) && (p.y > 30) && (p.y < 60)) printf("\t\t\t[%d, %d] zbuf: %d zpix^ %d\n", p.x, p.y, zbuffer[p.x + p.y*WIDTH], p.z);
-				if (p.z > zbuffer[p.x + p.y*WIDTH]) {
-					zbuffer[p.x + p.y*WIDTH] = p.z;
+				uint32_t pix_num = p.x + p.y*WIDTH;
+				if (p.z > zbuffer[pix_num]) {
+					zbuffer[pix_num] = p.z;
 					pixel_color_t color;
-					//if (GL_DEBUG_3) printf("checkpoint 3\n");
 					if (pshader (obj, &bar_clip, &color)) {
-						//color = set_color(255, 0, 0, 0);
-						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
-						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+						fbuffer[p.x + (HEIGHT-p.y-1)*WIDTH] = color;
 					}
 				}
 			}
@@ -288,33 +273,33 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		Triangle ndc;
 		Triangle screen;
 		
-		bool is_clipped = false; // sticky bit
+		bool is_clipped = true; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
 			
 			clip.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
 			
 			// clip & normalize (clip -> NDC):
-			if (clip.vtx[j].as_struct.w <= 0) {
-				is_clipped = true;
-				break;
-			}			
-			float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
-			for (int k = 0; k < 3; k++) {
-				ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-				if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
-					is_clipped = true; // clip
-					break;
+			if (clip.vtx[j].as_struct.w > 0) {
+				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
+				for (int k = 0; k < 3; k++) {
+					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
+					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
+						is_clipped = false;
+					}
 				}
+				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
-			ndc.vtx[j].as_struct.w = reciprocal_w;	
 			
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 +  WIDTH/2;
-				screen.vtx[j].as_struct.y =   ndc.vtx[j].as_struct.y * HEIGHT/2 + HEIGHT/2;
-				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z *  DEPTH/2 -  DEPTH/2); // TBD - remove magic numbers
+				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 +  WIDTH/2; // map [-1:1] to [0:(WIDTH+HEIGHT)/2]
+				//screen.vtx[j].as_struct.x =  WIDTH/2 - ndc.vtx[j].as_struct.x * HEIGHT/2; // map [-1:1] to [(WIDTH+HEIGHT)/2:0]
+				//screen.vtx[j].as_struct.y = -(ndc.vtx[j].as_struct.y * HEIGHT/2 - HEIGHT/2);
+				screen.vtx[j].as_struct.y =  (ndc.vtx[j].as_struct.y * HEIGHT/2 + HEIGHT/2); // map [-1:1] to [0:HEIGHT]
+				//screen.vtx[j].as_struct.y = HEIGHT/2.0 - ndc.vtx[j].as_struct.y * HEIGHT/2.0; // map [-1:1] to [HEIGHT:0]
+				screen.vtx[j].as_struct.z = DEPTH/2 - ndc.vtx[j].as_struct.z * DEPTH/2; // map [-1:1] to [DEPTH:0]
 				screen.vtx[j].as_struct.w =   ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {
