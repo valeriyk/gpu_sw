@@ -48,7 +48,8 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 		}
 	}
 	
-	// fixed point coordinates with subpixel precision
+	// fixed point coordinates with subpixel precision:
+	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
