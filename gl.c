@@ -312,9 +312,9 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 + WIDTH/2;
-				screen.vtx[j].as_struct.y =   ndc.vtx[j].as_struct.y *  WIDTH/2 + WIDTH/2;
-				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z *  DEPTH/2 - DEPTH/2); // TBD - remove magic numbers
+				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 +  WIDTH/2;
+				screen.vtx[j].as_struct.y =   ndc.vtx[j].as_struct.y * HEIGHT/2 + HEIGHT/2;
+				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z *  DEPTH/2 -  DEPTH/2); // TBD - remove magic numbers
 				screen.vtx[j].as_struct.w =   ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {

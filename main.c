@@ -54,7 +54,8 @@ int main(int argc, char** argv) {
     Bitmap *african_head_diffuse      = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_normal_map   = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_specular_map = new_bitmap_from_tga ("obj/african_head_spec.tga");
-    WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
+    //WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
+    WFobj *african_head = wfobj_new ("obj/african_head.obj", NULL, NULL, african_head_specular_map);
 	
 	
 	Bitmap *cube_diffuse      = new_bitmap_from_tga ("obj/floor_diffuse.tga");
