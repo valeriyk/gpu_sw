@@ -69,9 +69,6 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	int vv = (int) Float3_Float3_smult (&PHONG_VARYING_V, barw);
 	if (uu < 0 || vv < 0) return false;
 	
-	
-	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 1: uu=%d, vv=%d\n", uu, vv);
-	
 	pixel_color_t pix;
 	if (obj->texture != NULL) {
 		if (uu >= obj->texture->w || vv >= obj->texture->h) return false;

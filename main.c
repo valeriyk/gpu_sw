@@ -51,16 +51,19 @@ int main(int argc, char** argv) {
     pixel_color_t *active_fbuffer = NULL;
     
     
-    Bitmap *african_head_diffuse      = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
-    Bitmap *african_head_normal_map   = new_bitmap_from_tga ("obj/african_head_nm.tga");
-    Bitmap *african_head_specular_map = new_bitmap_from_tga ("obj/african_head_spec.tga");
-    WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
-    //WFobj *african_head = wfobj_new ("obj/african_head.obj", NULL, NULL, african_head_specular_map);
+    Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
+    Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
+    Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
+    WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
 	
+	Bitmap *diablo_diff = new_bitmap_from_tga ("obj/diablo/diablo3_pose_diffuse.tga");
+	Bitmap *diablo_nmap = new_bitmap_from_tga ("obj/diablo/diablo3_pose_nm.tga");
+	Bitmap *diablo_spec = new_bitmap_from_tga ("obj/diablo/diablo3_pose_spec.tga");
+	WFobj  *diablo = wfobj_new ("obj/diablo/diablo3_pose.obj", diablo_diff, diablo_nmap, diablo_spec);
 	
-	Bitmap *cube_diffuse      = new_bitmap_from_tga ("obj/floor_diffuse.tga");
-	Bitmap *cube_normal_map   = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-	WFobj *my_cube = wfobj_new ("obj/cube.obj", cube_diffuse, cube_normal_map, NULL);
+	Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
+	Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
+	WFobj  *my_cube = wfobj_new ("obj/cube.obj", cube_diff, cube_nmap, NULL);
 	
 	/*
 	WFobj *my_floor = wfobj_new ("obj/floor.obj");
@@ -74,15 +77,22 @@ int main(int argc, char** argv) {
 	// 1. Model Matrix - transform local coords to global
 	
     Object *head1  = obj_new (african_head);
-    //obj_set_translation (head1, 0.f, -2.5f, 0.f);
-    obj_set_scale       (head1, 3, 3, 3);
+    obj_set_translation (head1, -1.f, 0.f, -0.f);
+    //obj_set_scale       (head1, 3, 3, 3);
     obj_set_rotation    (head1, 0.f, 20.f, 0.f);
     obj_init_model      (head1);
-    /*
+    
     Object *head2  = obj_new (african_head);
-    obj_set_translation (head2, -1.f, 0.f, 0.6f);
+    obj_set_translation (head2, 1.f, 0.f, -0.0f);
+    obj_set_rotation    (head2, 0.f, 20.f, 0.f);
     obj_init_model      (head2);
-    */
+    
+    
+    Object *diablo1  = obj_new (diablo);
+    obj_set_translation (diablo1, 0.f, 0.f, -3.f);
+    //obj_set_scale       (diablo1, 3, 3, 3);
+    //obj_set_rotation    (diablo1, 0.f, 20.f, 0.f);
+    obj_init_model      (diablo1);
     
     /* 
     Object *floor1 = obj_new (my_floor);
@@ -114,18 +124,18 @@ int main(int argc, char** argv) {
 	
 	// 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( 0.0f,   0.0f,   10.0f);
-	Float3 center = Float3_set ( 0.0f,   0.0f,   5.0f);
+    Float3 eye    = Float3_set ( 0.0f,   0.0f,   5.0f);
+	Float3 center = Float3_set ( 0.0f,   0.0f,   4.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
     // 3. Projection Matrix - perspective correction
-	float right = 0.5;
+	float right = 2;
 	float left  = -right;
-	float top   = 0.5;
+	float top   = 2;
 	float bot   = -top;
-	float near  = 1;
+	float near  = 5;
 	float far   = 20;
 	fmat4 proj  = FMAT4_IDENTITY;
 	init_projection (&proj, left, right, top, bot, near, far);
@@ -138,7 +148,7 @@ int main(int argc, char** argv) {
 	
     
     
-    Float3 light_dir = Float3_set (-0.2f,  -0.3f,  -1.0f);
+    Float3 light_dir = Float3_set (-1.0f,  -0.3f,  -1.0f);
     //Float3 light_dir = Float3_set ( 0.0f,   0.0f,  -1.0f);
     
     
@@ -151,23 +161,34 @@ int main(int argc, char** argv) {
 	
 					
     //do {
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
 		obj_transform           (head1, &proj, &view, &light_dir);
-		//obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
 		obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		//obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		
+		obj_transform           (head2, &proj, &view, &light_dir);
+		//obj_draw            (head2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		
+		
+		//obj_transform       (diablo1, &proj, &view, &light_dir);
+		////obj_draw            (diablo1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		//obj_draw            (diablo1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		
 		/*	
 		obj_transform           (head2, &viewport_proj_view, &proj_view, &light_dir);
 		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
 		//transform       (floor1, &vpv, &projview, &light_dir);
 		//obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		
-		light_dir.as_struct.z = -light_dir.as_struct.z;
 		*/
+		light_dir.as_struct.x = -light_dir.as_struct.x;
+		light_dir.as_struct.y = -light_dir.as_struct.y;
+		
 		/*
 		obj_transform	       (cube2, &proj, &view, &light_dir);
 		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);

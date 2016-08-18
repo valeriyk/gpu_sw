@@ -150,11 +150,6 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	print_fmat4 (m, "viewport matrix");
 }
 
-/*void init_projection (fmat4 *m, float val) {
-	for (int i = 0; i < 4; i++)	fmat4_set (m, i, i, 1.0f);
-	fmat4_set (m, 3, 2, val);
-}*/
-
 void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
 	fmat4_set (m, 0, 2,       (right + left) / (right - left));
@@ -176,16 +171,17 @@ void init_view (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up) {
 	Float3 y = Float3_Float3_crossprod(&z, &x);
 	Float3_normalize (&y);
 	
-	fmat4 Minv = FMAT4_IDENTITY;
-	fmat4 Tr   = FMAT4_IDENTITY;
+	fmat4 Orient = FMAT4_IDENTITY;
+	fmat4 Transl = FMAT4_IDENTITY;
 	
 	for (int i = 0; i < 3; i++)	{
-		fmat4_set (&Minv, 0, i, x.as_array[i]);
-		fmat4_set (&Minv, 1, i, y.as_array[i]);
-		fmat4_set (&Minv, 2, i, z.as_array[i]);
-		fmat4_set (&Tr, i, 3, -(center->as_array[i]));
+		fmat4_set (&Orient, 0, i, x.as_array[i]);
+		fmat4_set (&Orient, 1, i, y.as_array[i]);
+		fmat4_set (&Orient, 2, i, z.as_array[i]);
+
+		fmat4_set (&Transl, i, 3, -(eye->as_array[i]));
 	}
-	fmat4_fmat4_mult(&Minv, &Tr, m);
+	fmat4_fmat4_mult(&Orient, &Transl, m);
 }
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis a) {

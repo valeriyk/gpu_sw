@@ -14,7 +14,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
-typedef  int32_t screenxy_t;
+typedef  int16_t screenxy_t;
 
 typedef uint32_t screenz_t;
 
