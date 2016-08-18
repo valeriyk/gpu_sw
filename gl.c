@@ -284,15 +284,15 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-						is_clipped = false;
-					}
+					//if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
+					//	is_clipped = false;
+					//}
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
 			
 			// NDC -> screen
-			if (!is_clipped) {
+			//if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
 				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 +  WIDTH/2; // map [-1:1] to [0:(WIDTH+HEIGHT)/2]
 				//screen.vtx[j].as_struct.x =  WIDTH/2 - ndc.vtx[j].as_struct.x * HEIGHT/2; // map [-1:1] to [(WIDTH+HEIGHT)/2:0]
@@ -306,12 +306,12 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
-			}
-			else break;
+			//}
+			//else break;
 		}
 		
-		if (!is_clipped) {
+		//if (!is_clipped) {
 			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
-		}
+		//}
     }
 }
