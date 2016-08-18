@@ -11,8 +11,23 @@ int edge_func(Float4 *a, Float4 *b, ScreenPt *c) {
     return (int) (b->as_struct.x - a->as_struct.x) * (c->y - a->as_struct.y) - (b->as_struct.y - a->as_struct.y) * (c->x - a->as_struct.x);
 }
 
+static inline screenxy_t min_of_two (screenxy_t a, screenxy_t b) {
+	return (a < b) ? a : b;
+}
 
-screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
+static inline screenxy_t max_of_two (screenxy_t a, screenxy_t b) {
+	return (a > b) ? a : b;
+}
+
+screenxy_t min_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
+	return min_of_two (a, min_of_two (b, c));
+}
+
+screenxy_t max_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
+	return max_of_two (a, max_of_two (b, c));
+}
+
+/*screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff) {
 	int min = a;
 	if (b < min) min = b;
 	if (c < min) min = c;
@@ -26,7 +41,7 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 	if (c > max) max = c;
 	if (max > cutoff) max = cutoff;
 	return max;
-}
+}*/
 
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
@@ -49,17 +64,12 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 		}
 	}
 	
-    // Compute triangle bounding box
-    screenxy_t min_x = tri_min_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, 0);
-    screenxy_t max_x = tri_max_bound (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x, WIDTH);
-    screenxy_t min_y = tri_min_bound (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y, 0);
-    screenxy_t max_y = tri_max_bound (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y, HEIGHT);
-    
-    if ((min_x == max_x) || (min_y == max_y)) {
-		if (GL_DEBUG_0) printf ("Degenerate triangle\n");
-		return;
-    }
-    
+    // Compute triangle bounding box. Triangles are already clipped to the screen, so no need to do additional checks
+    screenxy_t min_x = min_of_three (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x);
+    screenxy_t max_x = max_of_three (t->vtx[0].as_struct.x, t->vtx[1].as_struct.x, t->vtx[2].as_struct.x);
+    screenxy_t min_y = min_of_three (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y);
+    screenxy_t max_y = max_of_three (t->vtx[0].as_struct.y, t->vtx[1].as_struct.y, t->vtx[2].as_struct.y);
+        
     int3 bar;
     ScreenPt p;
     p.z = 0;
@@ -320,10 +330,10 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x = ndc.vtx[j].as_struct.x * HEIGHT/2 + WIDTH/2;
-				screen.vtx[j].as_struct.y = ndc.vtx[j].as_struct.y * WIDTH/2 + WIDTH/2;
-				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z * DEPTH/2 - DEPTH/2); // TBD - remove magic numbers
-				screen.vtx[j].as_struct.w = ndc.vtx[j].as_struct.w;
+				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 + WIDTH/2;
+				screen.vtx[j].as_struct.y =   ndc.vtx[j].as_struct.y *  WIDTH/2 + WIDTH/2;
+				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z *  DEPTH/2 - DEPTH/2); // TBD - remove magic numbers
+				screen.vtx[j].as_struct.w =   ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {
 					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
