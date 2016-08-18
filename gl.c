@@ -72,7 +72,6 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
         
     int3 bar;
     ScreenPt p;
-    p.z = 0;
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		if (GL_DEBUG_1) printf ("for y %d\n", p.y);
         for (p.x = min_x; p.x < max_x; p.x++) {
@@ -114,24 +113,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
 						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 					}
-					else {
-						pixel_color_t color = set_color(255, 255, 255, 0);
-						//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
-						//fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
-					}
 				}
-				else {
-					pixel_color_t color = set_color(255, 0, 0, 0);
-					//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
-					//fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
-				}
-				
-				/*if ((p.x > 45) && (p.x < 55) && (p.y > 30) && (p.y < 60)) {
-					pixel_color_t color = set_color(255, 255, 0, 0);
-					//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
-					fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
-				}*/
-				//if (GL_DEBUG_3) printf("checkpoint 10\n");
 			}
         }
     }
