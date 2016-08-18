@@ -74,8 +74,8 @@ int main(int argc, char** argv) {
 	// 1. Model Matrix - transform local coords to global
 	
     Object *head1  = obj_new (african_head);
-    obj_set_translation (head1, 0.f, -2.5f, 0.f);
-    //obj_set_scale       (head1, 0.6, 0.6, 0.6);
+    //obj_set_translation (head1, 0.f, -2.5f, 0.f);
+    obj_set_scale       (head1, 3, 3, 3);
     obj_set_rotation    (head1, 0.f, 20.f, 0.f);
     obj_init_model      (head1);
     /*

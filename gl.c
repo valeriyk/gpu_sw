@@ -7,7 +7,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-screenxy_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy) {
+int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy) {
     return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
 }
 
@@ -53,36 +53,23 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		x[i] = (screenxy_t) t->vtx[i].as_struct.x * 16.0;
-		y[i] = (screenxy_t) t->vtx[i].as_struct.y * 16.0;
+		x[i] = (screenxy_t) t->vtx[i].as_struct.x * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) t->vtx[i].as_struct.y * (1 << FIX_PT_PRECISION);
 	}
 	
     // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> 4);
-    screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> 4);
-    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> 4);
-    screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> 4);
-    
-    /*for (int i = 0; i < 3; i++) {
-		float scaled_x = t->vtx[i].as_struct.x * 16.0;
-		float scaled_y = t->vtx[i].as_struct.y * 16.0;
-		x[i] = (screenxy_t) (scaled_x >= 0) ? scaled_x : 0;
-		y[i] = (screenxy_t) (scaled_y >= 0) ? scaled_y : 0;
-	}
-	
-    // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> 4);
-    screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> 4);
-    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> 4);
-    screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> 4);*/
+    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
     
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		for (p.x = min_x; p.x < max_x; p.x++) {
 			int3 bar;
-			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << 4, p.y << 4); // not normalized
-			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << 4, p.y << 4); // not normalized
-			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << 4, p.y << 4); // not normalized
+			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {

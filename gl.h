@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define FIX_PT_PRECISION 4
+
 typedef enum {X = 0, Y, Z, W} axis;
 
 
