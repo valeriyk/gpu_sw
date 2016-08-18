@@ -59,19 +59,26 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) 
 }
 
 bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
-	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcall phong_pixel_shader()\n");
+	
+	if (PHONG_PSHADER_DEBUG_0) {
+		printf ("\t\tcall phong_pixel_shader()\n");
+	}
+	
 	int uu = (int) Float3_Float3_smult (&PHONG_VARYING_U, barw);
 	int vv = (int) Float3_Float3_smult (&PHONG_VARYING_V, barw);
 	if (uu < 0 || vv < 0) return false;
 	if (uu >= obj->texture->w || vv >= obj->texture->h) return false;
+	
 	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 1: uu=%d, vv=%d\n", uu, vv);
+	
 	pixel_color_t pix;
 	wfobj_get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
+	
 	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 2\n");
+	
 	float intensity      = 0;
 	float diff_intensity = 0;
-	float spec_intensity = 0;
-		
+	float spec_intensity = 0;	
 	Float3 normal;
 	
 	for (int i = 0; i < 3; i++) {
@@ -81,8 +88,8 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	Float3_normalize(&normal);
 	diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT);
 	if (PHONG_PSHADER_DEBUG_0) printf ("\t\tcheckpoint 4\n");
-	bool lighting = 0;
-	if (lighting) {
+	
+	if (obj->specularmap != NULL) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
 		Float3 r    = Float3_Float3_add (&nnl2, &UNIFORM_LIGHT);

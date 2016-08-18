@@ -50,17 +50,16 @@ int main(int argc, char** argv) {
     
     pixel_color_t *active_fbuffer = NULL;
     
-    /*
+    
     Bitmap *african_head_diffuse      = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_normal_map   = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_specular_map = new_bitmap_from_tga ("obj/african_head_spec.tga");
     WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diffuse, african_head_normal_map, african_head_specular_map);
-	*/
+	
 	
 	Bitmap *cube_diffuse      = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 	Bitmap *cube_normal_map   = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-	Bitmap *cube_specular_map = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-	WFobj *my_cube = wfobj_new ("obj/cube.obj", cube_diffuse, cube_normal_map, cube_specular_map);
+	WFobj *my_cube = wfobj_new ("obj/cube.obj", cube_diffuse, cube_normal_map, NULL);
 	
 	/*
 	WFobj *my_floor = wfobj_new ("obj/floor.obj");
@@ -72,13 +71,13 @@ int main(int argc, char** argv) {
 	
 	
 	// 1. Model Matrix - transform local coords to global
-	/*
+	
     Object *head1  = obj_new (african_head);
-    obj_set_translation (head1, 1.f, 0.f, 0.6f);
-    obj_set_scale       (head1, 0.6, 0.6, 0.6);
-    obj_set_rotation    (head1, 0.f, 0.f, 0.f);
+    //obj_set_translation (head1, 1.f, 0.f, 0.6f);
+    //obj_set_scale       (head1, 0.6, 0.6, 0.6);
+    obj_set_rotation    (head1, 0.f, 20.f, 0.f);
     obj_init_model      (head1);
-    
+    /*
     Object *head2  = obj_new (african_head);
     obj_set_translation (head2, -1.f, 0.f, 0.6f);
     obj_init_model      (head2);
@@ -92,10 +91,14 @@ int main(int argc, char** argv) {
 	Object *cube1 = obj_new (my_cube);
 	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
 	obj_set_rotation (cube1, 45, 45, 0);
-	//obj_set_translation (cube1, 0.f, 0.f, -2.5f);
+	obj_set_translation (cube1, -0.4f, 0.1f, 0.f);
 	obj_init_model (cube1);
 	
-	
+	Object *cube2 = obj_new (my_cube);
+	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
+	obj_set_rotation (cube2, 45, 45, 0);
+	obj_set_translation (cube2, 0.4f, 0.1f, 0.f);
+	obj_init_model (cube2);
 	/*
 	Object *floor2 = obj_new (my_floor);
     obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
@@ -110,19 +113,19 @@ int main(int argc, char** argv) {
 	
 	// 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( 0.0f,   0.0f,   5.0f);
+    Float3 eye    = Float3_set ( 0.0f,   0.0f,   9.0f);
 	Float3 center = Float3_set ( 0.0f,   0.0f,   2.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
     // 3. Projection Matrix - perspective correction
-	float right = 1;
+	float right = 0.5;
 	float left  = -right;
-	float top   = 1;
+	float top   = 0.5;
 	float bot   = -top;
 	float near  = 1;
-	float far   = 100;
+	float far   = 5;
 	fmat4 proj  = FMAT4_IDENTITY;
 	init_projection (&proj, left, right, top, bot, near, far);
 	
@@ -151,11 +154,11 @@ int main(int argc, char** argv) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
-		/*
-		obj_transform           (head1, &viewport_proj_view, &proj_view, &light_dir);
+		
+		obj_transform           (head1, &proj, &view, &light_dir);
 		//obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
-		obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-			
+		obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		/*	
 		obj_transform           (head2, &viewport_proj_view, &proj_view, &light_dir);
 		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
@@ -164,10 +167,15 @@ int main(int argc, char** argv) {
 		
 		light_dir.as_struct.z = -light_dir.as_struct.z;
 		*/
+		/*
+		obj_transform	       (cube2, &proj, &view, &light_dir);
+		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
+		obj_draw           (cube2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
 		
 		obj_transform	       (cube1, &proj, &view, &light_dir);
 		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		obj_draw           (cube1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		*/
 		
 		/*
 		obj_transform       (floor2, &vpv, &projview, &light_dir);
@@ -178,8 +186,8 @@ int main(int argc, char** argv) {
 		*/
 	}// while (0);
 	
-    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 1);
-    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 1);
+    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
+    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);

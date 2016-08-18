@@ -2,7 +2,7 @@
 
 #include "shader.h"
 
-#define PHONG_VSHADER_DEBUG 1
+#define PHONG_VSHADER_DEBUG 0
 
 #define PHONG_PSHADER_DEBUG_0 0
 #define PHONG_PSHADER_DEBUG_1 0

@@ -83,12 +83,19 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
 					return;
 				}				
+				
+				//if (GL_DEBUG_3) printf("checkpoint 2\n");
+				//p.z = (screenz_t) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
+				float duck = 0;
+				//for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar[i];//bar_clip.as_array[i];
+				for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar_clip.as_array[i];
+				duck /= (bar_clip.as_array[0] + bar_clip.as_array[1] + bar_clip.as_array[2]);
+				p.z = (screenz_t) duck; 
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
-				//if (GL_DEBUG_3) printf("checkpoint 2\n");
-				p.z = (int) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
-				if (zbuffer[p.x + p.y*WIDTH] < p.z) {
+				if (GL_DEBUG_4) if ((p.x > 45) && (p.x < 55) && (p.y > 30) && (p.y < 60)) printf("\t\t\t[%d, %d] zbuf: %d zpix^ %d\n", p.x, p.y, zbuffer[p.x + p.y*WIDTH], p.z);
+				if (p.z > zbuffer[p.x + p.y*WIDTH]) {
 					zbuffer[p.x + p.y*WIDTH] = p.z;
 					pixel_color_t color;
 					//if (GL_DEBUG_3) printf("checkpoint 3\n");
@@ -97,7 +104,23 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 						if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
 						fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
 					}
+					else {
+						pixel_color_t color = set_color(255, 255, 255, 0);
+						//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
+						//fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+					}
 				}
+				else {
+					pixel_color_t color = set_color(255, 0, 0, 0);
+					//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
+					//fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+				}
+				
+				/*if ((p.x > 45) && (p.x < 55) && (p.y > 30) && (p.y < 60)) {
+					pixel_color_t color = set_color(255, 255, 0, 0);
+					//if (GL_DEBUG_3) printf("pix [%d, %d] color: r%d g%d b%d\n", p.x, p.y, color.r, color.g, color.b);
+					fbuffer[p.x + (HEIGHT - 1 - p.y)*WIDTH] = color; // TBD remove this p.y hack which avoids flipping the framebuffer
+				}*/
 				//if (GL_DEBUG_3) printf("checkpoint 10\n");
 			}
         }
@@ -263,6 +286,7 @@ void obj_init_model (Object *obj) {
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport) {
 	
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
+	//for (int i = 0; i < 4; i++) {
 		
 		if (GL_DEBUG_0) {
 			printf("call obj_draw()\n");
@@ -296,9 +320,9 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x = ndc.vtx[j].as_struct.x * 360 + 640;
-				screen.vtx[j].as_struct.y = ndc.vtx[j].as_struct.y * 360 + 360;
-				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * 32768 + 32768; // TBD - remove magic numbers
+				screen.vtx[j].as_struct.x = ndc.vtx[j].as_struct.x * HEIGHT/2 + WIDTH/2;
+				screen.vtx[j].as_struct.y = ndc.vtx[j].as_struct.y * WIDTH/2 + WIDTH/2;
+				screen.vtx[j].as_struct.z = -(ndc.vtx[j].as_struct.z * DEPTH/2 - DEPTH/2); // TBD - remove magic numbers
 				screen.vtx[j].as_struct.w = ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {

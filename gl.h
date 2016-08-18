@@ -10,8 +10,8 @@
 typedef enum {X = 0, Y, Z, W} axis;
 
 
-typedef int16_t screenxy_t;
-typedef int32_t screenz_t;
+typedef uint16_t screenxy_t;
+typedef uint16_t screenz_t;
 
 typedef struct ScreenPt {
 	screenxy_t x;
