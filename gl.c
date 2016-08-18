@@ -76,7 +76,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				float sum_of_bars = 0.0f;
 				Float3 bar_clip;
 				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) (bar[i] >> 4)* t->vtx[i].as_struct.w; // W here actually contains 1/W
+					bar_clip.as_array[i] = (float) (bar[i] >> FIX_PT_PRECISION)* t->vtx[i].as_struct.w; // W here actually contains 1/W
 					sum_of_bars += bar_clip.as_array[i];
 				}
 				if (sum_of_bars == 0) {
