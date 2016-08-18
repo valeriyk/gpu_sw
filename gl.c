@@ -11,19 +11,19 @@ screenxy_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by,
     return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
 }
 
-static inline screenxy_t min_of_two (screenxy_t a, screenxy_t b) {
+static inline int32_t min_of_two (int32_t a, int32_t b) {
 	return (a < b) ? a : b;
 }
 
-static inline screenxy_t max_of_two (screenxy_t a, screenxy_t b) {
+static inline int32_t max_of_two (int32_t a, int32_t b) {
 	return (a > b) ? a : b;
 }
 
-screenxy_t min_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
+int32_t min_of_three (int32_t a, int32_t b, int32_t c) {
 	return min_of_two (a, min_of_two (b, c));
 }
 
-screenxy_t max_of_three (screenxy_t a, screenxy_t b, screenxy_t c) {
+int32_t max_of_three (int32_t a, int32_t b, int32_t c) {
 	return max_of_two (a, max_of_two (b, c));
 }
 
@@ -62,7 +62,20 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
     screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> 4);
     screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> 4);
     screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> 4);
-        
+    
+    /*for (int i = 0; i < 3; i++) {
+		float scaled_x = t->vtx[i].as_struct.x * 16.0;
+		float scaled_y = t->vtx[i].as_struct.y * 16.0;
+		x[i] = (screenxy_t) (scaled_x >= 0) ? scaled_x : 0;
+		y[i] = (screenxy_t) (scaled_y >= 0) ? scaled_y : 0;
+	}
+	
+    // Compute triangle bounding box.
+    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> 4);
+    screenxy_t max_x = min_of_two ( WIDTH-1, max_of_three (x[0], x[1], x[2]) >> 4);
+    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> 4);
+    screenxy_t max_y = min_of_two (HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> 4);*/
+    
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		for (p.x = min_x; p.x < max_x; p.x++) {

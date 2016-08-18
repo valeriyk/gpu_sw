@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	// 1. Model Matrix - transform local coords to global
 	
     Object *head1  = obj_new (african_head);
-    //obj_set_translation (head1, 1.f, 0.f, 0.6f);
+    obj_set_translation (head1, 0.f, -2.5f, 0.f);
     //obj_set_scale       (head1, 0.6, 0.6, 0.6);
     obj_set_rotation    (head1, 0.f, 20.f, 0.f);
     obj_init_model      (head1);
@@ -114,8 +114,8 @@ int main(int argc, char** argv) {
 	
 	// 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( 0.0f,   0.0f,   9.0f);
-	Float3 center = Float3_set ( 0.0f,   0.0f,   2.0f);
+    Float3 eye    = Float3_set ( 0.0f,   0.0f,   10.0f);
+	Float3 center = Float3_set ( 0.0f,   0.0f,   5.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 	float top   = 0.5;
 	float bot   = -top;
 	float near  = 1;
-	float far   = 5;
+	float far   = 20;
 	fmat4 proj  = FMAT4_IDENTITY;
 	init_projection (&proj, left, right, top, bot, near, far);
 	
