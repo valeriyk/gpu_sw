@@ -14,7 +14,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
-typedef  int16_t screenxy_t;
+typedef int16_t screenxy_t;
 
 typedef uint8_t screenz_t;
 
@@ -78,7 +78,7 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 void init_view       (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 //void init_projection (fmat4 *m, float val);
 void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far);
-void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
+//void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
@@ -97,4 +97,4 @@ void obj_set_rotation    (Object *obj, float x, float y, float z);
 void obj_set_translation (Object *obj, float x, float y, float z);
 void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
-void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport);
+void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);

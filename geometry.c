@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdarg.h>
 
-float det3x3 (fmat3 *m);
+//float det3x3 (fmat3 *m);
 
 void fmat3_set_col (fmat3 *mat, Float3 *in, int col_idx) {
 	for (int i = 0; i < 3; i++) fmat3_set (mat, i, col_idx, in->as_array[i]);

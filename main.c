@@ -135,14 +135,14 @@ int main(int argc, char** argv) {
 	float left  = -right;
 	float top   = 2;
 	float bot   = -top;
-	float near  = 5;
+	float near  = 4;
 	float far   = 20;
 	fmat4 proj  = FMAT4_IDENTITY;
 	init_projection (&proj, left, right, top, bot, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
-	fmat4 viewport = FMAT4_IDENTITY;
-	init_viewport (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
+	//fmat4 viewport = FMAT4_IDENTITY;
+	//init_viewport (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
     
     
 	
@@ -167,17 +167,17 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
 		
 		obj_transform           (head1, &proj, &view, &light_dir);
-		obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
-		//obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
+		//obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
 		obj_transform           (head2, &proj, &view, &light_dir);
-		//obj_draw            (head2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
-		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		//obj_draw            (head2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
+		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
 		
 		//obj_transform       (diablo1, &proj, &view, &light_dir);
-		////obj_draw            (diablo1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
-		//obj_draw            (diablo1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer, &viewport);
+		////obj_draw            (diablo1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
+		//obj_draw            (diablo1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
 		
 		/*	
 		obj_transform           (head2, &viewport_proj_view, &proj_view, &light_dir);
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
     write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-    write_tga_file ("zbuffer.tga", (tbyte *) zbuffer, WIDTH, HEIGHT, 8, 1);
+    write_tga_file (   "zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT,  8, 1);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);

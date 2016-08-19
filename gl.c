@@ -139,7 +139,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 }
 */
 
-void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
+/*void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
 	fmat4_set (m, 0, 3, x + w / 2.0f);
 	fmat4_set (m, 1, 1, h / 2.0f);
@@ -148,7 +148,7 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 2, 3, d / 2.0f);
 	fmat4_set (m, 3, 3, 1.0f);
 	print_fmat4 (m, "viewport matrix");
-}
+}*/
 
 void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
@@ -160,7 +160,6 @@ void init_projection (fmat4 *m, float left, float right, float top, float bot, f
 	fmat4_set (m, 3, 2,  -1.0f);
 	fmat4_set (m, 3, 3,   0.0f);
 }
-
 
 void init_view (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up) {
 	
@@ -257,10 +256,9 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, fmat4 *viewport) {
+void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
-	//for (int i = 0; i < 4; i++) {
 		
 		if (GL_DEBUG_0) {
 			printf("call obj_draw()\n");
@@ -281,35 +279,30 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					//if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-					//	is_clipped = false;
-					//}
+					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
+						is_clipped = false;
+					}
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
 			
 			// NDC -> screen
-			//if (!is_clipped) {
+			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x =   ndc.vtx[j].as_struct.x * HEIGHT/2 +  WIDTH/2; // map [-1:1] to [0:(WIDTH+HEIGHT)/2]
-				//screen.vtx[j].as_struct.x =  WIDTH/2 - ndc.vtx[j].as_struct.x * HEIGHT/2; // map [-1:1] to [(WIDTH+HEIGHT)/2:0]
-				//screen.vtx[j].as_struct.y = -(ndc.vtx[j].as_struct.y * HEIGHT/2 - HEIGHT/2);
-				screen.vtx[j].as_struct.y =  (ndc.vtx[j].as_struct.y * HEIGHT/2 + HEIGHT/2); // map [-1:1] to [0:HEIGHT]
-				//screen.vtx[j].as_struct.y = HEIGHT/2.0 - ndc.vtx[j].as_struct.y * HEIGHT/2.0; // map [-1:1] to [HEIGHT:0]
-				//screen.vtx[j].as_struct.z = DEPTH/2 - ndc.vtx[j].as_struct.z * DEPTH/2; // map [-1:1] to [DEPTH:0]
-				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * DEPTH/2 + DEPTH/2; // map [-1:1] to [0:DEPTH]
-				screen.vtx[j].as_struct.w =   ndc.vtx[j].as_struct.w;
+				screen.vtx[j].as_struct.x = (ndc.vtx[j].as_struct.x + 1.0) *  WIDTH / 2.0; // map [-1:1] to [0:WIDTH]
+				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0) * HEIGHT / 2.0; // map [-1:1] to [0:HEIGHT]
+				screen.vtx[j].as_struct.z =  DEPTH * (1.0 - ndc.vtx[j].as_struct.z) / 2.0; // map [-1:1] to [DEPTH:0]				
+				screen.vtx[j].as_struct.w =  ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {
 					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
-			//}
-			//else break;
+			}
 		}
 		
-		//if (!is_clipped) {
+		if (!is_clipped) {
 			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
-		//}
+		}
     }
 }
