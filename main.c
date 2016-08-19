@@ -23,13 +23,13 @@ Float3 UNIFORM_LIGHT;
 // from the object space to the world space
 void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
 	
-	fmat4_fmat4_fmat4_mult ( proj, view, &(obj->model), &(obj->mvpv)); 
+	fmat4_fmat4_fmat4_mult ( proj, view, &(obj->model), &(obj->mvp)); 
     fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
-	print_fmat4 (&(obj->model), "model matrix");
-	print_fmat4 (view, "view matrix");
-	print_fmat4 (proj, "projection matrix");
+	//print_fmat4 (&(obj->model), "model matrix");
+	//print_fmat4 (view, "view matrix");
+	//print_fmat4 (proj, "projection matrix");
 	
 	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
 	//Float4 light_new = fmat4_Float4_mult  (&UNIFORM_M, &light_dir4);

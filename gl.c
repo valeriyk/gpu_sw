@@ -272,7 +272,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		
 		for (int j = 0; j < 3; j++) {
 			
-			clip.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvpv));
+			clip.vtx[j] = vshader (obj->wfobj, i, j, &(obj->mvp));
 			
 			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {

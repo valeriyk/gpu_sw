@@ -62,10 +62,10 @@ typedef struct Object {
 	float3 rotate;
 	float3 tran;
 	fmat4  model;
-	fmat4  mvpv; // pre-multiplied ModelViewProjectionViewport matrix
+	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
 } Object;
 
-typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv);
+typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp);
 typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
 int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);

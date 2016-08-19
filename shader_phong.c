@@ -21,7 +21,7 @@ Float3 PHONG_VARYING_N[3];
 //Float3 UNIFORM_LIGHT;
 
 
-Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
+Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
 	if (PHONG_VSHADER_DEBUG) {
 		printf ("\tcall phong_vertex_shader()\n");
@@ -30,7 +30,7 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) 
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
 	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
-	Float4 vtx4d = fmat4_Float4_mult (mvpv, &mc);
+	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->texture != NULL) {
