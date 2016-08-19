@@ -296,7 +296,8 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				//screen.vtx[j].as_struct.y = -(ndc.vtx[j].as_struct.y * HEIGHT/2 - HEIGHT/2);
 				screen.vtx[j].as_struct.y =  (ndc.vtx[j].as_struct.y * HEIGHT/2 + HEIGHT/2); // map [-1:1] to [0:HEIGHT]
 				//screen.vtx[j].as_struct.y = HEIGHT/2.0 - ndc.vtx[j].as_struct.y * HEIGHT/2.0; // map [-1:1] to [HEIGHT:0]
-				screen.vtx[j].as_struct.z = DEPTH/2 - ndc.vtx[j].as_struct.z * DEPTH/2; // map [-1:1] to [DEPTH:0]
+				//screen.vtx[j].as_struct.z = DEPTH/2 - ndc.vtx[j].as_struct.z * DEPTH/2; // map [-1:1] to [DEPTH:0]
+				screen.vtx[j].as_struct.z = ndc.vtx[j].as_struct.z * DEPTH/2 + DEPTH/2; // map [-1:1] to [0:DEPTH]
 				screen.vtx[j].as_struct.w =   ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {

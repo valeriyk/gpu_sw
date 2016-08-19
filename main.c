@@ -210,6 +210,7 @@ int main(int argc, char** argv) {
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
     write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
+    write_tga_file ("zbuffer.tga", (tbyte *) zbuffer, WIDTH, HEIGHT, 8, 1);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);
