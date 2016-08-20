@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#define DEBUG_GEOM_0 0
 
 typedef int32_t int3 [3];
 
@@ -62,10 +65,15 @@ static inline void fmat4_set (fmat4 *mat, int row, int col, float val) {
 	(*mat)[row][col] = val;
 }
 
+//void fmat4_identity (fmat4 *m);
+	
 void fmat3_set_col (fmat3 *mat, Float3 *in, int col_idx);
 
 void  fmat4_transpose  (fmat4 *in, fmat4 *out);
 void  fmat4_inv_transp (fmat4 *in, fmat4 *out);
+void  fmat4_invert_transpose (fmat4 *in, fmat4 *out, bool transpose);
+void  fmat4_inv        (fmat4 *in, fmat4 *out);
+void  fmat4_copy       (fmat4 *in, fmat4 *out);
 
 void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d);
 void  fmat4_fmat4_mult  (fmat4 *a, fmat4 *b,  fmat4 *c);
@@ -87,5 +95,3 @@ Float3 Float4_Float3_vect_conv (Float4 *in);
 void   Float3_normalize (Float3 *v);
 
 void   print_fmat4 (fmat4 *m, char *header);
-
-

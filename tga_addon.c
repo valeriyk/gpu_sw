@@ -5,7 +5,7 @@ void write_tga_file (char *tga_file, tbyte *buffer, int width, int height, int d
 	TGA *tga = TGAOpen (tga_file, "w");
 	tga->hdr.id_len 	= 0;
 	tga->hdr.map_t		= 0;
-	tga->hdr.img_t 		= (depth == 24) ? 2 : 3;
+	tga->hdr.img_t 		= (depth == 8) ? 3 : 2; // 8-bit format is black&white, others are rgb
 	tga->hdr.map_first 	= 0;
 	tga->hdr.map_entry 	= 0;
 	tga->hdr.map_len	= 0;

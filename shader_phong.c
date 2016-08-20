@@ -107,7 +107,8 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	}
 	
 	float intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
-	if (intensity <= 0) return false;
+	//if (intensity <= 0) return false;
+	if (intensity <= 0.1) intensity = 0.1;//return false;
 	
 	if (PHONG_PSHADER_DEBUG_0) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);

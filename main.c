@@ -2,8 +2,9 @@
 #include "wavefront_obj.h"
 #include "geometry.h"
 #include "gl.h"
-#include "shader_normalmap.h"
-#include "shader_phong.h"
+//#include "shader_normalmap.h"
+//#include "shader_phong.h"
+#include "shader_depth.h"
 #include "bitmap.h"
 #include <tga_addon.h>
 
@@ -16,23 +17,29 @@
 // these are global:
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
+fmat4  UNIFORM_MSHADOW;
 Float3 UNIFORM_LIGHT;
+screenz_t *UNIFORM_SHADOWBUF;
+
 
 // Object transform, aka world transform function.  
 // Computes matrices that will be used to transform a model's vertices and normals
 // from the object space to the world space
 void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
 	
-	fmat4_fmat4_fmat4_mult ( proj, view, &(obj->model), &(obj->mvp)); 
+	//fmat4_fmat4_fmat4_mult ( proj, view, &(obj->model), &(obj->mvp)); 
+    //fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
     fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
+    fmat4_fmat4_mult ( proj, &UNIFORM_M, &(obj->mvp));
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
-	//print_fmat4 (&(obj->model), "model matrix");
-	//print_fmat4 (view, "view matrix");
-	//print_fmat4 (proj, "projection matrix");
-	
+	/*print_fmat4 (&(obj->model), "model matrix");
+	print_fmat4 (view, "view matrix");
+	print_fmat4 (proj, "projection matrix");
+	print_fmat4 (&UNIFORM_M, "UNIFORM_M");
+	print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
+	*/
 	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
-	//Float4 light_new = fmat4_Float4_mult  (&UNIFORM_M, &light_dir4);
 	// Light vector changes after View and Projection transformations only,
 	// it does not depend on Model transformation
 	Float4 light_new = fmat4_Float4_mult  (view, &light_dir4);
@@ -44,9 +51,13 @@ int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;
     
-    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t)    );
+    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
     pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    
+    screenz_t     *depth_buffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
+    //pixel_color_t *shadow_buffer = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    UNIFORM_SHADOWBUF = depth_buffer;
     
     pixel_color_t *active_fbuffer = NULL;
     
@@ -100,15 +111,16 @@ int main(int argc, char** argv) {
 	obj_build_model     (floor1);
 	*/
 	Object *cube1 = obj_new (my_cube);
-	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
-	obj_set_rotation (cube1, 45, 45, 0);
-	obj_set_translation (cube1, -0.4f, 0.1f, 0.f);
+	obj_set_scale    (cube1, 10, 10, 10);
+	//obj_set_rotation (cube1, 45, 45, 0);
+	obj_set_translation (cube1, -5.5f, 5.5f, -5.5f);
 	obj_init_model (cube1);
 	
 	Object *cube2 = obj_new (my_cube);
 	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
-	obj_set_rotation (cube2, 45, 45, 0);
-	obj_set_translation (cube2, 0.4f, 0.1f, 0.f);
+	obj_set_scale    (cube2, 2, 2, 2);
+	//obj_set_rotation (cube2, 45, 45, 0);
+	obj_set_translation (cube2, 1.5f, -1.5f, 1.5f);
 	obj_init_model (cube2);
 	/*
 	Object *floor2 = obj_new (my_floor);
@@ -124,21 +136,25 @@ int main(int argc, char** argv) {
 	
 	// 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( 0.0f,   0.0f,   5.0f);
-	Float3 center = Float3_set ( 0.0f,   0.0f,   4.0f);
+    Float3 eye    = Float3_set ( 0.0f,   0.0f,   10.000f);
+	Float3 center = Float3_set ( 0.0f,   0.0f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
     // 3. Projection Matrix - perspective correction
-	float right = 2;
-	float left  = -right;
-	float top   = 2;
+	float aspect_ratio = 16/9;
+	float top   = 0.6;
 	float bot   = -top;
-	float near  = 4;
-	float far   = 20;
-	fmat4 proj  = FMAT4_IDENTITY;
-	init_projection (&proj, left, right, top, bot, near, far);
+	float right = top * aspect_ratio;
+	float left  = -right;
+	float near  = 1;
+	float far   = 100;
+	
+	fmat4 persp_proj  = FMAT4_IDENTITY;
+	fmat4 ortho_proj  = FMAT4_IDENTITY;
+	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
+	init_ortho_proj       (&ortho_proj, left*20, right*20, top*20, bot*20, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
@@ -148,33 +164,85 @@ int main(int argc, char** argv) {
 	
     
     
-    Float3 light_dir = Float3_set (-1.0f,  -0.3f,  -1.0f);
-    //Float3 light_dir = Float3_set ( 0.0f,   0.0f,  -1.0f);
-    
-    
-    //fmat4 viewport_proj_view;
-	//fmat4_fmat4_fmat4_mult (&viewport, &proj, &view, &viewport_proj_view);
-	
-	//fmat4 proj_view;
-    //fmat4_fmat4_mult (&proj, &view, &proj_view);
-	
-	
-					
+    //Float3 light_dir = Float3_set (-1.0f,  -0.3f,  -1.0f);
+    Float3 light_dir = Float3_set ( -1.0f,  1.0f,  -1.25f);
+    Float3 light_src = Float3_set ( 40.0f,   -40.0f,   50.0f);
+    					
     //do {
-    for (int i = 0; i < 2; i++) {
+    bool heads = 0;
+    for (int i = 0; i < 1; i++) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
-		for (int i = 0; i < screen_size; i++) zbuffer[i] = 0;
+		for (int i = 0; i < screen_size; i++) {
+			zbuffer[i] = 0;
+			depth_buffer[i] = 0;
+		}
 		
-		obj_transform           (head1, &proj, &view, &light_dir);
-		obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
-		//obj_draw            (head1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
+		init_view (&view, &light_src, &center, &up);
 		
-		obj_transform           (head2, &proj, &view, &light_dir);
-		//obj_draw            (head2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
-		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
+		fmat4 shadow_mvp;
+		fmat4 mvp_inv;
+		if (heads) {
+			obj_transform       (head1, &ortho_proj, &view, &light_dir);
+			obj_draw            (head1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
+			
+			obj_transform       (head2, &ortho_proj, &view, &light_dir);
+			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
+		}
+		else {
+			init_view     (&view, &light_src, &center, &up);
+			obj_transform (cube1, &ortho_proj, &view, &light_dir);
+			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
+			fmat4_copy    (&(cube1->mvp), &shadow_mvp);
+			
+			init_view        (&view, &eye, &center, &up);
+			obj_transform    (cube1, &persp_proj, &view, &light_dir);
+			fmat4_inv        (&(cube1->mvp), &mvp_inv);
+			fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
+			if (DEBUG_0) {
+				print_fmat4 (&shadow_mvp, "shadow_mvp 1");
+				print_fmat4 (&(cube1->mvp), "cube1 mvp");
+				print_fmat4 (&mvp_inv, "mvp_inv 1");
+				print_fmat4 (&UNIFORM_MSHADOW, "UNIFORM_MSHADOW 1");
+			}
+			obj_draw         (cube1, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			
+			init_view     (&view, &light_src, &center, &up);
+			obj_transform (cube2, &ortho_proj, &view, &light_dir);
+			obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
+			fmat4_copy    (&(cube2->mvp), &shadow_mvp);
+			
+			init_view        (&view, &eye, &center, &up);
+			obj_transform    (cube2, &persp_proj, &view, &light_dir);
+			fmat4_inv        (&(cube2->mvp), &mvp_inv);
+			fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
+			if (DEBUG_0) {
+				print_fmat4 (&shadow_mvp, "shadow_mvp 2");
+				print_fmat4 (&(cube2->mvp), "cube2 mvp");
+				print_fmat4 (&mvp_inv, "mvp_inv 2");
+				print_fmat4 (&UNIFORM_MSHADOW, "UNIFORM_MSHADOW 2");
+			}
+			obj_draw         (cube2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+		}
+		/*
+		//UNIFORM_MSHADOW = UNIFORM_M;
 		
+		init_view (&view, &eye, &center, &up);
 		
+		//UNIFORM_MSHADOW = 
+		
+		if (heads) {
+			obj_transform       (head1, &persp_proj, &view, &light_dir);
+			obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
+			
+			obj_transform       (head2, &persp_proj, &view, &light_dir);
+			obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
+		}
+		else {
+			
+			;
+		}
+		*/
 		//obj_transform       (diablo1, &proj, &view, &light_dir);
 		////obj_draw            (diablo1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
 		//obj_draw            (diablo1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
@@ -189,15 +257,6 @@ int main(int argc, char** argv) {
 		light_dir.as_struct.x = -light_dir.as_struct.x;
 		light_dir.as_struct.y = -light_dir.as_struct.y;
 		
-		/*
-		obj_transform	       (cube2, &proj, &view, &light_dir);
-		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-		obj_draw           (cube2, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
-		
-		obj_transform	       (cube1, &proj, &view, &light_dir);
-		//obj_draw           (cube1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-		obj_draw           (cube1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer, &viewport);
-		*/
 		
 		/*
 		obj_transform       (floor2, &vpv, &projview, &light_dir);
@@ -209,8 +268,11 @@ int main(int argc, char** argv) {
 	}// while (0);
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
-    write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
+    //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
     write_tga_file (   "zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT,  8, 1);
+	
+	//write_tga_file ("shadow_buffer.tga", (tbyte *) shadow_buffer, WIDTH, HEIGHT, 24, 1);
+    write_tga_file ("depth_buffer.tga", (tbyte *)  depth_buffer, WIDTH, HEIGHT,  8, 1);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);

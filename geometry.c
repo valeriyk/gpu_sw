@@ -3,10 +3,25 @@
 #include <math.h>
 #include <stdarg.h>
 
-//float det3x3 (fmat3 *m);
-
+float det3x3 (fmat3 *m);
+//void fmat4_invert_transpose (fmat4 *in, fmat4 *out, bool transpose);
+	
+	
 void fmat3_set_col (fmat3 *mat, Float3 *in, int col_idx) {
 	for (int i = 0; i < 3; i++) fmat3_set (mat, i, col_idx, in->as_array[i]);
+}
+
+void fmat4_identity (fmat4 *m) {
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (i == j) {
+				fmat4_set (m, i, j, 1.0);
+			}
+			else {
+				fmat4_set (m, i, j, 0.0);
+			}
+		}
+	}
 }
 
 void  fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c) {
@@ -37,6 +52,12 @@ void fmat4_transpose (fmat4 *in, fmat4 *out) {
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			(*out)[i][j] = (*in)[j][i];
+}
+
+void fmat4_copy (fmat4 *in, fmat4 *out) {
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			(*out)[i][j] = (*in)[i][j];
 }
 
 void fmat4_get_minor (fmat4 *in, int r, int c, fmat3 *out) {
@@ -72,19 +93,37 @@ void fmat4_adjugate (fmat4 *in, fmat4 *out) {
 	fmat4_transpose (&cof, out);
 }
 
+void fmat4_inv (fmat4 *in, fmat4 *out) {
+	fmat4_invert_transpose (in, out, 0);
+}
+
 void fmat4_inv_transp (fmat4 *in, fmat4 *out) {
+	fmat4_invert_transpose (in, out, 1);
+}
+
+void fmat4_invert_transpose (fmat4 *in, fmat4 *out, bool transpose) {
 	// inverse of M = adjoint of M / det M
+	if (DEBUG_GEOM_0) print_fmat4 (in, "inv_tr in");
 	fmat4 adj;
 	fmat4_adjugate(in, &adj);
+	if (DEBUG_GEOM_0) print_fmat4 (adj, "inv_tr adj");
 	float det = 0.0f;
-	fmat3 minor;
+	//fmat3 minor;
 	for (int i = 0; i < 4; i++) {
-		fmat4_get_minor (&adj, 0, i, &minor);
-		det += adj[0][i] * det3x3 (&minor) * ((i % 2) ? -1 : 1);
+		//fmat4_get_minor (&adj, 0, i, &minor);
+		//fmat4_get_minor (in, i, 0, &minor);
+		//print_fmat3 (minor, "minor");
+		//float det3 = det3x3 (&minor);
+		//printf("det3 %d = %f\n", i, det3);
+		//det += adj[0][i] * det3 * ((i % 2) ? -1 : 1);
+		det += (*in)[i][0] * adj[0][i] * ((i % 2) ? -1 : 1);
 	}
+	//printf ("det %f\n", det);
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			(*out)[i][j] = adj[j][i] / det; // also transpose right here
+			(*out)[i][j] = adj[j][i] / det; // transpose right here
+			//if (transpose) (*out)[i][j] = adj[j][i] / det; // transpose right here
+			//else (*out)[i][j] = adj[i][j] / det; // don't transpose
 }
 
 Float4 fmat4_Float4_mult (fmat4 *a, Float4 *b) {

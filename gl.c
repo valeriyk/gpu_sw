@@ -73,11 +73,13 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
-				float sum_of_bars = 0.0f;
+				float sum_of_bars      = 0.0f;
+				float sum_of_bar_clips = 0.0f;
 				Float3 bar_clip;
 				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) (bar[i] >> FIX_PT_PRECISION)* t->vtx[i].as_struct.w; // W here actually contains 1/W
-					sum_of_bars += bar_clip.as_array[i];
+					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
+					sum_of_bar_clips += bar_clip.as_array[i];
+					sum_of_bars += (bar[i]);
 				}
 				if (sum_of_bars == 0) {
 					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
@@ -86,17 +88,23 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				
 				//p.z = (screenz_t) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
 				float duck = 0;
+				
 				for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar_clip.as_array[i];
-				duck /= sum_of_bars;
+				duck /= sum_of_bar_clips;
+				
+				//for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar[i];
+				//duck /= sum_of_bars;
+				
 				p.z = (screenz_t) duck; 
+				
 				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] /= sum_of_bars;
+					bar_clip.as_array[i] /= sum_of_bar_clips;
 				}
 				uint32_t pix_num = p.x + p.y*WIDTH;
 				if (p.z > zbuffer[pix_num]) {
 					zbuffer[pix_num] = p.z;
 					pixel_color_t color;
-					if (pshader (obj, &bar_clip, &color)) {
+					if (pshader (obj, &bar_clip, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (HEIGHT-p.y-1)*WIDTH] = color;
 					}
 				}
@@ -150,7 +158,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 	print_fmat4 (m, "viewport matrix");
 }*/
 
-void init_projection (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
+void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
 	fmat4_set (m, 0, 2,       (right + left) / (right - left));
 	fmat4_set (m, 1, 1,       ( 2.0f * near) / (  top -  bot));
@@ -159,6 +167,16 @@ void init_projection (fmat4 *m, float left, float right, float top, float bot, f
 	fmat4_set (m, 2, 3, (-2.0f * far * near) / (  far - near));
 	fmat4_set (m, 3, 2,  -1.0f);
 	fmat4_set (m, 3, 3,   0.0f);
+}
+
+void init_ortho_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
+	fmat4_set (m, 0, 0,            2.0f / (right - left));
+	fmat4_set (m, 0, 3, -(right + left) / (right - left));
+	fmat4_set (m, 1, 1,            2.0f / (  top -  bot));
+	fmat4_set (m, 1, 3, -(  top +  bot) / (  top -  bot));
+	fmat4_set (m, 2, 2,           -2.0f / (  far - near));
+	fmat4_set (m, 2, 3, -(  far + near) / (  far - near));
+	fmat4_set (m, 3, 3, 1.0f);
 }
 
 void init_view (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up) {
@@ -290,13 +308,14 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
 				screen.vtx[j].as_struct.x = WIDTH / 2.0 + ndc.vtx[j].as_struct.x * HEIGHT / 2.0; // map [-1:1] to [0:(WIDTH+HEIGTH)/2]
+				//screen.vtx[j].as_struct.x = (ndc.vtx[j].as_struct.x + 1.0) *  WIDTH / 2.0; // map [-1:1] to [0:WIDTH]
 				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0) * HEIGHT / 2.0; // map [-1:1] to [0:HEIGHT]
 				screen.vtx[j].as_struct.z =  DEPTH * (1.0 - ndc.vtx[j].as_struct.z) / 2.0; // map [-1:1] to [DEPTH:0]				
 				screen.vtx[j].as_struct.w =  ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {
-					printf ("\t\tNDC coord:    %f, %f, %f\n",        ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
-					printf ("\t\tscreen coord: %f, %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+					printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
+					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
 			}
 		}
