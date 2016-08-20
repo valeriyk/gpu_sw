@@ -111,16 +111,16 @@ int main(int argc, char** argv) {
 	obj_build_model     (floor1);
 	*/
 	Object *cube1 = obj_new (my_cube);
-	obj_set_scale    (cube1, 10, 10, 10);
+	obj_set_scale    (cube1, 2, 2, 2);
 	//obj_set_rotation (cube1, 45, 45, 0);
-	obj_set_translation (cube1, -5.5f, 5.5f, -5.5f);
+	obj_set_translation (cube1, -1.5f, 0.f, 1.5f);
 	obj_init_model (cube1);
 	
 	Object *cube2 = obj_new (my_cube);
 	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
 	obj_set_scale    (cube2, 2, 2, 2);
 	//obj_set_rotation (cube2, 45, 45, 0);
-	obj_set_translation (cube2, 1.5f, -1.5f, 1.5f);
+	obj_set_translation (cube2, 1.5f, 0.f, 1.5f);
 	obj_init_model (cube2);
 	/*
 	Object *floor2 = obj_new (my_floor);
@@ -149,12 +149,12 @@ int main(int argc, char** argv) {
 	float right = top * aspect_ratio;
 	float left  = -right;
 	float near  = 1;
-	float far   = 100;
+	float far   = 5;
 	
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	init_ortho_proj       (&ortho_proj, left*20, right*20, top*20, bot*20, near, far);
+	init_ortho_proj       (&ortho_proj, left*5, right*5, top*5, bot*5, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
     
     
     //Float3 light_dir = Float3_set (-1.0f,  -0.3f,  -1.0f);
-    Float3 light_dir = Float3_set ( -1.0f,  1.0f,  -1.25f);
-    Float3 light_src = Float3_set ( 40.0f,   -40.0f,   50.0f);
+    Float3 light_dir = Float3_set ( -1.0f,  -0.1f,  -0.25f);
+    Float3 light_src = Float3_set ( 4.0f,   0.4f,   1.0f);
     					
     //do {
     bool heads = 0;

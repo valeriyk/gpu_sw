@@ -67,7 +67,7 @@ Float4 depth_vshader_pass2 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
 	
 	for (int i = 0; i < 3; i++) {
-		DEPTH_PASS2_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i];// / vtx4d.as_struct.w; // TBD div by zero?
+		DEPTH_PASS2_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i] / vtx4d.as_struct.w; // TBD div by zero?
 	}
 	
 	// extract the texture UV coordinates of the vertex
@@ -108,7 +108,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	int sb_x = (int) WIDTH / 2.0 + sb_p.as_struct.x * HEIGHT / 2.0;
 	int sb_y = (int) ((sb_p.as_struct.y + 1.0) * HEIGHT / 2.0);
 	int sb_z = (int) DEPTH * (1.0 - sb_p.as_struct.z) / 2.0;
-	printf ("depth pshader2: ndc3: %f %f %f  ndc4: %f %f %f %f  shadowbuf: %f(%d) %f(%d) %f(%d)\n", ndc.as_struct.x, ndc.as_struct.y, ndc.as_struct.z, ndc4.as_struct.x, ndc4.as_struct.y, ndc4.as_struct.z, ndc4.as_struct.w, sb_p.as_struct.x, sb_x, sb_p.as_struct.y, sb_y, sb_p.as_struct.z, sb_z);
+	//printf ("depth pshader2: ndc3: %f %f %f  ndc4: %f %f %f %f  shadowbuf: %f(%d) %f(%d) %f(%d)\n", ndc.as_struct.x, ndc.as_struct.y, ndc.as_struct.z, ndc4.as_struct.x, ndc4.as_struct.y, ndc4.as_struct.z, ndc4.as_struct.w, sb_p.as_struct.x, sb_x, sb_p.as_struct.y, sb_y, sb_p.as_struct.z, sb_z);
 	screenz_t shadow_z = (screenz_t) *(UNIFORM_SHADOWBUF + (sb_x + sb_y*WIDTH)*sizeof(screenz_t));
 	float shadow;
 	if (shadow_z < sb_z) shadow = 1.0;
