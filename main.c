@@ -17,7 +17,8 @@
 // these are global:
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
-fmat4  UNIFORM_MSHADOW;
+fmat4  UNIFORM_MVP_SHADOW;
+fmat4  UNIFORM_MVP_INV;
 Float3 UNIFORM_LIGHT;
 screenz_t *UNIFORM_SHADOWBUF;
 
@@ -134,14 +135,7 @@ int main(int argc, char** argv) {
 	obj_build_model     (floor3);
 	*/
 	
-	// 2. View Matrix - transform global coords to camera coords
-	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( 3.0f,   3.0f,   3.000f);
-	Float3 center = Float3_set ( 0.0f,   0.0f,   0.0f);
-	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
-	fmat4 view    = FMAT4_IDENTITY;	
-	init_view (&view, &eye, &center, &up);
-    
+	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
 	float top   = 0.6;
@@ -154,7 +148,7 @@ int main(int argc, char** argv) {
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	init_ortho_proj       (&ortho_proj, left*5, right*5, top*5, bot*5, near, far);
+	init_ortho_proj       (&ortho_proj, left*2.5, right*2.5, top*2.5, bot*2.5, near*2.5, far*2.5);
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
@@ -163,10 +157,17 @@ int main(int argc, char** argv) {
     
 	
     
+    // 2. View Matrix - transform global coords to camera coords
+	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
+    Float3 eye    = Float3_set ( -2.f,  -2.f,   2.000f);
+	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
+	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
+	fmat4 view    = FMAT4_IDENTITY;	
+	init_view (&view, &eye, &center, &up);
     
     //Float3 light_dir = Float3_set (-1.0f,  -0.3f,  -1.0f);
     Float3 light_dir = Float3_set ( 0.0f,  -0.0f,  -1.0f);
-    Float3 light_src = Float3_set ( 0.0f,   0.0f,   1.0f);
+    Float3 light_src = Float3_set ( 0.0f,   0.0f,   3.0f);
     					
     //do {
     // 0 - heads, 1 - cubes, 2 - floors
@@ -181,8 +182,8 @@ int main(int argc, char** argv) {
 		
 		init_view (&view, &light_src, &center, &up);
 		
-		fmat4 shadow_mvp;
-		fmat4 mvp_inv;
+		//fmat4 shadow_mvp;
+		//fmat4 mvp_inv;
 		if (fig == 0) {
 			obj_transform       (head1, &ortho_proj, &view, &light_dir);
 			obj_draw            (head1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
@@ -191,14 +192,14 @@ int main(int argc, char** argv) {
 			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
 		}
 		else if (fig == 1) {
-			init_view     (&view, &light_src, &center, &up);
+			/*init_view     (&view, &light_src, &center, &up);
 			obj_transform (cube1, &ortho_proj, &view, &light_dir);
 			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
-			fmat4_copy    (&(cube1->mvp), &shadow_mvp);
+			fmat4_copy    (&(cube1->mvp), &UNIFORM_MVP_SHADOW);
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (cube1, &persp_proj, &view, &light_dir);
-			fmat4_inv        (&(cube1->mvp), &mvp_inv);
+			fmat4_inv        (&(cube1->mvp), &UNIFORM_MVP_INV);
 			fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
 			if (DEBUG_0) {
 				print_fmat4 (&shadow_mvp, "shadow_mvp 1");
@@ -223,42 +224,43 @@ int main(int argc, char** argv) {
 				print_fmat4 (&mvp_inv, "mvp_inv 2");
 				print_fmat4 (&UNIFORM_MSHADOW, "UNIFORM_MSHADOW 2");
 			}
-			obj_draw         (cube2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			obj_draw         (cube2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);*/
 		}
 		else if (fig == 2) {
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (floor1, &ortho_proj, &view, &light_dir);
 			obj_draw      (floor1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
-			fmat4_copy    (&(floor1->mvp), &shadow_mvp);
+			fmat4_copy    (&(floor1->mvp), &UNIFORM_MVP_SHADOW);
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (floor1, &persp_proj, &view, &light_dir);
-			fmat4_inv        (&(floor1->mvp), &mvp_inv);
-			fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
+			fmat4_inv        (&(floor1->mvp), &UNIFORM_MVP_INV);
+			//fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
 			if (DEBUG_0) {
-				print_fmat4 (&shadow_mvp, "shadow_mvp 1");
+				//print_fmat4 (&shadow_mvp, "shadow_mvp 1");
 				print_fmat4 (&(floor1->mvp), "floor1 mvp");
-				print_fmat4 (&mvp_inv, "mvp_inv 1");
-				print_fmat4 (&UNIFORM_MSHADOW, "UNIFORM_MSHADOW 1");
+				print_fmat4 (&UNIFORM_MVP_INV, "mvp_inv 1");
+				print_fmat4 (&UNIFORM_MVP_SHADOW, "UNIFORM_MVP_SHADOW 1");
 			}
 			obj_draw         (floor1, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 			
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (floor2, &ortho_proj, &view, &light_dir);
 			obj_draw      (floor2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer, NULL);
-			fmat4_copy    (&(floor2->mvp), &shadow_mvp);
+			fmat4_copy    (&(floor2->mvp), &UNIFORM_MVP_SHADOW);
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (floor2, &persp_proj, &view, &light_dir);
-			fmat4_inv        (&(floor2->mvp), &mvp_inv);
-			fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
+			fmat4_inv        (&(floor2->mvp), &UNIFORM_MVP_INV);
+			//fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
 			if (DEBUG_0) {
-				print_fmat4 (&shadow_mvp, "shadow_mvp 2");
+				//print_fmat4 (&shadow_mvp, "shadow_mvp 2");
 				print_fmat4 (&(floor2->mvp), "floor2 mvp");
-				print_fmat4 (&mvp_inv, "mvp_inv 2");
-				print_fmat4 (&UNIFORM_MSHADOW, "UNIFORM_MSHADOW 2");
+				print_fmat4 (&UNIFORM_MVP_INV, "mvp_inv 2");
+				print_fmat4 (&UNIFORM_MVP_SHADOW, "UNIFORM_MVP_SHADOW 2");
 			}
 			obj_draw         (floor2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			
 		}
 		/*
 		//UNIFORM_MSHADOW = UNIFORM_M;

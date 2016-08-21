@@ -14,8 +14,9 @@ Float3 DEPTH_VARYING_V;
 
 Float3 DEPTH_VARYING_N[3];
 
-Float3 DEPTH_PASS1_VARYING_NDC[3];
+//Float3 DEPTH_PASS1_VARYING_NDC[3];
 Float3 DEPTH_PASS2_VARYING_NDC[3];
+Float3 DEPTH_PASS2_VARYING_SCREEN[3];
 
 Float4 depth_vshader_pass1 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
@@ -28,9 +29,10 @@ Float4 depth_vshader_pass1 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
 	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
 	
-	for (int i = 0; i < 3; i++) {
-		DEPTH_PASS1_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i] / vtx4d.as_struct.w; // TBD div by zero?
-	}
+	/*for (int i = 0; i < 3; i++) {
+		if (vtx4d.as_struct.w != 1.0) printf ("unexpected shadow build W != 1, W = %f\n", vtx4d.as_struct.w);
+		DEPTH_PASS1_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i];// don't divide, W=1 for ortho proj / vtx4d.as_struct.w;
+	}*/
 	
 	return vtx4d;
 }
@@ -41,15 +43,21 @@ bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		printf ("\t\tcall phong_pixel_shader()\n");
 	}
 	
-	Float3 ndc;
+	/*Float3 ndc;
 	for (int i = 0; i < 3; i++) {
 		ndc.as_array[i] = Float3_Float3_smult (&DEPTH_PASS1_VARYING_NDC[i], barw);
 	}
 	for (int i = 0; i < 3; i++)
 		if ((ndc.as_array[i] > 1.0) || (ndc.as_array[i] < -1.0)) return false;
+	
+	
+	int sb_x = (int) WIDTH / 2.0 + ndc.as_struct.x * HEIGHT / 2.0;
+	int sb_y = (int) ((ndc.as_struct.y + 1.0) * HEIGHT / 2.0);
+	int sb_z = (int) DEPTH * (1.0 - ndc.as_struct.z) / 2.0;
+	printf ("shadowbuffer fill: %f %f %f - %d %d %d\n", ndc.as_struct.x, ndc.as_struct.y, ndc.as_struct.z, sb_x, sb_y, sb_z);
 		
 	//screenz_t val = DEPTH * (1.0 - ndc.as_struct.z) / 2.0;
-	//*color = set_color (val, val, val, 0);
+	//*color = set_color (val, val, val, 0);*/
 	return true;
 }
 
@@ -66,8 +74,17 @@ Float4 depth_vshader_pass2 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
 	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
 	
-	for (int i = 0; i < 3; i++) {
-		DEPTH_PASS2_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i] / vtx4d.as_struct.w; // TBD div by zero?
+	
+	Float4 vtx4d_shadow = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW, &mc);
+	if (0) {
+		for (int i = 0; i < 3; i++) {
+			DEPTH_PASS2_VARYING_NDC[i].as_array[vtx_idx] = vtx4d.as_array[i] / vtx4d.as_struct.w;
+		}	
+	}
+	else {
+		DEPTH_PASS2_VARYING_SCREEN[0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0;
+		DEPTH_PASS2_VARYING_SCREEN[1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0) * HEIGHT / 2.0;
+		DEPTH_PASS2_VARYING_SCREEN[2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0;
 	}
 	
 	// extract the texture UV coordinates of the vertex
@@ -96,23 +113,41 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
 	}
 	
-	Float3 ndc;
+	Float3 screen;
 	for (int i = 0; i < 3; i++) {
-		ndc.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_NDC[i], barw);
+		screen.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i], barw);
 	}
 	//for (int i = 0; i < 3; i++)
 		//if ((ndc.as_array[i] > 1.0) || (ndc.as_array[i] < -1.0)) return false;
 	
-	Float4 ndc4 = Float3_Float4_pt_conv (&ndc);
-	Float4 sb_p = fmat4_Float4_mult (&UNIFORM_MSHADOW, &ndc4);
-	int sb_x = (int) WIDTH / 2.0 + sb_p.as_struct.x * HEIGHT / 2.0;
-	int sb_y = (int) ((sb_p.as_struct.y + 1.0) * HEIGHT / 2.0);
-	int sb_z = (int) DEPTH * (1.0 - sb_p.as_struct.z) / 2.0;
+	//Float4 ndc4 = Float3_Float4_pt_conv (&ndc);
+	//Float4 clip;
+	//for (int i = 0; i < 3; i++) clip.as_array[i] = ndc.as_array[i] * DEPTH_PASS2_VARYING_W.as_array[i];
+	//clip.as_struct.w = Float3_Float3_smult (&DEPTH_PASS2_VARYING_W, barw);
+	
+	//Float4 inv = fmat4_Float4_mult (&UNIFORM_MVP_INV, &ndc4);
+	//printf ("inverted bar xy: %f %f\n", inv.as_struct.x, inv.as_struct.y); //, sb_p.as_struct.z, sb_x, sb_y, sb_z, shadow_z);
+	
+	//Float4 sb_p = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW, &inv);
+	// value in shadowbuffer for this pixel
+	//if (sb_p.as_struct.w != 1.0) printf ("unexpected shadow reconstruction W != 1, W = %f\n", sb_p.as_struct.w);
+	//int sb_x = (int) WIDTH / 2.0 + sb_p.as_struct.x * HEIGHT / 2.0;
+	//int sb_y = (int) ((sb_p.as_struct.y + 1.0) * HEIGHT / 2.0);
+	//int sb_z = (int) DEPTH * (1.0 - sb_p.as_struct.z) / 2.0;
 	//printf ("depth pshader2: ndc3: %f %f %f  ndc4: %f %f %f %f  shadowbuf: %f(%d) %f(%d) %f(%d)\n", ndc.as_struct.x, ndc.as_struct.y, ndc.as_struct.z, ndc4.as_struct.x, ndc4.as_struct.y, ndc4.as_struct.z, ndc4.as_struct.w, sb_p.as_struct.x, sb_x, sb_p.as_struct.y, sb_y, sb_p.as_struct.z, sb_z);
-	screenz_t shadow_z = (screenz_t) *(UNIFORM_SHADOWBUF + (sb_x + sb_y*WIDTH)*sizeof(screenz_t));
-	float shadow;
-	if (shadow_z < sb_z) shadow = 1.0;
-	else shadow = 0.3;
+	// actual value in the shadowbuffer
+	//screenz_t shadow_z = (screenz_t) *(UNIFORM_SHADOWBUF + (sb_x + sb_y*WIDTH)*sizeof(screenz_t));
+	int sb_x = (int) screen.as_struct.x;
+	int sb_y = (int) screen.as_struct.y;
+	int sb_z = (int) screen.as_struct.z;
+	screenz_t shadow_z = (screenz_t) UNIFORM_SHADOWBUF[sb_x + sb_y*WIDTH];
+	
+	//printf ("shadowbuffer: %f %f %f - %d %d %d - %d", sb_p.as_struct.x, sb_p.as_struct.y, sb_p.as_struct.z, sb_x, sb_y, sb_z, shadow_z);
+	//if (shadow_z > sb_z) {printf (" - in shadow\n");} else printf("\n");
+	
+	float shadow = 1.0;
+	printf ("\tshadowbuffer: %d, my shadow: %d\n", shadow_z, sb_z);
+	if (shadow_z > sb_z) shadow = 0.3;
 	
 	
 	
