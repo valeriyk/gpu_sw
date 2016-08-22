@@ -9,6 +9,7 @@
 #include <tga_addon.h>
 
 #include <stdint.h>
+//#include <limits.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -20,8 +21,38 @@ fmat4  UNIFORM_MIT;
 fmat4  UNIFORM_MVP_SHADOW;
 fmat4  UNIFORM_MVP_INV;
 Float3 UNIFORM_LIGHT;
+
+
 screenz_t *UNIFORM_SHADOWBUF;
 
+
+
+void   print_fmat3 (fmat3 *m, char *header);
+void   print_fmat4 (fmat4 *m, char *header);
+
+
+
+void print_fmat4 (fmat4 *m, char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 4; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 4; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+void print_fmat3 (fmat3 *m, char *header) {
+	printf ("%s\n", header);
+	for (int i = 0; i < 3; i++) {
+		printf("row %d: ", i);
+		for (int j = 0; j < 3; j++)
+			printf ("%f ", (*m)[i][j]);
+		printf("\n");
+	}
+	printf("\n");
+}
 
 // Object transform, aka world transform function.  
 // Computes matrices that will be used to transform a model's vertices and normals
@@ -40,7 +71,7 @@ void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
 	print_fmat4 (&UNIFORM_M, "UNIFORM_M");
 	print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
 	*/
-	Float4 light_dir4 = Float3_Float4_vect_conv (light_dir);
+	Float4 light_dir4 = Float3_Float4_conv (light_dir, 0);
 	// Light vector changes after View and Projection transformations only,
 	// it does not depend on Model transformation
 	Float4 light_new = fmat4_Float4_mult  (view, &light_dir4);
@@ -155,7 +186,9 @@ int main(int argc, char** argv) {
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
 	//init_viewport (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
-    
+	if (set_screen_size ((screenxy_t) WIDTH, (screenxy_t) HEIGHT) != EXIT_SUCCESS) {
+		return 5;
+	}
     
 	
     

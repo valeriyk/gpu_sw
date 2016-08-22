@@ -1,6 +1,6 @@
 TCF          = ../../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
 #SYSCONF_LINK_x86 = gcc -ggdb -g3 -pg -O0 -I.
-SYSCONF_LINK_x86 = gcc -g -std=c99 -I.
+SYSCONF_LINK_x86 = gcc -g -std=c99 -I. -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0
 
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF)
 SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.

@@ -1,8 +1,6 @@
 #include "shader_phong.h"
 #include "gl.h"
 
-#include "main.h"
-
 #include <math.h>
 
 
@@ -29,7 +27,7 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
-	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
+	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
 	
 	// extract the texture UV coordinates of the vertex
@@ -41,7 +39,7 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj, face_idx, vtx_idx);
-	Float4 norm4d = Float3_Float4_vect_conv  (&norm3d);
+	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
 	for (int i = 0; i < 3; i++) {
 		PHONG_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];

@@ -18,7 +18,7 @@ Float4 nm_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvpv) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
-	Float4 mc = Float3_Float4_pt_conv (&vtx3d);
+	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult (mvpv, &mc);
 	
 	// extract the texture UV coordinates of the vertex
@@ -51,7 +51,7 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	Float3 normal;
 	Float3 nm3 = wfobj_get_normal_from_map (obj, uu, vv);
-	Float4 nm4 = Float3_Float4_vect_conv (&nm3);
+	Float4 nm4 = Float3_Float4_conv (&nm3, 0);
 	Float4 tmp = fmat4_Float4_mult (&UNIFORM_MIT, &nm4);
 	normal     = Float4_Float3_vect_conv (&tmp);
 	Float3_normalize (&normal);

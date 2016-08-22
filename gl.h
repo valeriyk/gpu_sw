@@ -25,36 +25,26 @@ typedef struct ScreenPt {
 } ScreenPt;
 
 typedef struct pixel_color_t {
-	uint8_t r, g, b;//, a;
+	uint8_t r, g, b;
+	//uint8_t r, g, b, a;
 	//uint8_t b, g, r, a;
 } pixel_color_t;
-
-typedef struct Point2D {
-    int x, y;
-} Point2D;
-
+/*
 typedef struct Face {
 	int3 vtx_idx; // vertex indices
 	int3 txt_idx; // texture indices
 } Face;
-
+*/
+/*
 typedef struct Vertex {
 	float3 norm;
 	float2 text;
 	ScreenPt coords;
 } Vertex;
-
+*/
 typedef struct Triangle {
 	Float4 vtx[3];
 } Triangle;
-
-/*typedef struct Triangle {
-	int3 cx;
-	int3 cy;
-	int3 cz;
-	float4 cw;
-} Triangle;
-*/
 
 typedef struct Object {
 	WFobj *wfobj;
@@ -66,7 +56,13 @@ typedef struct Object {
 } Object;
 
 typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp);
-typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
+typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
+
+
+int        set_screen_size   (screenxy_t width, screenxy_t height);
+screenxy_t get_screen_width  (void);
+screenxy_t get_screen_height (void);
+screenz_t  get_screen_depth  (void);
 
 int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
 
@@ -75,8 +71,7 @@ int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
 screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 
-void init_view       (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
-//void init_projection (fmat4 *m, float val);
+void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 void init_ortho_proj       (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 //void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
@@ -87,15 +82,15 @@ void draw_triangle (Triangle *t, pixel_shader shader, screenz_t *zbuffer, pixel_
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-void write_fbuffer (pixel_color_t *fbuffer, int x, int y, pixel_color_t *val);
-void write_zbuffer (screenz_t     *zbuffer, int x, int y, screenz_t     *val);
+//void write_fbuffer (pixel_color_t *fbuffer, int x, int y, pixel_color_t *val);
+//void write_zbuffer (screenz_t     *zbuffer, int x, int y, screenz_t     *val);
 
 
 
 Object* obj_new (WFobj *wfobj);
-void obj_set_scale       (Object *obj, float x, float y, float z);
-void obj_set_rotation    (Object *obj, float x, float y, float z);
-void obj_set_translation (Object *obj, float x, float y, float z);
+void obj_set_scale       (Object *obj, float x,     float y,     float z);
+void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
+void obj_set_translation (Object *obj, float x,     float y,     float z);
 void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
