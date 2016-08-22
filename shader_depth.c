@@ -147,7 +147,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	float shadow = 1.0;
 	//printf ("\tshadowbuffer: %d, my shadow: %d\n", shadow_z, sb_z);
-	if (shadow_z > sb_z+2) shadow = 0.3; // +2 for z-fighting
+	if (shadow_z > sb_z+5) shadow = 0.1; // +1 for z-fighting
 	
 	
 	

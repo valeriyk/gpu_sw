@@ -108,14 +108,14 @@ int main(int argc, char** argv) {
     Object *cube1 = obj_new (my_cube);
 	obj_set_scale    (cube1, 2, 2, 2);
 	obj_set_rotation (cube1, 45, 45, 0);
-	obj_set_translation (cube1, -1.0f, 0.f, 0.f);
+	obj_set_translation (cube1, 1.0f, 0.f, 0.f);
 	obj_init_model (cube1);
 	
 	Object *cube2 = obj_new (my_cube);
 	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
 	obj_set_scale    (cube2, 2, 2, 2);
 	obj_set_rotation (cube2, 45, 45, 0);
-	obj_set_translation (cube2, 1.0f, 0.f, 0.f);
+	obj_set_translation (cube2, -1.0f, 0.f, 0.f);
 	obj_init_model (cube2);
 	
 	 
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
 	float right = top * aspect_ratio;
 	float left  = -right;
 	float near  = 1;
-	float far   = 10;
+	float far   = 100;
 	
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
@@ -161,16 +161,16 @@ int main(int argc, char** argv) {
     
     // 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( -0.f,  -0.f,   4.000f);
+    Float3 eye    = Float3_set ( -0.f,  -0.f,   6.000f);
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
-    Float3 light_dir = Float3_set (-1.0f,  -0.5f, -0.25f);
+    Float3 light_dir = Float3_set (-1.0f,  -0.f, -0.5f);
     //Float3 light_dir = Float3_set ( 0.0f,  -0.0f,  -1.0f);
-    Float3 light_src = Float3_set ( 5.0f,   2.5f,   0.0f);
-    //Float3 light_src = Float3_set ( -light_dir.as_struct.x, -light_dir.as_struct.y, -light_dir.as_struct.z);
+    //Float3 light_src = Float3_set ( 5.0f,   2.5f,   0.0f);
+    Float3 light_src = Float3_set ( -light_dir.as_struct.x*5, -light_dir.as_struct.y*5, -light_dir.as_struct.z*5);
     					
     //do {
     // 0 - heads, 1 - cubes, 2 - floors
@@ -310,10 +310,10 @@ int main(int argc, char** argv) {
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
     //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-    write_tga_file (   "zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT,  8, 1);
+    //write_tga_file (   "zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT,  8, 1);
 	
 	//write_tga_file ("shadow_buffer.tga", (tbyte *) shadow_buffer, WIDTH, HEIGHT, 24, 1);
-    write_tga_file ("depth_buffer.tga", (tbyte *)  depth_buffer, WIDTH, HEIGHT,  8, 1);
+    //write_tga_file ("depth_buffer.tga", (tbyte *)  depth_buffer, WIDTH, HEIGHT,  8, 1);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);
