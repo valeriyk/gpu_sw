@@ -58,7 +58,7 @@ bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		
 	//screenz_t val = DEPTH * (1.0 - ndc.as_struct.z) / 2.0;
 	//*color = set_color (val, val, val, 0);*/
-	return true;
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,8 +146,8 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	//if (shadow_z > sb_z) {printf (" - in shadow\n");} else printf("\n");
 	
 	float shadow = 1.0;
-	printf ("\tshadowbuffer: %d, my shadow: %d\n", shadow_z, sb_z);
-	if (shadow_z > sb_z) shadow = 0.3;
+	//printf ("\tshadowbuffer: %d, my shadow: %d\n", shadow_z, sb_z);
+	if (shadow_z > sb_z+2) shadow = 0.3; // +2 for z-fighting
 	
 	
 	

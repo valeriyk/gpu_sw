@@ -102,7 +102,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				p.z = (screenz_t) duck; 
 				
 				
-				printf ("draw_triangle: x=%d y=%d z=%d\t", p.x, p.y, p.z);
+				//printf ("draw_triangle: x=%d y=%d z=%d\t", p.x, p.y, p.z);
 				
 				uint32_t pix_num = p.x + p.y*WIDTH;
 				if (p.z > zbuffer[pix_num]) {
@@ -290,7 +290,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		Triangle ndc;
 		Triangle screen;
 		
-		bool is_clipped = true; // sticky bit
+		bool is_clipped = false;//true; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
 			
@@ -301,8 +301,10 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-						is_clipped = false;
+					//if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
+					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+						//is_clipped = false;
+						is_clipped = true;
 					}
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
