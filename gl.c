@@ -54,18 +54,10 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	print_fmat4 (m, "viewport matrix");
 }*/
 
-int set_screen_size (screenxy_t width, screenxy_t height) {
+void set_screen_size (screenxy_t width, screenxy_t height) {
 	SCREEN_WIDTH  = width;
 	SCREEN_HEIGHT = height;
-	
-	switch (sizeof(screenz_t)) {
-		case 1: SCREEN_DEPTH = UINT8_MAX; break;
-		case 2: SCREEN_DEPTH = UINT16_MAX; break;
-		case 4: SCREEN_DEPTH = UINT32_MAX; break;
-		case 8: SCREEN_DEPTH = (uint64_t) UINT64_MAX; break;
-		default: return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
+	SCREEN_DEPTH = (screenz_t) ~0;
 }
 
 screenxy_t get_screen_width (void) {

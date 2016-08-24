@@ -34,6 +34,8 @@ void   print_fmat4 (fmat4 *m, char *header);
 
 
 
+
+
 void print_fmat4 (fmat4 *m, char *header) {
 	printf ("%s\n", header);
 	for (int i = 0; i < 4; i++) {
@@ -88,6 +90,23 @@ void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
     Float3_normalize   (&UNIFORM_LIGHT[1]);
 }
 
+/*
+void light_transform (fmat4 *view, Float3 *light_dir) {
+	Float4 light_dir4 = Float3_Float4_conv (light_dir, 0);
+	// Light vector changes after View and Projection transformations only,
+	// it does not depend on Model transformation
+	Float4 light_new = fmat4_Float4_mult  (view, &light_dir4);
+	UNIFORM_LIGHT[0] = Float4_Float3_vect_conv (&light_new);
+    Float3_normalize   (&UNIFORM_LIGHT[0]);
+    
+    Float4 light_dir4_2 = Float4_set (-light_dir->as_struct.x, light_dir->as_struct.y, light_dir->as_struct.z, 0);
+	// Light vector changes after View and Projection transformations only,
+	// it does not depend on Model transformation
+	Float4 light_new_2 = fmat4_Float4_mult  (view, &light_dir4_2);
+	UNIFORM_LIGHT[1] = Float4_Float3_vect_conv (&light_new_2);
+    Float3_normalize   (&UNIFORM_LIGHT[1]);
+}
+*/
 int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;
@@ -204,9 +223,7 @@ int main(int argc, char** argv) {
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
 	//init_viewport (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
-	if (set_screen_size ((screenxy_t) WIDTH, (screenxy_t) HEIGHT) != EXIT_SUCCESS) {
-		return 5;
-	}
+	set_screen_size ((screenxy_t) WIDTH, (screenxy_t) HEIGHT);
     
 	
     
@@ -240,6 +257,8 @@ int main(int argc, char** argv) {
 		}
 		
 		init_view (&view, &light_src, &center, &up);
+		
+		//light_transform (&view, &light_dir);
 		
 		//fmat4 shadow_mvp;
 		//fmat4 mvp_inv;

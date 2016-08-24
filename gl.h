@@ -7,7 +7,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define FIX_PT_PRECISION 3
+#define FIX_PT_PRECISION	3
+#define MAX_NUM_OF_LIGHTS	4
 
 typedef enum {X = 0, Y, Z, W} axis;
 
@@ -29,22 +30,16 @@ typedef struct pixel_color_t {
 	//uint8_t r, g, b, a;
 	//uint8_t b, g, r, a;
 } pixel_color_t;
-/*
-typedef struct Face {
-	int3 vtx_idx; // vertex indices
-	int3 txt_idx; // texture indices
-} Face;
-*/
-/*
-typedef struct Vertex {
-	float3 norm;
-	float2 text;
-	ScreenPt coords;
-} Vertex;
-*/
+
 typedef struct Triangle {
 	Float4 vtx[3];
 } Triangle;
+
+typedef struct Light {
+	Float3		dir;
+	fmat4 		shadow_mvp;
+	screenz_t	*shadow_buf;
+} Light;
 
 typedef struct Object {
 	WFobj *wfobj;
@@ -55,11 +50,18 @@ typedef struct Object {
 	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
 } Object;
 
+
 typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp);
 typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
 
-int        set_screen_size   (screenxy_t width, screenxy_t height);
+
+Light light[MAX_NUM_OF_LIGHTS];
+
+
+void create_light (Float3 dir, screenz_t *shadow_buf, int light_num);
+
+void       set_screen_size   (screenxy_t width, screenxy_t height);
 screenxy_t get_screen_width  (void);
 screenxy_t get_screen_height (void);
 screenz_t  get_screen_depth  (void);
