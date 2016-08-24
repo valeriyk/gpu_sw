@@ -62,7 +62,7 @@ int set_screen_size (screenxy_t width, screenxy_t height) {
 		case 1: SCREEN_DEPTH = UINT8_MAX; break;
 		case 2: SCREEN_DEPTH = UINT16_MAX; break;
 		case 4: SCREEN_DEPTH = UINT32_MAX; break;
-		case 8: SCREEN_DEPTH = UINT64_MAX; break;
+		case 8: SCREEN_DEPTH = (uint64_t) UINT64_MAX; break;
 		default: return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

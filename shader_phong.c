@@ -51,7 +51,7 @@ Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 		printf ("\t\tvtx shader face %d vtx %d: ", face_idx, vtx_idx);
 		printf ("obj norm (%f, %f, %f) ",            norm3d.as_struct.x, norm3d.as_struct.y, norm3d.as_struct.z);
 		printf ("transformed normal (%f, %f, %f)\n", norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z);
-		printf ("\t\tuniform light (%f, %f, %f)\n",  UNIFORM_LIGHT.as_struct.x, UNIFORM_LIGHT.as_struct.y, UNIFORM_LIGHT.as_struct.z);
+		printf ("\t\tuniform light (%f, %f, %f)\n",  UNIFORM_LIGHT[0].as_struct.x, UNIFORM_LIGHT[0].as_struct.y, UNIFORM_LIGHT[0].as_struct.z);
 	}
 	
 	return vtx4d;
@@ -81,13 +81,13 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		normal.as_array[i] = Float3_Float3_smult (&PHONG_VARYING_N[i], barw);
 	}
 	Float3_normalize(&normal);
-	float diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT);
+	float diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT[0]);
 	
 	float spec_intensity = 0;	
 	if (obj->specularmap != NULL) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
-		Float3 r    = Float3_Float3_add (&nnl2, &UNIFORM_LIGHT);
+		Float3 r    = Float3_Float3_add (&nnl2, &UNIFORM_LIGHT[0]);
 		Float3_normalize (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
@@ -110,7 +110,7 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	if (PHONG_PSHADER_DEBUG_0) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
-		printf ("light=(%f;%f;%f) ", UNIFORM_LIGHT.as_struct.x, UNIFORM_LIGHT.as_struct.y, UNIFORM_LIGHT.as_struct.z);
+		printf ("light=(%f;%f;%f) ", UNIFORM_LIGHT[0].as_struct.x, UNIFORM_LIGHT[0].as_struct.y, UNIFORM_LIGHT[0].as_struct.z);
 		printf ("diff_int=%f ", diff_intensity);
 	}
 		
