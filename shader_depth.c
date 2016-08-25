@@ -15,7 +15,7 @@ Float3 DEPTH_VARYING_N[3];
 //Float3 DEPTH_PASS1_VARYING_NDC[3];
 Float3 DEPTH_PASS2_VARYING_NDC[3];
 
-Float3 DEPTH_PASS2_VARYING_SCREEN[3];
+Float3 DEPTH_PASS2_VARYING_SCREEN[2][3];
 Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
 
 Float4 depth_vshader_pass1 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
@@ -54,14 +54,14 @@ Float4 depth_vshader_pass2 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	int WIDTH  = get_screen_width();
 	int HEIGHT = get_screen_height();
 	int DEPTH  = get_screen_depth();
-	DEPTH_PASS2_VARYING_SCREEN[0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0;
-	DEPTH_PASS2_VARYING_SCREEN[1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0) * HEIGHT / 2.0;
-	DEPTH_PASS2_VARYING_SCREEN[2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[0][0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[0][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0) * HEIGHT / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[0][2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0;
 	
 	Float4 vtx4d_shadow_2 = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW_2, &mc);
-	DEPTH_PASS2_VARYING_SCREEN_2[0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow_2.as_array[0] / vtx4d_shadow_2.as_struct.w) * HEIGHT / 2.0;
-	DEPTH_PASS2_VARYING_SCREEN_2[1].as_array[vtx_idx] = (vtx4d_shadow_2.as_array[1] / vtx4d_shadow_2.as_struct.w + 1.0) * HEIGHT / 2.0;
-	DEPTH_PASS2_VARYING_SCREEN_2[2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow_2.as_array[2] / vtx4d_shadow_2.as_struct.w) / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[1][0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow_2.as_array[0] / vtx4d_shadow_2.as_struct.w) * HEIGHT / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[1][1].as_array[vtx_idx] = (vtx4d_shadow_2.as_array[1] / vtx4d_shadow_2.as_struct.w + 1.0) * HEIGHT / 2.0;
+	DEPTH_PASS2_VARYING_SCREEN[1][2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow_2.as_array[2] / vtx4d_shadow_2.as_struct.w) / 2.0;
 	
 	
 	// extract the texture UV coordinates of the vertex
@@ -92,7 +92,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	Float3 screen;
 	for (int i = 0; i < 3; i++) {
-		screen.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i], barw);
+		screen.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[0][i], barw);
 	}
 	int sb_x = (int) screen.as_struct.x;
 	int sb_y = (int) screen.as_struct.y;
@@ -101,7 +101,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	Float3 screen_2;
 	for (int i = 0; i < 3; i++) {
-		screen_2.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN_2[i], barw);
+		screen_2.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[1][i], barw);
 	}
 	int sb_x_2 = (int) screen_2.as_struct.x;
 	int sb_y_2 = (int) screen_2.as_struct.y;
