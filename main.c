@@ -130,6 +130,8 @@ int main(int argc, char** argv) {
 	
 	// 1. Model Matrix - transform local coords to global
 	
+	Object *object[NUM_OF_OBJECTS];
+	
     Object *head1  = obj_new (african_head);
     obj_set_translation (head1, -1.f, 0.f, -0.f);
     //obj_set_scale       (head1, 3, 3, 3);
@@ -148,24 +150,27 @@ int main(int argc, char** argv) {
     //obj_set_rotation    (diablo1, 0.f, 20.f, 0.f);
     obj_init_model      (diablo1);
     
-    Object *cube1 = obj_new (my_cube);
-	obj_set_scale    (cube1, 2, 2, 2);
-	obj_set_rotation (cube1, 45, 45, 0);
-	obj_set_translation (cube1, 1.0f, 0.f, 0.f);
-	obj_init_model (cube1);
+    // Cube 0
+    object[0] = obj_new (my_cube);
+	obj_set_scale       (object[0], 2, 2, 2);
+	obj_set_rotation    (object[0], 45, 45, 0);
+	obj_set_translation (object[0], 1.0f, 0.f, 0.f);
+	obj_init_model      (object[0]);
 	
-	Object *cube2 = obj_new (my_cube);
-	//obj_set_scale    (cube1, 0.5, 0.5, 0.5);
-	obj_set_scale    (cube2, 2, 2, 2);
-	obj_set_rotation (cube2, 45, 45, 0);
-	obj_set_translation (cube2, -1.0f, 0.f, 0.f);
-	obj_init_model (cube2);
+	// Cube 1
+	object[1] = obj_new (my_cube);
+	//obj_set_scale       (object[1], 0.5, 0.5, 0.5);
+	obj_set_scale       (object[1], 2, 2, 2);
+	obj_set_rotation    (object[1], 45, 45, 0);
+	obj_set_translation (object[1], -1.0f, 0.f, 0.f);
+	obj_init_model      (object[1]);
 	
-	Object *floor = obj_new (my_floor);
-    //obj_set_rotation    (floor1, 90.f, 0.f, 0.f);
-    obj_set_translation (floor, 0.f, -0.5f, -2.0f);
-    obj_set_scale    (floor, 6, 4, 4);
-	obj_init_model      (floor);
+	// Floor
+	object[2] = obj_new (my_floor);
+    //obj_set_rotation    (object[2], 90.f, 0.f, 0.f);
+    obj_set_translation (object[2], 0.f, -0.5f, -2.0f);
+    obj_set_scale       (object[2], 6, 4, 4);
+	obj_init_model      (object[2]);
 	
 	 
     Object *floor1 = obj_new (my_floor);
@@ -216,19 +221,19 @@ int main(int argc, char** argv) {
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
-    Float3 light_dir = Float3_set (-4.0f,  -5.f, -2.5f);
-    Float3 light_dir_2 = Float3_set (-light_dir.as_struct.x, light_dir.as_struct.y, light_dir.as_struct.z);
-    
+    Float3 light_dir[2];
     Float3 light_src[2];
-    //for (int i = 0; i < 2; i++) {
-	light_src[0] = Float3_set ( -light_dir.as_struct.x*5, -light_dir.as_struct.y*5, -light_dir.as_struct.z*5);
-	//}
-    light_src[1] = Float3_set ( -light_dir_2.as_struct.x*5, -light_dir_2.as_struct.y*5, -light_dir_2.as_struct.z*5);
+    
+    light_dir[0] = Float3_set (-4.0f,  -5.f, -2.5f);
+    light_dir[1] = Float3_set (-light_dir[0].as_struct.x, light_dir[0].as_struct.y, light_dir[0].as_struct.z);
+    for (int i = 0; i < 2; i++) {
+		light_src[i] = Float3_set ( -light_dir[i].as_struct.x*5, -light_dir[i].as_struct.y*5, -light_dir[i].as_struct.z*5);
+	}
     
     					
     //do {
     // 0 - heads, 1 - cubes, 2 - floors
-    int fig = 1;
+    //int fig = 1;
     for (int i = 0; i < 1; i++) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
@@ -238,119 +243,22 @@ int main(int argc, char** argv) {
 			UNIFORM_SHADOWBUF[1][i] = 0;
 		}
 		
-		if (fig == 0) {
-			/*obj_transform       (head1, &ortho_proj, &view, &light_dir);
-			obj_draw            (head1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			
-			obj_transform       (head2, &ortho_proj, &view, &light_dir);
-			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);*/
-		}
-		else if (fig == 1) {
-			for (int j = 0; j < 2; j++) {
-				init_view     (&view, &light_src[j], &center, &up);
-				light_transform (&view, &light_dir);
-				
-				obj_transform (cube1, &ortho_proj, &view);
-				obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
-				fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[j]));
-				
-				obj_transform (cube2, &ortho_proj, &view);
-				obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
-				fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[j]));
-				
-				obj_transform (floor, &ortho_proj, &view);
-				obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
-				fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[j]));
-			}			
-			
-			init_view        (&view, &eye, &center, &up);
-			light_transform (&view, &light_dir);
-			obj_transform    (cube1, &persp_proj, &view);
-			obj_draw         (cube1, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			
-			obj_transform    (cube2, &persp_proj, &view);
-			obj_draw         (cube2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			
-			obj_transform    (floor, &persp_proj, &view);
-			obj_draw         (floor, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-		}
-		/*else if (fig == 2) {
-			init_view     (&view, &light_src, &center, &up);
-			obj_transform (floor1, &ortho_proj, &view, &light_dir);
-			obj_draw      (floor1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(floor1->mvp), &UNIFORM_MVP_SHADOW);
-			
-			init_view        (&view, &eye, &center, &up);
-			obj_transform    (floor1, &persp_proj, &view, &light_dir);
-			fmat4_inv        (&(floor1->mvp), &UNIFORM_MVP_INV);
-			//fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
-			if (DEBUG_0) {
-				//print_fmat4 (&shadow_mvp, "shadow_mvp 1");
-				print_fmat4 (&(floor1->mvp), "floor1 mvp");
-				print_fmat4 (&UNIFORM_MVP_INV, "mvp_inv 1");
-				print_fmat4 (&UNIFORM_MVP_SHADOW, "UNIFORM_MVP_SHADOW 1");
+		for (int j = 0; j < 2; j++) {
+			init_view       (&view, &light_src[j], &center, &up);
+			light_transform (&view, &light_dir[0]);	
+			for (int k = 0; k < NUM_OF_OBJECTS; k++) {
+				obj_transform (object[k], &ortho_proj, &view);
+				obj_draw      (object[k], depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
+				fmat4_copy    (&(object[k]->mvp), &(object[k]->shadow_mvp[j]));
 			}
-			obj_draw         (floor1, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			
-			init_view     (&view, &light_src, &center, &up);
-			obj_transform (floor2, &ortho_proj, &view, &light_dir);
-			obj_draw      (floor2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(floor2->mvp), &UNIFORM_MVP_SHADOW);
-			
-			init_view        (&view, &eye, &center, &up);
-			obj_transform    (floor2, &persp_proj, &view, &light_dir);
-			fmat4_inv        (&(floor2->mvp), &UNIFORM_MVP_INV);
-			//fmat4_fmat4_mult (&shadow_mvp, &mvp_inv, &UNIFORM_MSHADOW);
-			if (DEBUG_0) {
-				//print_fmat4 (&shadow_mvp, "shadow_mvp 2");
-				print_fmat4 (&(floor2->mvp), "floor2 mvp");
-				print_fmat4 (&UNIFORM_MVP_INV, "mvp_inv 2");
-				print_fmat4 (&UNIFORM_MVP_SHADOW, "UNIFORM_MVP_SHADOW 2");
-			}
-			obj_draw         (floor2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			
-		}*/
-		/*
-		//UNIFORM_MSHADOW = UNIFORM_M;
+		}			
 		
-		init_view (&view, &eye, &center, &up);
-		
-		//UNIFORM_MSHADOW = 
-		
-		if (heads) {
-			obj_transform       (head1, &persp_proj, &view, &light_dir);
-			obj_draw            (head1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
-			
-			obj_transform       (head2, &persp_proj, &view, &light_dir);
-			obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
+		init_view       (&view, &eye, &center, &up);
+		light_transform (&view, &light_dir[0]);
+		for (int j = 0; j < NUM_OF_OBJECTS; j++) {
+			obj_transform    (object[j], &persp_proj, &view);
+			obj_draw         (object[j], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		}
-		else {
-			
-			;
-		}
-		*/
-		//obj_transform       (diablo1, &proj, &view, &light_dir);
-		////obj_draw            (diablo1, phong_vertex_shader, phong_pixel_shader, zbuffer, active_fbuffer);
-		//obj_draw            (diablo1, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-		
-		/*	
-		obj_transform           (head2, &viewport_proj_view, &proj_view, &light_dir);
-		obj_draw            (head2, nm_vertex_shader, nm_pixel_shader, zbuffer, active_fbuffer);
-		
-		//transform       (floor1, &vpv, &projview, &light_dir);
-		//obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		*/
-		//light_dir.as_struct.x = -light_dir.as_struct.x;
-		//light_dir.as_struct.y = -light_dir.as_struct.y;
-		
-		
-		/*
-		obj_transform       (floor2, &vpv, &projview, &light_dir);
-		obj_draw            (floor2, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-			
-		obj_transform       (floor3, &vpv, &projview, &light_dir);
-		obj_draw            (floor3, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
-		*/
 	}// while (0);
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);

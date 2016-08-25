@@ -9,6 +9,9 @@ const int depth  = 1000000;//16000000;//30000;//65536;
 //#define DEPTH  65535//256
 //const int SCREEN_SIZE[3] = {WIDTH, HEIGHT, DEPTH};
 
+#define NUM_OF_OBJECTS	3
+
+
 
 #define DEBUG_0 1
 
