@@ -97,7 +97,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	int sb_x = (int) screen.as_struct.x;
 	int sb_y = (int) screen.as_struct.y;
 	int sb_z = (int) screen.as_struct.z;
-	screenz_t shadow_z0 = (screenz_t) UNIFORM_SHADOWBUF[sb_x + sb_y*get_screen_width()];
+	screenz_t shadow_z0 = (screenz_t) UNIFORM_SHADOWBUF[0][sb_x + sb_y*get_screen_width()];
 	
 	Float3 screen_2;
 	for (int i = 0; i < 3; i++) {
@@ -107,7 +107,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	int sb_y_2 = (int) screen_2.as_struct.y;
 	int sb_z_2 = (int) screen_2.as_struct.z;
 	//printf ("shadow_z1 x=%d y=%d\n", sb_x_2, sb_y_2);
-	screenz_t shadow_z1 = (screenz_t) UNIFORM_SHADOWBUF_2[sb_x_2 + sb_y_2*get_screen_width()];
+	screenz_t shadow_z1 = (screenz_t) UNIFORM_SHADOWBUF[1][sb_x_2 + sb_y_2*get_screen_width()];
 	//screenz_t shadow_z1 = 0;
 	
 	//printf ("shadowbuffer: %f %f %f - %d %d %d - %d", sb_p.as_struct.x, sb_p.as_struct.y, sb_p.as_struct.z, sb_x, sb_y, sb_z, shadow_z);

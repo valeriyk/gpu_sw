@@ -24,8 +24,8 @@ fmat4  UNIFORM_MVP_INV;
 
 Float3 UNIFORM_LIGHT[2];
 
-screenz_t *UNIFORM_SHADOWBUF;
-screenz_t *UNIFORM_SHADOWBUF_2;
+screenz_t *UNIFORM_SHADOWBUF[2];
+//screenz_t *UNIFORM_SHADOWBUF_2;
 
 
 
@@ -116,10 +116,10 @@ int main(int argc, char** argv) {
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     
     screenz_t     *depth_buffer0  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    UNIFORM_SHADOWBUF = depth_buffer0;
+    UNIFORM_SHADOWBUF[0] = depth_buffer0;
     
     screenz_t     *depth_buffer1  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    UNIFORM_SHADOWBUF_2 = depth_buffer1;
+    UNIFORM_SHADOWBUF[1] = depth_buffer1;
     
     
     pixel_color_t *active_fbuffer = NULL;
@@ -263,11 +263,11 @@ int main(int argc, char** argv) {
 		//fmat4 shadow_mvp;
 		//fmat4 mvp_inv;
 		if (fig == 0) {
-			obj_transform       (head1, &ortho_proj, &view, &light_dir);
+			/*obj_transform       (head1, &ortho_proj, &view, &light_dir);
 			obj_draw            (head1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
 			
 			obj_transform       (head2, &ortho_proj, &view, &light_dir);
-			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
+			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);*/
 		}
 		else if (fig == 1) {
 			fmat4_identity (&UNIFORM_MVP_SHADOW_2);
@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
 			obj_transform    (floor, &persp_proj, &view, &light_dir);
 			obj_draw         (floor, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		}
-		else if (fig == 2) {
+		/*else if (fig == 2) {
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (floor1, &ortho_proj, &view, &light_dir);
 			obj_draw      (floor1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
 			}
 			obj_draw         (floor2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 			
-		}
+		}*/
 		/*
 		//UNIFORM_MSHADOW = UNIFORM_M;
 		
@@ -380,8 +380,8 @@ int main(int argc, char** argv) {
 		//transform       (floor1, &vpv, &projview, &light_dir);
 		//obj_draw            (floor1, my_vertex_shader, my_pixel_shader, zbuffer, active_fbuffer);
 		*/
-		light_dir.as_struct.x = -light_dir.as_struct.x;
-		light_dir.as_struct.y = -light_dir.as_struct.y;
+		//light_dir.as_struct.x = -light_dir.as_struct.x;
+		//light_dir.as_struct.y = -light_dir.as_struct.y;
 		
 		
 		/*
