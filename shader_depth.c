@@ -16,7 +16,7 @@ Float3 DEPTH_VARYING_N[3];
 Float3 DEPTH_PASS2_VARYING_NDC[3];
 
 Float3 DEPTH_PASS2_VARYING_SCREEN[2][3];
-Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
+//Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
 
 Float4 depth_vshader_pass1 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
@@ -91,35 +91,20 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	}
 	
 	Float3 screen;
-	for (int i = 0; i < 3; i++) {
-		screen.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[0][i], barw);
+	screenz_t current_z[2];
+	screenz_t shadow_buf_z[2];
+	float shadow[2];
+	for (int i = 0; i < 2; i++) {
+		for (int j = 0; j < 3; j++) {
+			screen.as_array[j] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i][j], barw);
+		}
+		int x = (int) screen.as_struct.x;
+		int y = (int) screen.as_struct.y;
+		current_z[i]    = (screenz_t) screen.as_struct.z;
+		shadow_buf_z[i] = (screenz_t) UNIFORM_SHADOWBUF[i][x + y*get_screen_width()];
+		
+		shadow[i] = (shadow_buf_z[i] > current_z[i]+5) ? 0.2 : 1.0; // +5 for z-fighting
 	}
-	int sb_x = (int) screen.as_struct.x;
-	int sb_y = (int) screen.as_struct.y;
-	int sb_z = (int) screen.as_struct.z;
-	screenz_t shadow_z0 = (screenz_t) UNIFORM_SHADOWBUF[0][sb_x + sb_y*get_screen_width()];
-	
-	Float3 screen_2;
-	for (int i = 0; i < 3; i++) {
-		screen_2.as_array[i] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[1][i], barw);
-	}
-	int sb_x_2 = (int) screen_2.as_struct.x;
-	int sb_y_2 = (int) screen_2.as_struct.y;
-	int sb_z_2 = (int) screen_2.as_struct.z;
-	//printf ("shadow_z1 x=%d y=%d\n", sb_x_2, sb_y_2);
-	screenz_t shadow_z1 = (screenz_t) UNIFORM_SHADOWBUF[1][sb_x_2 + sb_y_2*get_screen_width()];
-	//screenz_t shadow_z1 = 0;
-	
-	//printf ("shadowbuffer: %f %f %f - %d %d %d - %d", sb_p.as_struct.x, sb_p.as_struct.y, sb_p.as_struct.z, sb_x, sb_y, sb_z, shadow_z);
-	//if (shadow_z > sb_z) {printf (" - in shadow\n");} else printf("\n");
-	
-	float shadow0 = 1.0;
-	if (shadow_z0 > sb_z+5) shadow0 = 0.2; // +5 for z-fighting
-	
-	float shadow1 = 1.0;
-	if (shadow_z1 > sb_z+5) shadow1 = 0.2; // +5 for z-fighting
-	
-	
 	
 	int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);
 	int vv = (int) Float3_Float3_smult (&DEPTH_VARYING_V, barw);
@@ -165,7 +150,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	float intensity = shadow0 * shadow1 * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
+	float intensity = shadow[0] * shadow[1] * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
 	//else intensity = 0;
 	
 	//if (intensity <= 0) return false;
