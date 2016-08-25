@@ -55,13 +55,13 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	Float4 tmp = fmat4_Float4_mult (&UNIFORM_MIT, &nm4);
 	normal     = Float4_Float3_vect_conv (&tmp);
 	Float3_normalize (&normal);
-	float diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT);
+	float diff_intensity = -Float3_Float3_smult (&normal, &UNIFORM_LIGHT[0]);
 	
 	float spec_intensity = 0;	
 	if (obj->specularmap != NULL) {
 		float nl = diff_intensity; // this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
-		Float3 r    = Float3_Float3_add (&nnl2, &UNIFORM_LIGHT);
+		Float3 r    = Float3_Float3_add (&nnl2, &UNIFORM_LIGHT[0]);
 		Float3_normalize (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);

@@ -145,9 +145,9 @@ Object* obj_new (WFobj *wfobj) {
 		obj->rotate[i] = 0.f;
 		obj->tran[i]   = 0.f;
 	}
-	fmat4_identity (obj->mvp);
+	fmat4_identity (&(obj->mvp));
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		fmat4_identity (obj->shadow_mvp[i]);
+		fmat4_identity (&(obj->shadow_mvp[i]));
 	}
 	return obj;
 }
