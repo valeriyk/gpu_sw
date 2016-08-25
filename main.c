@@ -61,11 +61,9 @@ void print_fmat3 (fmat3 *m, char *header) {
 // Object transform, aka world transform function.  
 // Computes matrices that will be used to transform a model's vertices and normals
 // from the object space to the world space
-void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
+void obj_transform (Object *obj, fmat4 *proj, fmat4 *view) {
 	
-	//fmat4_fmat4_fmat4_mult ( proj, view, &(obj->model), &(obj->mvp)); 
-    //fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
-    fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
+	fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
     fmat4_fmat4_mult ( proj, &UNIFORM_M, &(obj->mvp));
 	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 	
@@ -75,22 +73,9 @@ void obj_transform (Object *obj, fmat4 *proj, fmat4 *view, Float3 *light_dir) {
 	print_fmat4 (&UNIFORM_M, "UNIFORM_M");
 	print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
 	*/
-	Float4 light_dir4 = Float3_Float4_conv (light_dir, 0);
-	// Light vector changes after View and Projection transformations only,
-	// it does not depend on Model transformation
-	Float4 light_new = fmat4_Float4_mult  (view, &light_dir4);
-	UNIFORM_LIGHT[0] = Float4_Float3_vect_conv (&light_new);
-    Float3_normalize   (&UNIFORM_LIGHT[0]);
-    
-    Float4 light_dir4_2 = Float4_set (-light_dir->as_struct.x, light_dir->as_struct.y, light_dir->as_struct.z, 0);
-	// Light vector changes after View and Projection transformations only,
-	// it does not depend on Model transformation
-	Float4 light_new_2 = fmat4_Float4_mult  (view, &light_dir4_2);
-	UNIFORM_LIGHT[1] = Float4_Float3_vect_conv (&light_new_2);
-    Float3_normalize   (&UNIFORM_LIGHT[1]);
 }
 
-/*
+
 void light_transform (fmat4 *view, Float3 *light_dir) {
 	Float4 light_dir4 = Float3_Float4_conv (light_dir, 0);
 	// Light vector changes after View and Projection transformations only,
@@ -106,7 +91,7 @@ void light_transform (fmat4 *view, Float3 *light_dir) {
 	UNIFORM_LIGHT[1] = Float4_Float3_vect_conv (&light_new_2);
     Float3_normalize   (&UNIFORM_LIGHT[1]);
 }
-*/
+
 int main(int argc, char** argv) {
        
     size_t screen_size = WIDTH*HEIGHT;
@@ -115,12 +100,8 @@ int main(int argc, char** argv) {
     pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     
-    screenz_t     *depth_buffer0  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    UNIFORM_SHADOWBUF[0] = depth_buffer0;
-    
-    screenz_t     *depth_buffer1  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    UNIFORM_SHADOWBUF[1] = depth_buffer1;
-    
+    UNIFORM_SHADOWBUF[0] = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
+    UNIFORM_SHADOWBUF[1] = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
     
     pixel_color_t *active_fbuffer = NULL;
     
@@ -236,12 +217,13 @@ int main(int argc, char** argv) {
 	init_view (&view, &eye, &center, &up);
     
     Float3 light_dir = Float3_set (-4.0f,  -5.f, -2.5f);
-    //Float3 light_dir = Float3_set ( 0.0f,  -0.0f,  -1.0f);
-    //Float3 light_src = Float3_set ( 5.0f,   2.5f,   0.0f);
-    Float3 light_src = Float3_set ( -light_dir.as_struct.x*5, -light_dir.as_struct.y*5, -light_dir.as_struct.z*5);
-    
     Float3 light_dir_2 = Float3_set (-light_dir.as_struct.x, light_dir.as_struct.y, light_dir.as_struct.z);
-    Float3 light_src_2 = Float3_set ( -light_dir_2.as_struct.x*5, -light_dir_2.as_struct.y*5, -light_dir_2.as_struct.z*5);
+    
+    Float3 light_src[2];
+    //for (int i = 0; i < 2; i++) {
+	light_src[0] = Float3_set ( -light_dir.as_struct.x*5, -light_dir.as_struct.y*5, -light_dir.as_struct.z*5);
+	//}
+    light_src[1] = Float3_set ( -light_dir_2.as_struct.x*5, -light_dir_2.as_struct.y*5, -light_dir_2.as_struct.z*5);
     
     					
     //do {
@@ -252,16 +234,10 @@ int main(int argc, char** argv) {
 		
 		for (int i = 0; i < screen_size; i++) {
 			zbuffer[i] = 0;
-			depth_buffer0[i] = 0;
-			depth_buffer1[i] = 0;
+			UNIFORM_SHADOWBUF[0][i] = 0;
+			UNIFORM_SHADOWBUF[1][i] = 0;
 		}
 		
-		init_view (&view, &light_src, &center, &up);
-		
-		//light_transform (&view, &light_dir);
-		
-		//fmat4 shadow_mvp;
-		//fmat4 mvp_inv;
 		if (fig == 0) {
 			/*obj_transform       (head1, &ortho_proj, &view, &light_dir);
 			obj_draw            (head1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
@@ -270,46 +246,32 @@ int main(int argc, char** argv) {
 			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);*/
 		}
 		else if (fig == 1) {
-			init_view     (&view, &light_src, &center, &up);
-			obj_transform (cube1, &ortho_proj, &view, &light_dir);
-			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[0]));
-			
-			init_view     (&view, &light_src_2, &center, &up);
-			obj_transform (cube1, &ortho_proj, &view, &light_dir);
-			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[1]));
+			for (int j = 0; j < 2; j++) {
+				init_view     (&view, &light_src[j], &center, &up);
+				light_transform (&view, &light_dir);
+				
+				obj_transform (cube1, &ortho_proj, &view);
+				obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
+				fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[j]));
+				
+				obj_transform (cube2, &ortho_proj, &view);
+				obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
+				fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[j]));
+				
+				obj_transform (floor, &ortho_proj, &view);
+				obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[j], NULL);
+				fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[j]));
+			}			
 			
 			init_view        (&view, &eye, &center, &up);
-			obj_transform    (cube1, &persp_proj, &view, &light_dir);
+			light_transform (&view, &light_dir);
+			obj_transform    (cube1, &persp_proj, &view);
 			obj_draw         (cube1, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 			
-			init_view     (&view, &light_src, &center, &up);
-			obj_transform (cube2, &ortho_proj, &view, &light_dir);
-			obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[0]));
-			
-			init_view     (&view, &light_src_2, &center, &up);
-			obj_transform (cube2, &ortho_proj, &view, &light_dir);
-			obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[1]));
-			
-			init_view        (&view, &eye, &center, &up);
-			obj_transform    (cube2, &persp_proj, &view, &light_dir);
+			obj_transform    (cube2, &persp_proj, &view);
 			obj_draw         (cube2, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 			
-			init_view     (&view, &light_src, &center, &up);
-			obj_transform (floor, &ortho_proj, &view, &light_dir);
-			obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[0]));
-			
-			init_view     (&view, &light_src_2, &center, &up);
-			obj_transform (floor, &ortho_proj, &view, &light_dir);
-			obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[1]));
-			
-			init_view        (&view, &eye, &center, &up);
-			obj_transform    (floor, &persp_proj, &view, &light_dir);
+			obj_transform    (floor, &persp_proj, &view);
 			obj_draw         (floor, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		}
 		/*else if (fig == 2) {
