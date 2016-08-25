@@ -96,8 +96,18 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 		int x = (int) screen.as_struct.x;
 		int y = (int) screen.as_struct.y;
+		
+		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) {
+			shadow[i] = 0;
+			continue;
+		}
+		
 		current_z[i]    = (screenz_t) screen.as_struct.z;
-		shadow_buf_z[i] = (screenz_t) UNIFORM_SHADOWBUF[i][x + y*get_screen_width()];
+		//printf ("x=%d, y=%d\n", x, y);
+		//LIGHTS[i].shadow_buf = UNIFORM_SHADOWBUF[i];
+		//shadow_buf_z[i] = (screenz_t) UNIFORM_SHADOWBUF[i][x + y*get_screen_width()];
+		
+		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
 		shadow[i] = (shadow_buf_z[i] > current_z[i]+5) ? 0.2 : 1.0; // +5 for z-fighting
 	}
@@ -146,7 +156,12 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	float intensity = shadow[0] * shadow[1] * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
+	float shadow_total = 1;
+	for (int i = 0; i < 2; i++) {
+		shadow_total *= (shadow[i] == 0) ? 1 : shadow[i];
+	}
+	//float intensity = shadow[0] * shadow[1] * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
+	float intensity = shadow_total * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
 	//else intensity = 0;
 	
 	//if (intensity <= 0) return false;

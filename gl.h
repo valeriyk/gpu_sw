@@ -35,11 +35,6 @@ typedef struct Triangle {
 	Float4 vtx[3];
 } Triangle;
 
-typedef struct Light {
-	Float3		dir;
-	screenz_t	*shadow_buf;
-} Light;
-
 typedef struct Object {
 	WFobj *wfobj;
 	float3 scale;
@@ -54,6 +49,18 @@ typedef struct Object {
 typedef Float4 (*vertex_shader) (Object *obj, int face_idx, int vtx_idx);
 typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
+typedef struct Light {
+	bool 		enabled;
+	//Float3		dir;
+	//Float3		src;
+	screenz_t	*shadow_buf;
+} Light;
+
+extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
+
+void new_light  (int light_num, Float3 dir);
+void free_light (int light_num);
+void init_scene (void);
 
 
 Light light[MAX_NUM_OF_LIGHTS];

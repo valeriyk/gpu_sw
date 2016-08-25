@@ -72,6 +72,28 @@ screenz_t get_screen_depth (void) {
 	return SCREEN_DEPTH;
 }
 
+
+void new_light (int light_num, Float3 dir) { //TBD add light_src,
+	LIGHTS[light_num].enabled = true;
+	//LIGHTS[light_num].dir = dir;
+	//LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
+	LIGHTS[light_num].shadow_buf = (screenz_t*) calloc (SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(screenz_t));
+}
+
+void free_light (int light_num) {
+	LIGHTS[light_num].enabled = false;
+    free (LIGHTS[light_num].shadow_buf);
+}
+
+void init_scene (void) {
+	//Scene.num_of_lights = 0;
+	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		LIGHTS[i].enabled = false;
+		LIGHTS[i].shadow_buf = NULL;
+	}
+}
+
+
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
 	fmat4_set (m, 0, 2,       (right + left) / (right - left));
