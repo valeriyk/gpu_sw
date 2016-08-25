@@ -18,16 +18,16 @@ Float3 DEPTH_PASS2_VARYING_NDC[3];
 Float3 DEPTH_PASS2_VARYING_SCREEN[2][3];
 //Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
 
-Float4 depth_vshader_pass1 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
+Float4 depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
 	}
 	
 	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
+	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
-	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
+	Float4 vtx4d = fmat4_Float4_mult (obj->mvp, &mc);
 	
 	return vtx4d;
 }
@@ -38,16 +38,16 @@ bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Float4 depth_vshader_pass2 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
+Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
 	
 	if (DEPTH_VSHADER2_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
 	}
 	
 	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 vtx3d = wfobj_get_vtx_coords (obj, face_idx, vtx_idx);
+	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
-	Float4 vtx4d = fmat4_Float4_mult (mvp, &mc);
+	Float4 vtx4d = fmat4_Float4_mult (obj->mvp, &mc);
 	
 	
 	Float4 vtx4d_shadow = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW, &mc);
@@ -65,14 +65,14 @@ Float4 depth_vshader_pass2 (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp) {
 	
 	
 	// extract the texture UV coordinates of the vertex
-	if (obj->texture != NULL) {
-		Float2 vtx_uv = wfobj_get_texture_coords (obj, face_idx, vtx_idx);
+	if (obj->wfobj->texture != NULL) {
+		Float2 vtx_uv = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
 		DEPTH_VARYING_U.as_array[vtx_idx] = vtx_uv.as_struct.u;
 		DEPTH_VARYING_V.as_array[vtx_idx] = vtx_uv.as_struct.v;
 	}
 	
 	// transform the normal vector to the vertex
-	Float3 norm3d = wfobj_get_norm_coords    (obj, face_idx, vtx_idx);
+	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
 	for (int i = 0; i < 3; i++) {

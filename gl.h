@@ -37,7 +37,6 @@ typedef struct Triangle {
 
 typedef struct Light {
 	Float3		dir;
-	fmat4 		shadow_mvp;
 	screenz_t	*shadow_buf;
 } Light;
 
@@ -48,10 +47,11 @@ typedef struct Object {
 	float3 tran;
 	fmat4  model;
 	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
+	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
 } Object;
 
 
-typedef Float4 (*vertex_shader) (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp);
+typedef Float4 (*vertex_shader) (Object *obj, int face_idx, int vtx_idx);
 typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
 
 
