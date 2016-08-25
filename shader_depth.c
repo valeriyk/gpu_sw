@@ -50,7 +50,7 @@ Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
 	Float4 vtx4d = fmat4_Float4_mult (obj->mvp, &mc);
 	
 	
-	Float4 vtx4d_shadow = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW, &mc);
+	Float4 vtx4d_shadow = fmat4_Float4_mult (obj->shadow_mvp[0], &mc);
 	int WIDTH  = get_screen_width();
 	int HEIGHT = get_screen_height();
 	int DEPTH  = get_screen_depth();
@@ -58,7 +58,7 @@ Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
 	DEPTH_PASS2_VARYING_SCREEN[0][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0) * HEIGHT / 2.0;
 	DEPTH_PASS2_VARYING_SCREEN[0][2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0;
 	
-	Float4 vtx4d_shadow_2 = fmat4_Float4_mult (&UNIFORM_MVP_SHADOW_2, &mc);
+	Float4 vtx4d_shadow_2 = fmat4_Float4_mult (obj->shadow_mvp[1], &mc);
 	DEPTH_PASS2_VARYING_SCREEN[1][0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow_2.as_array[0] / vtx4d_shadow_2.as_struct.w) * HEIGHT / 2.0;
 	DEPTH_PASS2_VARYING_SCREEN[1][1].as_array[vtx_idx] = (vtx4d_shadow_2.as_array[1] / vtx4d_shadow_2.as_struct.w + 1.0) * HEIGHT / 2.0;
 	DEPTH_PASS2_VARYING_SCREEN[1][2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow_2.as_array[2] / vtx4d_shadow_2.as_struct.w) / 2.0;

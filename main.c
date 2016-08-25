@@ -18,8 +18,8 @@
 // these are global:
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
-fmat4  UNIFORM_MVP_SHADOW;
-fmat4  UNIFORM_MVP_SHADOW_2;
+//fmat4  UNIFORM_MVP_SHADOW;
+//fmat4  UNIFORM_MVP_SHADOW_2;
 fmat4  UNIFORM_MVP_INV;
 
 Float3 UNIFORM_LIGHT[2];
@@ -270,17 +270,15 @@ int main(int argc, char** argv) {
 			obj_draw            (head2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);*/
 		}
 		else if (fig == 1) {
-			fmat4_identity (&UNIFORM_MVP_SHADOW_2);
-			
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (cube1, &ortho_proj, &view, &light_dir);
 			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(cube1->mvp), &UNIFORM_MVP_SHADOW);
+			fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[0]));
 			
 			init_view     (&view, &light_src_2, &center, &up);
 			obj_transform (cube1, &ortho_proj, &view, &light_dir);
 			obj_draw      (cube1, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(cube1->mvp), &UNIFORM_MVP_SHADOW_2);
+			fmat4_copy    (&(cube1->mvp), &(cube1->shadow_mvp[1]));
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (cube1, &persp_proj, &view, &light_dir);
@@ -289,12 +287,12 @@ int main(int argc, char** argv) {
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (cube2, &ortho_proj, &view, &light_dir);
 			obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(cube2->mvp), &UNIFORM_MVP_SHADOW);
+			fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[0]));
 			
 			init_view     (&view, &light_src_2, &center, &up);
 			obj_transform (cube2, &ortho_proj, &view, &light_dir);
 			obj_draw      (cube2, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(cube2->mvp), &UNIFORM_MVP_SHADOW_2);
+			fmat4_copy    (&(cube2->mvp), &(cube2->shadow_mvp[1]));
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (cube2, &persp_proj, &view, &light_dir);
@@ -303,12 +301,12 @@ int main(int argc, char** argv) {
 			init_view     (&view, &light_src, &center, &up);
 			obj_transform (floor, &ortho_proj, &view, &light_dir);
 			obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, depth_buffer0, NULL);
-			fmat4_copy    (&(floor->mvp), &UNIFORM_MVP_SHADOW);
+			fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[0]));
 			
 			init_view     (&view, &light_src_2, &center, &up);
 			obj_transform (floor, &ortho_proj, &view, &light_dir);
 			obj_draw      (floor, depth_vshader_pass1, depth_pshader_pass1, depth_buffer1, NULL);
-			fmat4_copy    (&(floor->mvp), &UNIFORM_MVP_SHADOW_2);
+			fmat4_copy    (&(floor->mvp), &(floor->shadow_mvp[1]));
 			
 			init_view        (&view, &eye, &center, &up);
 			obj_transform    (floor, &persp_proj, &view, &light_dir);
