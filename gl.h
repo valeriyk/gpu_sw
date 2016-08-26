@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #define FIX_PT_PRECISION	3
-#define MAX_NUM_OF_LIGHTS	4
+#define MAX_NUM_OF_LIGHTS	8
 
 typedef enum {X = 0, Y, Z, W} axis;
 
@@ -17,7 +17,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
 typedef uint16_t screenxy_t;
 
-typedef uint16_t screenz_t;
+typedef uint8_t screenz_t;
 
 typedef struct ScreenPt {
 	screenxy_t x;

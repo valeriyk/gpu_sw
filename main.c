@@ -238,22 +238,27 @@ int main(int argc, char** argv) {
     //new_light (0, Float3_set (-6.0f,  -5.f, -5.f));					
     new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
     //new_light (1, Float3_set ( 6.0f,  -5.f, -5.f));
+    new_light (7, Float3_set ( 6.0f,  -0.5f, -5.f));
     
     //do {
     static int fbuffer_idx = 0;
     for (int m = 0; m < 1; m++) {
 		
 		//active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
-		active_fbuffer = fbuffer[fbuffer_idx];
-		fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
+		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		//active_fbuffer = fbuffer[fbuffer_idx];
+		//fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
 		
 		for (int i = 0; i < screen_size; i++) {
 			zbuffer[i] = 0;
-			LIGHTS[0].shadow_buf[i] = 0;
-			//LIGHTS[1].shadow_buf[i] = 0;
+			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
+				if (LIGHTS[j].enabled) {
+					LIGHTS[j].shadow_buf[i] = 0;
+				}
+			}
 		}
 		
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			init_view       (&view, &(LIGHTS[i].src), &center, &up);
 			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
 				obj_transform (object[j], &ortho_proj, &view);
