@@ -105,9 +105,6 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;
 		
 		current_z[i]    = (screenz_t) screen.as_struct.z;
-		//printf ("x=%d, y=%d\n", x, y);
-		//LIGHTS[i].shadow_buf = UNIFORM_SHADOWBUF[i];
-		//shadow_buf_z[i] = (screenz_t) UNIFORM_SHADOWBUF[i][x + y*get_screen_width()];
 		
 		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
