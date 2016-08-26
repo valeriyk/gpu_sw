@@ -131,27 +131,38 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
     obj_init_model      (diablo1);
     */
     
+    int obj_idx = 0;
     // Cube 0
-    object[0] = obj_new (my_cube);
-	obj_set_scale       (object[0], 2, 2, 2);
-	obj_set_rotation    (object[0], 45, 45, 0);
-	obj_set_translation (object[0], 1.0f, 0.f, 0.f);
-	obj_init_model      (object[0]);
+    object[obj_idx] = obj_new (my_cube);
+	obj_set_scale       (object[obj_idx], 2, 2, 2);
+	obj_set_rotation    (object[obj_idx], 45, 45, 0);
+	obj_set_translation (object[obj_idx], 1.0f, 0.f, 0.f);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
 	
 	// Cube 1
-	object[1] = obj_new (my_cube);
-	//obj_set_scale       (object[1], 0.5, 0.5, 0.5);
-	obj_set_scale       (object[1], 2, 2, 2);
-	obj_set_rotation    (object[1], 45, 45, 0);
-	obj_set_translation (object[1], -1.0f, 0.f, 0.f);
-	obj_init_model      (object[1]);
+	object[obj_idx] = obj_new (my_cube);
+	//obj_set_scale       (object[obj_idx], 0.5, 0.5, 0.5);
+	obj_set_scale       (object[obj_idx], 2, 2, 2);
+	obj_set_rotation    (object[obj_idx], 45, 45, 0);
+	obj_set_translation (object[obj_idx], -1.0f, 0.f, 0.f);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
 	
 	// Floor
-	object[2] = obj_new (my_floor);
-    //obj_set_rotation    (object[2], 90.f, 0.f, 0.f);
-    obj_set_translation (object[2], 0.f, -0.5f, -2.0f);
-    obj_set_scale       (object[2], 6, 4, 4);
-	obj_init_model      (object[2]);
+	object[obj_idx] = obj_new (my_floor);
+    //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
+    obj_set_scale       (object[obj_idx], 6, 4, 4);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
+	
+	object[obj_idx] = obj_new (my_floor);
+    obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
+    obj_set_scale       (object[obj_idx], 10, 4, 10);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
 	
 	/* 
     Object *floor1 = obj_new (my_floor);
@@ -179,8 +190,12 @@ int main(int argc, char** argv) {
     size_t screen_size = WIDTH*HEIGHT;
     
     screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-    pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    
+    pixel_color_t *fbuffer[NUM_OF_FRAMEBUFFERS];
+    for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {
+		fbuffer[i] = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+	}
+    //pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     
     pixel_color_t *active_fbuffer = NULL;
     
@@ -202,7 +217,7 @@ int main(int argc, char** argv) {
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	float f = 10.0;
+	float f = 15;//20.0;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
@@ -220,17 +235,22 @@ int main(int argc, char** argv) {
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
-    new_light (0, Float3_set (-3.0f,  -5.f, -2.5f));					
-    new_light (1, Float3_set ( 3.0f,  -5.f, -2.5f));
+    //new_light (0, Float3_set (-6.0f,  -5.f, -5.f));					
+    new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
+    //new_light (1, Float3_set ( 6.0f,  -5.f, -5.f));
     
     //do {
+    static int fbuffer_idx = 0;
     for (int m = 0; m < 1; m++) {
-		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
+		
+		//active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
+		active_fbuffer = fbuffer[fbuffer_idx];
+		fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
 		
 		for (int i = 0; i < screen_size; i++) {
 			zbuffer[i] = 0;
 			LIGHTS[0].shadow_buf[i] = 0;
-			LIGHTS[1].shadow_buf[i] = 0;
+			//LIGHTS[1].shadow_buf[i] = 0;
 		}
 		
 		for (int i = 0; i < 2; i++) {
@@ -250,7 +270,7 @@ int main(int argc, char** argv) {
 		}
 	}// while (0);
 	
-    write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
+    write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
     //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
     if (sizeof(screenz_t) == 1) {
 		write_tga_file ("zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT, 8, 1);
@@ -258,7 +278,7 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled) {
 				char sb_file[32];
-				char num[2];
+				char num[32];
 				sprintf(num, "%d", i);
 				strcpy (sb_file, "shadow_buffer_");
 				strcat (sb_file, num);
@@ -272,8 +292,8 @@ int main(int argc, char** argv) {
 	//wfobj_free(my_floor);
 	
 	free(zbuffer);
-	free(fbuffer0);
-	free(fbuffer1);
+	free(fbuffer[0]);
+	free(fbuffer[1]);
 	
     return 0;
 }

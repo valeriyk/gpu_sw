@@ -108,7 +108,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		
 		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
-		shadow[i] = (shadow_buf_z[i] > current_z[i]+5) ? 0.2 : 1.0; // +5 for z-fighting
+		shadow[i] = (shadow_buf_z[i] > current_z[i]+10) ? 0.2 : 1.0; // +5 for z-fighting
 	}
 	
 	int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);
