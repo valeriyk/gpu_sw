@@ -197,12 +197,13 @@ int main(int argc, char** argv) {
 	float right = top * aspect_ratio;
 	float left  = -right;
 	float near  = 1;
-	float far   = 100;
+	float far   = 50;
 	
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	init_ortho_proj       (&ortho_proj, left*2.5, right*2.5, top*2.5, bot*2.5, near*2.5, far*2.5);
+	float f = 10.0;
+	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
@@ -251,10 +252,21 @@ int main(int argc, char** argv) {
 	
     write_tga_file ("output_fb0.tga", (tbyte *) fbuffer0, WIDTH, HEIGHT, 24, 1);
     //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-    //write_tga_file (   "zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT,  8, 1);
-	
-	//write_tga_file ("shadow_buffer.tga", (tbyte *) shadow_buffer, WIDTH, HEIGHT, 24, 1);
-    //write_tga_file ("depth_buffer.tga", (tbyte *)  depth_buffer, WIDTH, HEIGHT,  8, 1);
+    if (sizeof(screenz_t) == 1) {
+		write_tga_file ("zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT, 8, 1);
+		
+		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+			if (LIGHTS[i].enabled) {
+				char sb_file[32];
+				char num[2];
+				sprintf(num, "%d", i);
+				strcpy (sb_file, "shadow_buffer_");
+				strcat (sb_file, num);
+				strcat (sb_file, ".tga");
+				write_tga_file (sb_file, (tbyte *) LIGHTS[i].shadow_buf, WIDTH, HEIGHT, 8, 1);
+			}
+		}
+	}
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);
