@@ -20,7 +20,7 @@ fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
 //fmat4  UNIFORM_MVP_SHADOW;
 //fmat4  UNIFORM_MVP_SHADOW_2;
-fmat4  UNIFORM_MVP_INV;
+//fmat4  UNIFORM_MVP_INV;
 
 //Float3 UNIFORM_LIGHT[2];
 
@@ -92,20 +92,9 @@ void light_transform (fmat4 *view) {
 	}
 }
 
-int main(int argc, char** argv) {
-       
-    init_scene();
-    
-    size_t screen_size = WIDTH*HEIGHT;
-    
-    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
-    pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-    pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-    
-    pixel_color_t *active_fbuffer = NULL;
-    
-    
-    Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
+void init_objects (Object *object[NUM_OF_OBJECTS]) {
+	
+	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
     WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
@@ -122,11 +111,8 @@ int main(int argc, char** argv) {
 	Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
 	WFobj *my_floor = wfobj_new ("obj/floor.obj", floor_diff, NULL, NULL);
 	
-	// 1. Model Matrix - transform local coords to global
 	
-	Object *object[NUM_OF_OBJECTS];
-	
-    Object *head1  = obj_new (african_head);
+    /*Object *head1  = obj_new (african_head);
     obj_set_translation (head1, -1.f, 0.f, -0.f);
     //obj_set_scale       (head1, 3, 3, 3);
     obj_set_rotation    (head1, 0.f, 20.f, 0.f);
@@ -143,6 +129,7 @@ int main(int argc, char** argv) {
     //obj_set_scale       (diablo1, 3, 3, 3);
     //obj_set_rotation    (diablo1, 0.f, 20.f, 0.f);
     obj_init_model      (diablo1);
+    */
     
     // Cube 0
     object[0] = obj_new (my_cube);
@@ -166,7 +153,7 @@ int main(int argc, char** argv) {
     obj_set_scale       (object[2], 6, 4, 4);
 	obj_init_model      (object[2]);
 	
-	 
+	/* 
     Object *floor1 = obj_new (my_floor);
     obj_set_rotation    (floor1, 90.f, 0.f, 0.f);
     //obj_set_translation (floor1, 0.f, 0.f, -1.0f);
@@ -177,13 +164,30 @@ int main(int argc, char** argv) {
 	obj_set_translation (floor2, -0.0f, -0.0f, -0.5f);
 	obj_set_scale       (floor2, 1.2, 1.2, 1.2);
 	obj_init_model      (floor2);
-	/*
+	
 	Object *floor3 = obj_new (my_floor);
     obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
 	obj_set_translation (floor3, 0.f, 0.f, 0.75f);
 	obj_build_model     (floor3);
 	*/
+}
+
+int main(int argc, char** argv) {
+       
+    init_scene();
+    
+    size_t screen_size = WIDTH*HEIGHT;
+    
+    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
+    pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
+    
+    pixel_color_t *active_fbuffer = NULL;
+    
+	// 1. Model Matrix - transform local coords to global
 	
+	Object *object[NUM_OF_OBJECTS];
+	init_objects(object);	
 	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
