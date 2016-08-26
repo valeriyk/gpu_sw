@@ -11,5 +11,5 @@ extern fmat4  UNIFORM_MVP_INV;
 //extern screenz_t *UNIFORM_SHADOWBUF[2];
 //extern screenz_t *UNIFORM_SHADOWBUF_2;
 
-extern Float3 UNIFORM_LIGHT[2];
+//extern Float3 UNIFORM_LIGHT[2];
 

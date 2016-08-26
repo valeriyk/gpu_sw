@@ -75,8 +75,8 @@ screenz_t get_screen_depth (void) {
 
 void new_light (int light_num, Float3 dir) { //TBD add light_src,
 	LIGHTS[light_num].enabled = true;
-	//LIGHTS[light_num].dir = dir;
-	//LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
+	LIGHTS[light_num].dir = dir;
+	LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
 	LIGHTS[light_num].shadow_buf = (screenz_t*) calloc (SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(screenz_t));
 }
 

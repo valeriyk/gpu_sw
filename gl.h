@@ -51,8 +51,9 @@ typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color)
 
 typedef struct Light {
 	bool 		enabled;
-	//Float3		dir;
-	//Float3		src;
+	Float3		dir;
+	Float3		src;
+	Float3		eye;
 	screenz_t	*shadow_buf;
 } Light;
 

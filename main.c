@@ -22,7 +22,7 @@ fmat4  UNIFORM_MIT;
 //fmat4  UNIFORM_MVP_SHADOW_2;
 fmat4  UNIFORM_MVP_INV;
 
-Float3 UNIFORM_LIGHT[2];
+//Float3 UNIFORM_LIGHT[2];
 
 //screenz_t *UNIFORM_SHADOWBUF[2];
 //screenz_t *UNIFORM_SHADOWBUF_2;
@@ -78,20 +78,18 @@ void obj_transform (Object *obj, fmat4 *proj, fmat4 *view) {
 }
 
 
-void light_transform (fmat4 *view, Float3 *light_dir) {
-	Float4 light_dir4 = Float3_Float4_conv (light_dir, 0);
-	// Light vector changes after View and Projection transformations only,
-	// it does not depend on Model transformation
-	Float4 light_new = fmat4_Float4_mult  (view, &light_dir4);
-	UNIFORM_LIGHT[0] = Float4_Float3_vect_conv (&light_new);
-    Float3_normalize   (&UNIFORM_LIGHT[0]);
-    
-    Float4 light_dir4_2 = Float4_set (-light_dir->as_struct.x, light_dir->as_struct.y, light_dir->as_struct.z, 0);
-	// Light vector changes after View and Projection transformations only,
-	// it does not depend on Model transformation
-	Float4 light_new_2 = fmat4_Float4_mult  (view, &light_dir4_2);
-	UNIFORM_LIGHT[1] = Float4_Float3_vect_conv (&light_new_2);
-    Float3_normalize   (&UNIFORM_LIGHT[1]);
+void light_transform (fmat4 *view) {
+	Float4 light4_a;
+	Float4 light4_b;
+	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		if (!LIGHTS[i].enabled) continue;
+		light4_a = Float3_Float4_conv (&(LIGHTS[i].dir), 0);
+		// Light vector changes after View transformation only,
+		// it does not depend on Model and Projection transformations
+		light4_b = fmat4_Float4_mult  (view, &light4_a);
+		LIGHTS[i].eye = Float4_Float3_vect_conv (&light4_b);
+		Float3_normalize (&(LIGHTS[i].eye));
+	}
 }
 
 int main(int argc, char** argv) {
@@ -103,9 +101,6 @@ int main(int argc, char** argv) {
     screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
     pixel_color_t *fbuffer0 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
     pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-    
-    //UNIFORM_SHADOWBUF[0] = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
-    //UNIFORM_SHADOWBUF[1] = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
     
     pixel_color_t *active_fbuffer = NULL;
     
@@ -126,11 +121,6 @@ int main(int argc, char** argv) {
 	
 	Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
 	WFobj *my_floor = wfobj_new ("obj/floor.obj", floor_diff, NULL, NULL);
-	//wfobj_load_normal_map   (my_floor, "obj/floor_nm_tangent.tga");
-	
-	
-	//Float3 camera = Float3_Float3_sub(&eye, &center);	
-	
 	
 	// 1. Model Matrix - transform local coords to global
 	
@@ -219,52 +209,36 @@ int main(int argc, char** argv) {
     
     // 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( -0.f,  -0.f,   6.000f);
+    Float3 eye    = Float3_set ( -0.5f,  -0.5f,   6.500f);
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
-    Float3 light_dir[2];
-    Float3 light_src[2];
-    
-    light_dir[0] = Float3_set (-4.0f,  -5.f, -2.5f);
-    light_dir[1] = Float3_set (-light_dir[0].as_struct.x, light_dir[0].as_struct.y, light_dir[0].as_struct.z);
-    for (int i = 0; i < 2; i++) {
-		light_src[i] = Float3_set ( -light_dir[i].as_struct.x*5, -light_dir[i].as_struct.y*5, -light_dir[i].as_struct.z*5);
-	}
-    
-    new_light (0, light_dir[0]);					
-    new_light (1, light_dir[1]);
+    new_light (0, Float3_set (-3.0f,  -5.f, -2.5f));					
+    new_light (1, Float3_set ( 3.0f,  -5.f, -2.5f));
     
     //do {
-    // 0 - heads, 1 - cubes, 2 - floors
-    //int fig = 1;
     for (int m = 0; m < 1; m++) {
 		active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		
 		for (int i = 0; i < screen_size; i++) {
 			zbuffer[i] = 0;
-			//UNIFORM_SHADOWBUF[0][i] = 0;
-			//UNIFORM_SHADOWBUF[1][i] = 0;
 			LIGHTS[0].shadow_buf[i] = 0;
 			LIGHTS[1].shadow_buf[i] = 0;
 		}
 		
 		for (int i = 0; i < 2; i++) {
-			init_view       (&view, &light_src[i], &center, &up);
-			light_transform (&view, &light_dir[0]);	
+			init_view       (&view, &(LIGHTS[i].src), &center, &up);
 			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
 				obj_transform (object[j], &ortho_proj, &view);
-				//obj_draw      (object[j], depth_vshader_pass1, depth_pshader_pass1, UNIFORM_SHADOWBUF[i], NULL);
 				obj_draw      (object[j], depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
-				//UNIFORM_SHADOWBUF[i] = LIGHTS[i].shadow_buf;
 				fmat4_copy    (&(object[j]->mvp), &(object[j]->shadow_mvp[i]));
 			}
 		}			
 		
 		init_view       (&view, &eye, &center, &up);
-		light_transform (&view, &light_dir[0]);
+		light_transform (&view);
 		for (int i = 0; i < NUM_OF_OBJECTS; i++) {
 			obj_transform    (object[i], &persp_proj, &view);
 			obj_draw         (object[i], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
