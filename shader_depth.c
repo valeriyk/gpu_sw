@@ -165,24 +165,15 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	/*float shadow_total = 1;
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		shadow_total *= (shadow[i] == 0) ? 1 : shadow[i];
-	}*/
 	float shadow_total = 1.0 - shadows/4.0;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		diff_int_total += diff_intensity[i];
 	}
-	//if (diff_int_total > 1) diff_int_total = 1;
-	
-	//float intensity = shadow[0] * shadow[1] * (1.0 * (diff_intensity[0] + diff_intensity[1]) + 0.6 * spec_intensity);
 	float intensity = shadow_total * (0.5 * diff_int_total + 0.6 * spec_intensity);
-	//else intensity = 0;
 	
-	//if (intensity <= 0) return false;
-	if (intensity <= 0.1) intensity = 0.2;//return false;
+	if (intensity <= 0.1) intensity = 0.2;
 	
 	if (DEPTH_PSHADER2_DEBUG) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
