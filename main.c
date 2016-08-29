@@ -18,17 +18,10 @@
 // these are global:
 fmat4  UNIFORM_M;
 fmat4  UNIFORM_MIT;
-//fmat4  UNIFORM_MVP_SHADOW;
-//fmat4  UNIFORM_MVP_SHADOW_2;
-//fmat4  UNIFORM_MVP_INV;
-
-//Float3 UNIFORM_LIGHT[2];
-
-//screenz_t *UNIFORM_SHADOWBUF[2];
-//screenz_t *UNIFORM_SHADOWBUF_2;
-
 
 Light LIGHTS[MAX_NUM_OF_LIGHTS];
+
+
 
 
 void   print_fmat3 (fmat3 *m, char *header);
@@ -217,7 +210,7 @@ int main(int argc, char** argv) {
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	float f = 15;//20.0;
+	float f = 15.0;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
@@ -229,16 +222,18 @@ int main(int argc, char** argv) {
     
     // 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( -0.5f,  -0.5f,   6.500f);
+    Float3 eye    = Float3_set ( -0.5f,  0.5f,   6.500f);
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
 	init_view (&view, &eye, &center, &up);
     
-    //new_light (0, Float3_set (-6.0f,  -5.f, -5.f));					
-    new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
-    //new_light (1, Float3_set ( 6.0f,  -5.f, -5.f));
-    new_light (7, Float3_set ( 6.0f,  -0.5f, -5.f));
+    //new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
+    //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
+    
+    new_light (0, Float3_set ( 0.0f,  -2.5f, -5.f));					
+    new_light (1, Float3_set ( 0.0f,   2.5f, -5.f));
+    
     
     //do {
     static int fbuffer_idx = 0;
@@ -259,6 +254,7 @@ int main(int argc, char** argv) {
 		}
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+			if (!LIGHTS[i].enabled) continue;
 			init_view       (&view, &(LIGHTS[i].src), &center, &up);
 			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
 				obj_transform (object[j], &ortho_proj, &view);
@@ -297,8 +293,9 @@ int main(int argc, char** argv) {
 	//wfobj_free(my_floor);
 	
 	free(zbuffer);
-	free(fbuffer[0]);
-	free(fbuffer[1]);
+	for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {
+		free(fbuffer[i]);
+	}
 	
     return 0;
 }
