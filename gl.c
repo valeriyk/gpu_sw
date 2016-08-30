@@ -266,7 +266,7 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
 					sum_of_bar_clips += bar_clip.as_array[i];
-					sum_of_bars += (bar[i]);
+					sum_of_bars += bar[i];
 				}
 				if (sum_of_bars == 0) {
 					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
@@ -275,19 +275,20 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 				
 				for (int i = 0; i < 3; i++) {
 					bar_clip.as_array[i] /= sum_of_bar_clips;
+					bar[i] /= sum_of_bars;
 				}
 				
 				
 				//p.z = (screenz_t) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
-				float duck = 0;
-				
-				for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar_clip.as_array[i];
 				
 				//for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar[i];
 				//duck /= sum_of_bars;
 				
 				p.z = (screenz_t) duck; 
 				
+				// 1/z = l0/z0 + l1/z1 + l2/z2
+				//p.z = (screenz_t) 1.0f / (bar[0]/t->vtx[0].as_struct.z + bar[1]/t->vtx[1].as_struct.z + bar[2]/t->vtx[2].as_struct.z);
+				p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
 				
 				//printf ("draw_triangle: x=%d y=%d z=%d\t", p.x, p.y, p.z);
 				

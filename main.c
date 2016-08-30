@@ -231,8 +231,9 @@ int main(int argc, char** argv) {
     //new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
     //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
     
-    new_light (0, Float3_set ( 0.0f,  -2.5f, -5.f));					
-    new_light (1, Float3_set ( 0.0f,   2.5f, -5.f));
+    new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
+    new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
+    new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
     
     //do {
