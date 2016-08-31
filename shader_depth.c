@@ -90,7 +90,6 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	Float3    screen;
 	screenz_t current_z    [MAX_NUM_OF_LIGHTS];
 	screenz_t shadow_buf_z [MAX_NUM_OF_LIGHTS];
-	float     shadow       [MAX_NUM_OF_LIGHTS];
 	
 	int shadows = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {

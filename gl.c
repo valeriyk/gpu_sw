@@ -226,7 +226,7 @@ void obj_init_model (Object *obj) {
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
+/*void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
 {    
 	if (GL_DEBUG_0) {
 		printf ("\tcall draw_triangle()\n");
@@ -304,7 +304,73 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
         }
     }
 }
+*/
 
+void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
+{    
+	if (GL_DEBUG_0) {
+		printf ("\tcall draw_triangle()\n");
+		for (int i = 0; i < 3; i++) {
+			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
+		}
+	}
+	
+	// fixed point coordinates with subpixel precision:
+	// forum.devmaster.net/t/advanced-rasterization/6145
+	screenxy_t x[3];
+	screenxy_t y[3];
+	screenxy_t w[3];
+	for (int i = 0; i < 3; i++) {
+		x[i] = (screenxy_t) t->vtx[i].as_struct.x * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) t->vtx[i].as_struct.y * (1 << FIX_PT_PRECISION);
+		//w[i] = (screenxy_t) t->vtx[i].as_struct.w * (1 << FIX_PT_PRECISION);
+	}
+	
+    // Compute triangle bounding box.
+    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    
+    ScreenPt p;
+    for (p.y = min_y; p.y < max_y; p.y++) {	
+		for (p.x = min_x; p.x < max_x; p.x++) {
+			int3 bar;
+			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			
+			// If p is on or inside all edges, render pixel.
+			if ((bar[0] | bar[1] | bar[2]) > 0) {
+				float sum_of_bars      = 0.0f;
+				Float3 bar_clip;
+				for (int i = 0; i < 3; i++) {
+					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
+					sum_of_bars += bar_clip.as_array[i];
+				}
+				if (sum_of_bars == 0) {
+					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
+					return;
+				}				
+				
+				for (int i = 0; i < 3; i++) {
+					bar_clip.as_array[i] /= sum_of_bars;
+				}
+				
+				p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
+								
+				uint32_t pix_num = p.x + p.y*SCREEN_WIDTH;
+				if (p.z > zbuffer[pix_num]) {
+					zbuffer[pix_num] = p.z;
+					pixel_color_t color;
+					if (pshader (obj, &bar_clip, &color) && (fbuffer != NULL)) {
+						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
+					}
+				}
+			}
+        }
+    }
+}
 /*
 void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
     bool steep = false;
