@@ -65,7 +65,7 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		Float3_normalize (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
-		spec_intensity = (r.as_struct.z < 0) ? 0 : pow (r.as_struct.z, spec_factor);
+		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 		
 		if (NM_PSHADER_DEBUG) {
 			if (spec_intensity >= 0.5) {
@@ -78,7 +78,7 @@ bool nm_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	float intensity = 1.0 * diff_intensity + 0.6 * spec_intensity;
+	float intensity = 1.0f * diff_intensity + 0.6f * spec_intensity;
 	
 	if (NM_PSHADER_DEBUG) {
 		if (spec_intensity > 0.5) printf ("spec%f diff%f total%f\n", spec_intensity, diff_intensity, intensity);

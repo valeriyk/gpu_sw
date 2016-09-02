@@ -14,8 +14,16 @@ screenxy_t SCREEN_HEIGHT;
 screenz_t  SCREEN_DEPTH;
 
 
+int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy);
+int32_t min_of_three (int32_t a, int32_t b, int32_t c);
+int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
+	
 int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy) {
-    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    int32_t bx_ax = (int32_t) bx - (int32_t) ax;
+    int32_t cy_ay = (int32_t) cy - (int32_t) ay;
+    int32_t by_ay = (int32_t) by - (int32_t) ay;
+    int32_t cx_ax = (int32_t) cx - (int32_t) ax;
+    return bx_ax * cy_ay - by_ay * cx_ax;
 }
 
 static inline int32_t min_of_two (int32_t a, int32_t b) {
@@ -139,8 +147,8 @@ void init_view (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up) {
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis a) {
 	float rad = alpha_deg * 0.01745f; // degrees to rad conversion
-	float sin_alpha = sin(rad);
-	float cos_alpha = cos(rad);
+	float sin_alpha = sinf(rad);
+	float cos_alpha = cosf(rad);
 	
 	fmat4 r = FMAT4_IDENTITY;
 	
@@ -416,7 +424,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			
 			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {
-				float reciprocal_w = 1.0 / clip.vtx[j].as_struct.w; // we checked above that it's not zero
+				float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; // we checked above that it's not zero
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					//if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
@@ -431,10 +439,10 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x = SCREEN_WIDTH / 2.0 + ndc.vtx[j].as_struct.x * SCREEN_HEIGHT / 2.0; // map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
+				screen.vtx[j].as_struct.x = SCREEN_WIDTH / 2.0f + ndc.vtx[j].as_struct.x * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
 				//screen.vtx[j].as_struct.x = (ndc.vtx[j].as_struct.x + 1.0) *  SCREEN_WIDTH / 2.0; // map [-1:1] to [0:SCREEN_WIDTH]
-				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0) * SCREEN_HEIGHT / 2.0; // map [-1:1] to [0:SCREEN_HEIGHT]
-				screen.vtx[j].as_struct.z =  SCREEN_DEPTH * (1.0 - ndc.vtx[j].as_struct.z) / 2.0; // map [-1:1] to [SCREEN_DEPTH:0]				
+				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0f) * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:SCREEN_HEIGHT]
+				screen.vtx[j].as_struct.z =  SCREEN_DEPTH * (1.0f - ndc.vtx[j].as_struct.z) / 2.0f; // map [-1:1] to [SCREEN_DEPTH:0]				
 				screen.vtx[j].as_struct.w =  ndc.vtx[j].as_struct.w;
 				
 				if (GL_DEBUG_0) {

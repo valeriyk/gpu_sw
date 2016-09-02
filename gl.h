@@ -10,6 +10,7 @@
 #define FIX_PT_PRECISION	3
 #define MAX_NUM_OF_LIGHTS	8
 
+
 typedef enum {X = 0, Y, Z, W} axis;
 
 
@@ -64,7 +65,7 @@ void free_light (int light_num);
 void init_scene (void);
 
 
-Light light[MAX_NUM_OF_LIGHTS];
+//Light light[MAX_NUM_OF_LIGHTS];
 
 
 void create_light (Float3 dir, screenz_t *shadow_buf, int light_num);

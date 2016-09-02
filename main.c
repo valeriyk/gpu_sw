@@ -86,7 +86,7 @@ void light_transform (fmat4 *view) {
 }
 
 void init_objects (Object *object[NUM_OF_OBJECTS]) {
-	
+	/*
 	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
@@ -96,7 +96,7 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	Bitmap *diablo_nmap = new_bitmap_from_tga ("obj/diablo/diablo3_pose_nm.tga");
 	Bitmap *diablo_spec = new_bitmap_from_tga ("obj/diablo/diablo3_pose_spec.tga");
 	WFobj  *diablo = wfobj_new ("obj/diablo/diablo3_pose.obj", diablo_diff, diablo_nmap, diablo_spec);
-	
+	*/
 	Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 	Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
 	WFobj  *my_cube = wfobj_new ("obj/cube.obj", cube_diff, cube_nmap, NULL);
@@ -232,8 +232,8 @@ int main(int argc, char** argv) {
     //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
     
     new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
-    new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
-    new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
+    //new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
+    //new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
     
     //do {

@@ -175,7 +175,8 @@ Float3 Float3_float_mult(Float3 *a, float b) {
 }
 
 void Float3_normalize (Float3 *v) {
-	float length = (float) sqrt(pow(v->as_struct.x, 2) + pow(v->as_struct.y, 2) + pow(v->as_struct.z, 2));
+	//float length = (float) sqrtf(powf(v->as_struct.x, 2) + powf(v->as_struct.y, 2) + powf(v->as_struct.z, 2));
+	float length = (float) sqrtf(v->as_struct.x * v->as_struct.x + v->as_struct.y * v->as_struct.y + v->as_struct.z * v->as_struct.z);
 	for (int i = 0; i < 3; i++) {
 		v->as_array[i] = v->as_array[i] / length;
 	}

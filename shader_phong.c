@@ -91,7 +91,7 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		Float3_normalize (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
-		spec_intensity = (r.as_struct.z < 0) ? 0 : pow (r.as_struct.z, spec_factor);
+		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 		
 		if (PHONG_PSHADER_DEBUG_1) {
 			if (spec_intensity >= 0.5) {

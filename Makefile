@@ -1,9 +1,11 @@
-TCF          = ../../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
+TCF          = ../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
 #SYSCONF_LINK_x86 = gcc -ggdb -g3 -pg -O0 -I.
 SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -I. -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0
 
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF)
-SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.
+#SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.
+SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I. -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0
+
 CPPFLAGS     =
 LDFLAGS_x86  = -lm
 LDFLAGS_ARC  =

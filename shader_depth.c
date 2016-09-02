@@ -56,9 +56,9 @@ Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (!LIGHTS[i].enabled) continue;
 		Float4 vtx4d_shadow = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc);
-		DEPTH_PASS2_VARYING_SCREEN[i][0].as_array[vtx_idx] = WIDTH/2.0 + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0;
-		DEPTH_PASS2_VARYING_SCREEN[i][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0) * HEIGHT / 2.0;
-		DEPTH_PASS2_VARYING_SCREEN[i][2].as_array[vtx_idx] = DEPTH * (1.0 - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0;
+		DEPTH_PASS2_VARYING_SCREEN[i][0].as_array[vtx_idx] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
+		DEPTH_PASS2_VARYING_SCREEN[i][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
+		DEPTH_PASS2_VARYING_SCREEN[i][2].as_array[vtx_idx] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
 	}
 	
 	// extract the texture UV coordinates of the vertex
@@ -111,7 +111,7 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		
 		//
 		//shadow[i] = (shadow_buf_z[i] > current_z[i]+5) ? 0.2 : 1.0; // +5 for z-fighting
-		float z_fighting = 50;
+		float z_fighting = 50.0f;
 		if (shadow_buf_z[i] > current_z[i] + z_fighting) {
 			shadows++;
 		}
@@ -151,10 +151,10 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		Float3_normalize (&r);
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
-		spec_intensity = (r.as_struct.z < 0) ? 0 : pow (r.as_struct.z, spec_factor);
+		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 		
 		if (DEPTH_PSHADER2_DEBUG) {
-			if (spec_intensity >= 0.5) {
+			if (spec_intensity >= 0.5f) {
 				printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
 				printf ("nl=%f ", nl);
 				printf ("nnl2=(%f;%f;%f) ", nnl2.as_struct.x, nnl2.as_struct.y, nnl2.as_struct.z);
@@ -164,15 +164,15 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	float shadow_total = 1.0 - shadows/4.0;
+	float shadow_total = 1.0f - shadows/4.0f;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		diff_int_total += diff_intensity[i];
 	}
-	float intensity = shadow_total * (0.5 * diff_int_total + 0.6 * spec_intensity);
+	float intensity = shadow_total * (0.5f * diff_int_total + 0.6f * spec_intensity);
 	
-	if (intensity <= 0.1) intensity = 0.2;
+	if (intensity <= 0.1) intensity = 0.2f;
 	
 	if (DEPTH_PSHADER2_DEBUG) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
