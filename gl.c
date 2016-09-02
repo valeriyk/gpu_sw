@@ -365,8 +365,11 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
 				
-				p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
-								
+				//p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
+				
+				float z_float = (bar[0]*t->vtx[0].as_struct.z + bar[1] * t->vtx[1].as_struct.z + bar[2] * t->vtx[2].as_struct.z) / (bar[0] + bar[1] + bar[2]);
+				p.z = (screenz_t) z_float;
+							
 				uint32_t pix_num = p.x + p.y*SCREEN_WIDTH;
 				if (p.z > zbuffer[pix_num]) {
 					zbuffer[pix_num] = p.z;
