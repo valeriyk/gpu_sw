@@ -335,9 +335,9 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 	}
 	
     // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
     screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
     screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
     
     ScreenPt p;
@@ -365,10 +365,11 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 					bar_clip.as_array[i] /= sum_of_bars;
 				}
 				
-				//p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
-				
+
 				float z_float = (bar[0]*t->vtx[0].as_struct.z + bar[1] * t->vtx[1].as_struct.z + bar[2] * t->vtx[2].as_struct.z) / (bar[0] + bar[1] + bar[2]);
 				p.z = (screenz_t) z_float;
+				// this also would work:
+				// p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
 							
 				uint32_t pix_num = p.x + p.y*SCREEN_WIDTH;
 				if (p.z > zbuffer[pix_num]) {
