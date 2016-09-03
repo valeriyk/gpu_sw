@@ -327,10 +327,12 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
 	screenxy_t y[3];
-	screenxy_t w[3];
+	screenz_t  z[3];
+	//int w[3];
 	for (int i = 0; i < 3; i++) {
 		x[i] = (screenxy_t) t->vtx[i].as_struct.x * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) t->vtx[i].as_struct.y * (1 << FIX_PT_PRECISION);
+		z[i] = (screenz_t)  t->vtx[i].as_struct.z;// * (1 << FIX_PT_PRECISION);
 		//w[i] = (screenxy_t) t->vtx[i].as_struct.w * (1 << FIX_PT_PRECISION);
 	}
 	
@@ -350,31 +352,33 @@ void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
-				float sum_of_bars      = 0.0f;
-				Float3 bar_clip;
-				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
-					sum_of_bars += bar_clip.as_array[i];
-				}
-				if (sum_of_bars == 0) {
-					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
-					return;
-				}				
-				
-				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] /= sum_of_bars;
-				}
-				
-
 				float z_float = (bar[0]*t->vtx[0].as_struct.z + bar[1] * t->vtx[1].as_struct.z + bar[2] * t->vtx[2].as_struct.z) / (bar[0] + bar[1] + bar[2]);
 				p.z = (screenz_t) z_float;
-				// this also would work:
+				
+				// this doesn't work:
+				//uint32_t tmpz = (bar[0] * z[0] + bar[1] * z[1] + bar[2] * z[2]) / (bar[0] + bar[1] + bar[2]);
+				//p.z = (screenz_t) tmpz;
+				
+				// but this works too:
 				// p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
 							
-				uint32_t pix_num = p.x + p.y*SCREEN_WIDTH;
+				size_t pix_num = p.x + p.y*SCREEN_WIDTH;
 				if (p.z > zbuffer[pix_num]) {
 					zbuffer[pix_num] = p.z;
 					pixel_color_t color;
+					float sum_of_bars      = 0.0f;
+					Float3 bar_clip;
+					for (int i = 0; i < 3; i++) {
+						bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
+						sum_of_bars += bar_clip.as_array[i];
+					}
+					
+					if (sum_of_bars == 0) continue;
+										
+					for (int i = 0; i < 3; i++) {
+						bar_clip.as_array[i] /= sum_of_bars;
+					}
+					
 					if (pshader (obj, &bar_clip, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
 					}
@@ -420,7 +424,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		Triangle ndc;
 		Triangle screen;
 		
-		bool is_clipped = false;//true; // sticky bit
+		bool is_clipped = true; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
 			
@@ -431,10 +435,10 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; // we checked above that it's not zero
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					//if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
-						//is_clipped = false;
-						is_clipped = true;
+					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
+					//if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+						is_clipped = false;
+						//is_clipped = true;
 					}
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	

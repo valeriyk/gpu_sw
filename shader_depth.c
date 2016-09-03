@@ -93,7 +93,6 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	int shadows = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		//shadow[i] = 0;
 		
 		if (!LIGHTS[i].enabled) continue;
 		
@@ -109,15 +108,10 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		
 		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
-		//
-		//shadow[i] = (shadow_buf_z[i] > current_z[i]+5) ? 0.2 : 1.0; // +5 for z-fighting
 		float z_fighting = 50.0f;
 		if (shadow_buf_z[i] > current_z[i] + z_fighting) {
 			shadows++;
 		}
-		/*else {
-			if (shadows > 0) shadows--;
-		}*/
 	}
 	
 	int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);

@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
     
     // 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( -0.5f,  0.5f,   6.500f);
+    Float3 eye    = Float3_set ( -0.5f,  0.5f,   3.500f);
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
