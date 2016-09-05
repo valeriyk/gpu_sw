@@ -26,7 +26,7 @@ Float3 wfobj_get_vtx_coords           (const WFobj *obj, const int face_idx, con
 Float3 wfobj_get_norm_coords          (const WFobj *obj, const int face_idx, const int vtx_idx);
 Float2 wfobj_get_texture_coords       (const WFobj *obj, const int face_idx, const int vtx_idx);
 
-void wfobj_get_rgb_from_texture     (const WFobj *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
+void wfobj_get_rgb_from_texture       (const WFobj *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
 Float3 wfobj_get_normal_from_map      (const WFobj *obj, const int u, const int v);
-int  wfobj_get_specularity_from_map (const WFobj *obj, const int u, const int v);
-int  wfobj_get_num_of_faces         (const WFobj *obj);
+int  wfobj_get_specularity_from_map   (const WFobj *obj, const int u, const int v);
+int  wfobj_get_num_of_faces           (const WFobj *obj);

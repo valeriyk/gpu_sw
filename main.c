@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
     
     size_t screen_size = WIDTH*HEIGHT;
     
-    screenz_t     *zbuffer  = (screenz_t*)     calloc (screen_size, sizeof(screenz_t));
+    screenz_t *zbuffer = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
     
     pixel_color_t *fbuffer[NUM_OF_FRAMEBUFFERS];
     for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {

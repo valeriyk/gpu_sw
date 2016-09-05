@@ -10,7 +10,7 @@
 #define FIX_PT_PRECISION	3
 #define MAX_NUM_OF_LIGHTS	8
 
-#define NUM_OF_VARYING_FLOATS 32 // must be multiple of 4
+#define NUM_OF_VARYING_WORDS 32 // must be multiple of 4
 
 
 typedef enum {X = 0, Y, Z, W} axis;
@@ -38,6 +38,15 @@ typedef struct Triangle {
 	Float4 vtx[3];
 } Triangle;
 
+typedef float  varying_float  [NUM_OF_VARYING_WORDS];
+typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
+typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
+typedef union Varying {
+	varying_float  as_float;
+	varying_Float2 as_Float2;
+	varying_Float4 as_Float4;
+} Varying;
+
 typedef struct Object {
 	WFobj *wfobj;
 	float3 scale;
@@ -46,6 +55,7 @@ typedef struct Object {
 	fmat4  model;
 	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
 	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
+	Varying *varying;
 } Object;
 
 
@@ -59,15 +69,6 @@ typedef struct Light {
 
 extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
-
-typedef float  varying_float  [NUM_OF_VARYING_FLOATS];
-typedef Float2 varying_Float2 [NUM_OF_VARYING_FLOATS/2];
-typedef Float4 varying_Float4 [NUM_OF_VARYING_FLOATS/4];
-typedef union Varying {
-	varying_float  as_float;
-	varying_Float2 as_Float2;
-	varying_Float4 as_Float4;
-} Varying;
 
 
 typedef void (*vertex_shader) (Object *obj, int face_idx, int vtx_idx, Varying *var);

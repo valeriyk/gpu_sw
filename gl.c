@@ -179,6 +179,10 @@ Object* obj_new (WFobj *wfobj) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		fmat4_identity (&(obj->shadow_mvp[i]));
 	}
+	//obj->data = dyn_array_create (sizeof(DynArrayItem), NUM_OF_VARYING_WORDS * wfobj_get_num_of_faces(obj->wfobj) * 3);
+	//obj->varying = dyn_array_create (sizeof(Varying), wfobj_get_num_of_faces(obj->wfobj) * 3);
+	obj->varying = (Varying*) calloc(wfobj_get_num_of_faces(obj->wfobj) * 3, sizeof(Varying));
+	
 	return obj;
 }
 
@@ -429,12 +433,13 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		bool is_clipped = true; // sticky bit
 		
 		for (int j = 0; j < 3; j++) {
-			
-			Varying var[3];
 			//var.as_Float4[0] = vshader (obj, i, j, &var);
 			//clip.vtx[j] = var.as_Float4[0];
-			vshader (obj, i, j, &var[j]);
-			clip.vtx[j] = var[j].as_Float4[0];
+			Varying var;
+			
+			vshader (obj, i, j, &var);
+		
+			clip.vtx[j] = var.as_Float4[0];
 			
 			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {
@@ -461,7 +466,21 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
 			}
+			
+			var.as_Float4[0] = screen.vtx[j];
+			printf ("\t\tscreen coord immediate: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+			
+			//obj->varying[sizeof(Varying) * (i*3 + j)] = var;
+			obj->varying[i*3 + j] = var;
+			//printf ("\t\tscreen coord from mem: %f, %f, %f\n", obj->varying[i*3 + j].as_Float4[0].as_struct.x, obj->varying[i*3 + j].as_Float4[0].as_struct.y, obj->varying[i*3 + j].as_Float4[0].as_struct.z);
 		}
+		
+		screen.vtx[0] = obj->varying[i*3  ].as_Float4[0];
+		screen.vtx[1] = obj->varying[i*3+1].as_Float4[0];
+		screen.vtx[2] = obj->varying[i*3+2].as_Float4[0];
+		
+		for (int j = 0; j < 3; j++)
+			printf ("\t\t\tscreen coord from mem 2: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 		
 		if (!is_clipped) {
 			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
