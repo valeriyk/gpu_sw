@@ -2,6 +2,7 @@
 
 #include "bitmap.h"
 #include "geometry.h"
+#include "dynarray.h"
 
 #include <stdint.h>
 

@@ -3,18 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef union ObjData {
-	int i;
-	float f;
-} objdata;
 
-typedef struct DynArray {
-	int end;
-	int max;
-	size_t elem_size;
-	size_t expand_rate;
-	objdata *data;
-} DynArray;
 
 typedef struct WFobjPrivate {
 	DynArray *vtx;
@@ -30,13 +19,6 @@ typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;
 typedef enum {VERTEX_IDX, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
 
 
-DynArray * dyn_array_create (size_t elem_size, size_t initial_max);
-
-int    dyn_array_push    (DynArray *a, objdata *el);
-int    dyn_array_expand  (DynArray *a);
-void   dyn_array_destroy (DynArray *a);
-
-static inline void* dyn_array_get (DynArray *a, int i) {return &(a->data[i]);}
 
 int  read_obj_file (const char *filename, WFobj *obj);
 
@@ -243,7 +225,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 						 if ((c != ' ') && (c != '\t')) return 2;
 					}
 					else {
-						objdata data;
+						DynArrayItem data;
 						// convert string to number and save it
 						if ((V_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
 							data.f = (float) atof (alpha_num);
@@ -306,35 +288,4 @@ int read_obj_file (const char *filename, WFobj *obj) {
     
     fclose (fp);
     return 0;
-}
-
-DynArray * dyn_array_create (size_t elem_size, size_t initial_max) {
-	DynArray *a = (DynArray*) malloc(sizeof(DynArray));
-	a->max = initial_max;
-	a->data = (objdata*) calloc(initial_max, sizeof(objdata));
-	a->end = 0;
-	a->elem_size = elem_size;
-	a->expand_rate = 256;
-	
-	return a;
-}
-
-int dyn_array_push (DynArray *a, objdata *el) {
-	a->data[a->end] = *el;
-	a->end++;
-	if (a->end >= a->max) return dyn_array_expand(a);
-	else return 0;
-}
-
-int dyn_array_expand  (DynArray *a) {
-	a->max = a->max + a->expand_rate;
-	a->data = (objdata*) realloc(a->data, a->max * sizeof (objdata));
-	return 0;
-}
-
-void dyn_array_destroy (DynArray *a) {
-	if (a) {
-		if (a->data) free(a->data);
-		free(a);
-	}
 }

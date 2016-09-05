@@ -414,6 +414,8 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
+	
+	
 	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		
 		if (GL_DEBUG_0) {
