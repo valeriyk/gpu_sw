@@ -318,9 +318,19 @@ void obj_init_model (Object *obj) {
 }
 */
 
-void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
+void draw_triangle (Object *ob, size_t tri_idx, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
 {    
-	if (GL_DEBUG_0) {
+	
+	//static int tri_idx=0;
+	
+	
+	Triangle tt;
+	tt.vtx[0] = ob->varying[tri_idx*3  ].as_Float4[0];
+	tt.vtx[1] = ob->varying[tri_idx*3+1].as_Float4[0];
+	tt.vtx[2] = ob->varying[tri_idx*3+2].as_Float4[0];
+	Triangle *t = &tt;
+		
+		if (GL_DEBUG_0) {
 		printf ("\tcall draw_triangle()\n");
 		for (int i = 0; i < 3; i++) {
 			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
@@ -419,8 +429,8 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	
-	
-	for (int i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
+	int tri_idx = 0;
+	for (size_t i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		
 		if (GL_DEBUG_0) {
 			printf("call obj_draw()\n");
@@ -432,7 +442,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		
 		bool is_clipped = true; // sticky bit
 		
-		for (int j = 0; j < 3; j++) {
+		for (size_t j = 0; j < 3; j++) {
 			//var.as_Float4[0] = vshader (obj, i, j, &var);
 			//clip.vtx[j] = var.as_Float4[0];
 			Varying var;
@@ -465,25 +475,24 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
+			
+				var.as_Float4[0] = screen.vtx[j];
+				//printf ("\t\tscreen coord immediate: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+				
+				//obj->varying[sizeof(Varying) * (i*3 + j)] = var;
+				
 			}
 			
-			var.as_Float4[0] = screen.vtx[j];
-			printf ("\t\tscreen coord immediate: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-			
-			//obj->varying[sizeof(Varying) * (i*3 + j)] = var;
 			obj->varying[i*3 + j] = var;
-			//printf ("\t\tscreen coord from mem: %f, %f, %f\n", obj->varying[i*3 + j].as_Float4[0].as_struct.x, obj->varying[i*3 + j].as_Float4[0].as_struct.y, obj->varying[i*3 + j].as_Float4[0].as_struct.z);
 		}
 		
-		screen.vtx[0] = obj->varying[i*3  ].as_Float4[0];
-		screen.vtx[1] = obj->varying[i*3+1].as_Float4[0];
-		screen.vtx[2] = obj->varying[i*3+2].as_Float4[0];
 		
-		for (int j = 0; j < 3; j++)
-			printf ("\t\t\tscreen coord from mem 2: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+		//for (int j = 0; j < 3; j++)
+			//printf ("\t\t\tscreen coord from mem 2: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 		
-		if (!is_clipped) {
-			draw_triangle (&screen, pshader, zbuffer, fbuffer, obj->wfobj);
-		}
+		//if (!is_clipped) {
+			draw_triangle (obj, i, pshader, zbuffer, fbuffer, obj->wfobj);
+				//printf ("\t\tscreen coord from mem: %f, %f, %f\n", obj->varying[i*3 + j].as_Float4[0].as_struct.x, obj->varying[i*3 + j].as_Float4[0].as_struct.y, obj->varying[i*3 + j].as_Float4[0].as_struct.z);
+		//}
     }
 }
