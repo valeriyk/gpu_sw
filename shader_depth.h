@@ -9,8 +9,8 @@
 
 //#define NUM_OF_LIGHTS 2
 
-Float4 depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx);
+void   depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx, Varying *var);
 bool   depth_pshader_pass1  (WFobj *obj, Float3 *barw, pixel_color_t *color);
 
-Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx);
+void   depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var);
 bool   depth_pshader_pass2  (WFobj *obj, Float3 *barw, pixel_color_t *color);

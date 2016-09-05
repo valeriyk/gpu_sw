@@ -428,7 +428,11 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		
 		for (int j = 0; j < 3; j++) {
 			
-			clip.vtx[j] = vshader (obj, i, j);
+			Varying var[3];
+			//var.as_Float4[0] = vshader (obj, i, j, &var);
+			//clip.vtx[j] = var.as_Float4[0];
+			vshader (obj, i, j, &var[j]);
+			clip.vtx[j] = var[j].as_Float4[0];
 			
 			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {
@@ -436,9 +440,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-					//if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
 						is_clipped = false;
-						//is_clipped = true;
 					}
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
@@ -448,7 +450,6 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
 				screen.vtx[j].as_struct.x = SCREEN_WIDTH / 2.0f + ndc.vtx[j].as_struct.x * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
-				//screen.vtx[j].as_struct.x = (ndc.vtx[j].as_struct.x + 1.0) *  SCREEN_WIDTH / 2.0; // map [-1:1] to [0:SCREEN_WIDTH]
 				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0f) * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:SCREEN_HEIGHT]
 				screen.vtx[j].as_struct.z =  SCREEN_DEPTH * (1.0f - ndc.vtx[j].as_struct.z) / 2.0f; // map [-1:1] to [SCREEN_DEPTH:0]				
 				screen.vtx[j].as_struct.w =  ndc.vtx[j].as_struct.w;

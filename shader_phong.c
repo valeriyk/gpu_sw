@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-
+/*
 
 // declare the following here instead of the header to make these variables local:
 Float3 PHONG_VARYING_U;
@@ -125,3 +125,4 @@ bool phong_pixel_shader (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	*color = set_color (r, g, b, 0);
 	return true;
 }
+*/

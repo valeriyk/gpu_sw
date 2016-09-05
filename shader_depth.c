@@ -18,7 +18,7 @@ Float3 DEPTH_PASS2_VARYING_NDC[3];
 Float3 DEPTH_PASS2_VARYING_SCREEN[MAX_NUM_OF_LIGHTS][3];
 //Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
 
-Float4 depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx) {
+void depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx, Varying *var) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -29,7 +29,8 @@ Float4 depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx) {
 	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult (&(obj->mvp), &mc);
 	
-	return vtx4d;
+	//return vtx4d;
+	var->as_Float4[0] = vtx4d;
 }
 
 bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
@@ -38,7 +39,7 @@ bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
+void depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var) {
 	
 	if (DEPTH_VSHADER2_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -78,7 +79,8 @@ Float4 depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx) {
 	
 	
 	
-	return vtx4d;
+	//return vtx4d;
+	var->as_Float4[0] = vtx4d;
 }
 
 bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {

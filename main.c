@@ -125,7 +125,24 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
     */
     
     int obj_idx = 0;
-    // Cube 0
+    
+    // Plane
+    object[obj_idx] = obj_new (my_floor);
+    obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
+    obj_set_scale       (object[obj_idx], 10, 4, 10);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
+	
+	// Plane
+	object[obj_idx] = obj_new (my_floor);
+    //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
+    obj_set_scale       (object[obj_idx], 6, 4, 4);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
+	
+	// Cube
     object[obj_idx] = obj_new (my_cube);
 	obj_set_scale       (object[obj_idx], 2, 2, 2);
 	obj_set_rotation    (object[obj_idx], 45, 45, 0);
@@ -133,7 +150,7 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
 	
-	// Cube 1
+	// Cube
 	object[obj_idx] = obj_new (my_cube);
 	//obj_set_scale       (object[obj_idx], 0.5, 0.5, 0.5);
 	obj_set_scale       (object[obj_idx], 2, 2, 2);
@@ -142,20 +159,8 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
 	
-	// Floor
-	object[obj_idx] = obj_new (my_floor);
-    //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
-    obj_set_scale       (object[obj_idx], 6, 4, 4);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
 	
-	object[obj_idx] = obj_new (my_floor);
-    obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
-    obj_set_scale       (object[obj_idx], 10, 4, 10);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
+	
 	
 	/* 
     Object *floor1 = obj_new (my_floor);

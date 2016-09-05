@@ -10,6 +10,8 @@
 #define FIX_PT_PRECISION	3
 #define MAX_NUM_OF_LIGHTS	8
 
+#define NUM_OF_VARYING_FLOATS 32 // must be multiple of 4
+
 
 typedef enum {X = 0, Y, Z, W} axis;
 
@@ -47,9 +49,6 @@ typedef struct Object {
 } Object;
 
 
-typedef Float4 (*vertex_shader) (Object *obj, int face_idx, int vtx_idx);
-typedef bool   (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
-
 typedef struct Light {
 	bool 		enabled;
 	Float3		dir;
@@ -59,6 +58,22 @@ typedef struct Light {
 } Light;
 
 extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
+
+
+typedef float  varying_float  [NUM_OF_VARYING_FLOATS];
+typedef Float2 varying_Float2 [NUM_OF_VARYING_FLOATS/2];
+typedef Float4 varying_Float4 [NUM_OF_VARYING_FLOATS/4];
+typedef union Varying {
+	varying_float  as_float;
+	varying_Float2 as_Float2;
+	varying_Float4 as_Float4;
+} Varying;
+
+
+typedef void (*vertex_shader) (Object *obj, int face_idx, int vtx_idx, Varying *var);
+typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
+
+
 
 void new_light  (int light_num, Float3 dir);
 void free_light (int light_num);
