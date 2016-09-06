@@ -59,20 +59,15 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (!LIGHTS[i].enabled) continue;
 		Float4 vtx4d_shadow = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc);
-		//DEPTH_PASS2_VARYING_SCREEN[i][0].as_array[vtx_idx] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
 		var->as_float[4] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
-		//DEPTH_PASS2_VARYING_SCREEN[i][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
 		var->as_float[5] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
-		//DEPTH_PASS2_VARYING_SCREEN[i][2].as_array[vtx_idx] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
 		var->as_float[6] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
 	}
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
 		Float2 vtx_uv = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		//DEPTH_VARYING_U.as_array[vtx_idx] = vtx_uv.as_struct.u;
 		var->as_float[7] = vtx_uv.as_struct.u;
-		//DEPTH_VARYING_V.as_array[vtx_idx] = vtx_uv.as_struct.v;
 		var->as_float[8] = vtx_uv.as_struct.v;
 	}
 	
@@ -81,14 +76,8 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
 	for (int i = 0; i < 3; i++) {
-		//DEPTH_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
 		var->as_float[9+i] = norm4d.as_array[i];
 	}
-	
-	
-	
-	//return vtx4d;
-	
 }
 
 bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
@@ -107,7 +96,6 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		if (!LIGHTS[i].enabled) continue;
 		
 		for (int j = 0; j < 3; j++) {
-			//screen.as_array[j] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i][j], barw);			
 			screen.as_array[j] = var->as_float[4+j];
 		}
 		int x = (int) screen.as_struct.x;
@@ -125,9 +113,7 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		}
 	}
 	
-	//int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);
 	int uu = (int) var->as_float[7];
-	//int vv = (int) Float3_Float3_smult (&DEPTH_VARYING_V, barw);
 	int vv = (int) var->as_float[8];
 	if (uu < 0 || vv < 0) return false;
 	
@@ -142,12 +128,6 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 	
 	Float3 normal;
 	for (int i = 0; i < 3; i++) {
-		////normal.as_array[i] = Float3_Float3_smult (&DEPTH_VARYING_N[i], barw);
-		//float vtx0_norm = obj->varying[tri_idx*3].as_float[9+i];
-		//float vtx1_norm = obj->varying[tri_idx*3+1].as_float[9+i];
-		//float vtx2_norm = obj->varying[tri_idx*3+2].as_float[9+i];
-		//Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
-		//normal.as_array[i] = Float3_Float3_smult (&tmp, barw);
 		normal.as_array[i] = var->as_float[9+i];
 	}
 	Float3_normalize(&normal);
