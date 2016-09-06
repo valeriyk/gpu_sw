@@ -464,12 +464,9 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		bool is_clipped = true; // sticky bit
 		
 		for (size_t j = 0; j < 3; j++) {
-			//var.as_Float4[0] = vshader (obj, i, j, &var);
-			//clip.vtx[j] = var.as_Float4[0];
-			Varying var;
 			
+			Varying var;
 			vshader (obj, i, j, &var);
-		
 			clip.vtx[j] = var.as_Float4[0];
 			
 			// clip & normalize (clip -> NDC):
@@ -498,22 +495,12 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				}
 			
 				var.as_Float4[0] = screen.vtx[j];
-				//printf ("\t\tscreen coord immediate: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-				
-				//obj->varying[sizeof(Varying) * (i*3 + j)] = var;
-				
 			}
 			
 			obj->varying[i*3 + j] = var;
 		}
-		
-		
-		//for (int j = 0; j < 3; j++)
-			//printf ("\t\t\tscreen coord from mem 2: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-		
-		//if (!is_clipped) {
+		if (!is_clipped) {
 			draw_triangle (obj, i, pshader, zbuffer, fbuffer);
-				//printf ("\t\tscreen coord from mem: %f, %f, %f\n", obj->varying[i*3 + j].as_Float4[0].as_struct.x, obj->varying[i*3 + j].as_Float4[0].as_struct.y, obj->varying[i*3 + j].as_Float4[0].as_struct.z);
-		//}
+		}
     }
 }
