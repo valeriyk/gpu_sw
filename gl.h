@@ -8,8 +8,7 @@
 #include <stdio.h>
 
 #define FIX_PT_PRECISION	3
-#define MAX_NUM_OF_LIGHTS	8
-
+#define MAX_NUM_OF_LIGHTS	4
 #define NUM_OF_VARYING_WORDS 32 // must be multiple of 4
 
 
