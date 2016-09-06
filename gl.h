@@ -40,6 +40,7 @@ typedef struct Triangle {
 
 typedef float  varying_float  [NUM_OF_VARYING_WORDS];
 typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
+//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
 typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
 typedef union Varying {
 	varying_float  as_float;
@@ -71,8 +72,8 @@ extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
 
-typedef void (*vertex_shader) (Object *obj, int face_idx, int vtx_idx, Varying *var);
-typedef bool (*pixel_shader)  (WFobj *obj, Float3 *barc, pixel_color_t *color);
+typedef void (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
+typedef bool (*pixel_shader)  (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color);
 
 
 
@@ -105,7 +106,7 @@ void init_ortho_proj       (fmat4 *m, float left, float right, float top, float 
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (Object *ob, size_t tri_idx, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj);
+void draw_triangle (Object *obj, size_t tri_idx, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 

@@ -318,16 +318,28 @@ void obj_init_model (Object *obj) {
 }
 */
 
-void draw_triangle (Object *ob, size_t tri_idx, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
+
+/*
+float baryc_interpolate (float a, float b, float c, Float3 bar) {
+	//normal.as_array[i] = Float3_Float3_smult (&DEPTH_VARYING_N[i], barw);
+		float vtx0_norm = obj->varying[tri_idx*3].as_float[9+i];
+		float vtx1_norm = obj->varying[tri_idx*3+1].as_float[9+i];
+		float vtx2_norm = obj->varying[tri_idx*3+2].as_float[9+i];
+		Float3 tmp = Float3_set (a, b, cvtx0_norm, vtx1_norm, vtx2_norm);
+		normal.as_array[i] = Float3_Float3_smult (&tmp, barw);
+}
+*/
+
+void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
 	
 	//static int tri_idx=0;
 	
 	
 	Triangle tt;
-	tt.vtx[0] = ob->varying[tri_idx*3  ].as_Float4[0];
-	tt.vtx[1] = ob->varying[tri_idx*3+1].as_Float4[0];
-	tt.vtx[2] = ob->varying[tri_idx*3+2].as_Float4[0];
+	tt.vtx[0] = obj->varying[tri_idx*3  ].as_Float4[0];
+	tt.vtx[1] = obj->varying[tri_idx*3+1].as_Float4[0];
+	tt.vtx[2] = obj->varying[tri_idx*3+2].as_Float4[0];
 	Triangle *t = &tt;
 		
 		if (GL_DEBUG_0) {
@@ -392,8 +404,17 @@ void draw_triangle (Object *ob, size_t tri_idx, pixel_shader pshader, screenz_t 
 					for (int i = 0; i < 3; i++) {
 						bar_clip.as_array[i] /= sum_of_bars;
 					}
+
+					Varying varying;
+					for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+						float vtx0_norm = obj->varying[tri_idx*3].as_float[i];
+						float vtx1_norm = obj->varying[tri_idx*3+1].as_float[i];
+						float vtx2_norm = obj->varying[tri_idx*3+2].as_float[i];
+						Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
+						varying.as_float[i] = Float3_Float3_smult (&tmp, &bar_clip);
+					}
 					
-					if (pshader (obj, &bar_clip, &color) && (fbuffer != NULL)) {
+					if (pshader (obj, tri_idx, &varying, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
 					}
 				}
@@ -491,7 +512,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			//printf ("\t\t\tscreen coord from mem 2: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 		
 		//if (!is_clipped) {
-			draw_triangle (obj, i, pshader, zbuffer, fbuffer, obj->wfobj);
+			draw_triangle (obj, i, pshader, zbuffer, fbuffer);
 				//printf ("\t\tscreen coord from mem: %f, %f, %f\n", obj->varying[i*3 + j].as_Float4[0].as_struct.x, obj->varying[i*3 + j].as_Float4[0].as_struct.y, obj->varying[i*3 + j].as_Float4[0].as_struct.z);
 		//}
     }

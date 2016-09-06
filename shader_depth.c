@@ -7,18 +7,18 @@
 
 
 // declare the following here instead of the header to make these variables local:
-Float3 DEPTH_VARYING_U;
-Float3 DEPTH_VARYING_V;
+//Float3 DEPTH_VARYING_U;
+//Float3 DEPTH_VARYING_V;
 
-Float3 DEPTH_VARYING_N[3];
+//Float3 DEPTH_VARYING_N[3];
 
 //Float3 DEPTH_PASS1_VARYING_NDC[3];
-Float3 DEPTH_PASS2_VARYING_NDC[3];
+//Float3 DEPTH_PASS2_VARYING_NDC[3];
 
-Float3 DEPTH_PASS2_VARYING_SCREEN[MAX_NUM_OF_LIGHTS][3];
+//Float3 DEPTH_PASS2_VARYING_SCREEN[MAX_NUM_OF_LIGHTS][3];
 //Float3 DEPTH_PASS2_VARYING_SCREEN_2[3];
 
-void depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx, Varying *var) {
+void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -33,13 +33,13 @@ void depth_vshader_pass1 (Object *obj, int face_idx, int vtx_idx, Varying *var) 
 	var->as_Float4[0] = vtx4d;
 }
 
-bool depth_pshader_pass1 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
+bool depth_pshader_pass1 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var) {
+void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var) {
 	
 	if (DEPTH_VSHADER2_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -50,6 +50,8 @@ void depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var) 
 	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult (&(obj->mvp), &mc);
 	
+	var->as_Float4[0] = vtx4d;
+	
 	int WIDTH  = get_screen_width();
 	int HEIGHT = get_screen_height();
 	int DEPTH  = get_screen_depth();
@@ -57,16 +59,21 @@ void depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var) 
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (!LIGHTS[i].enabled) continue;
 		Float4 vtx4d_shadow = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc);
-		DEPTH_PASS2_VARYING_SCREEN[i][0].as_array[vtx_idx] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
-		DEPTH_PASS2_VARYING_SCREEN[i][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
-		DEPTH_PASS2_VARYING_SCREEN[i][2].as_array[vtx_idx] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
+		//DEPTH_PASS2_VARYING_SCREEN[i][0].as_array[vtx_idx] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
+		var->as_float[4] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
+		//DEPTH_PASS2_VARYING_SCREEN[i][1].as_array[vtx_idx] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
+		var->as_float[5] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
+		//DEPTH_PASS2_VARYING_SCREEN[i][2].as_array[vtx_idx] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
+		var->as_float[6] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
 	}
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
 		Float2 vtx_uv = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		DEPTH_VARYING_U.as_array[vtx_idx] = vtx_uv.as_struct.u;
-		DEPTH_VARYING_V.as_array[vtx_idx] = vtx_uv.as_struct.v;
+		//DEPTH_VARYING_U.as_array[vtx_idx] = vtx_uv.as_struct.u;
+		var->as_float[7] = vtx_uv.as_struct.u;
+		//DEPTH_VARYING_V.as_array[vtx_idx] = vtx_uv.as_struct.v;
+		var->as_float[8] = vtx_uv.as_struct.v;
 	}
 	
 	// transform the normal vector to the vertex
@@ -74,16 +81,17 @@ void depth_vshader_pass2 (Object *obj, int face_idx, int vtx_idx, Varying *var) 
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	norm4d = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);
 	for (int i = 0; i < 3; i++) {
-		DEPTH_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
+		//DEPTH_VARYING_N[i].as_array[vtx_idx] = norm4d.as_array[i];
+		var->as_float[9+i] = norm4d.as_array[i];
 	}
 	
 	
 	
 	//return vtx4d;
-	var->as_Float4[0] = vtx4d;
+	
 }
 
-bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
+bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
 	
 	if (DEPTH_PSHADER2_DEBUG) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
@@ -99,7 +107,8 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		if (!LIGHTS[i].enabled) continue;
 		
 		for (int j = 0; j < 3; j++) {
-			screen.as_array[j] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i][j], barw);
+			//screen.as_array[j] = Float3_Float3_smult (&DEPTH_PASS2_VARYING_SCREEN[i][j], barw);			
+			screen.as_array[j] = var->as_float[4+j];
 		}
 		int x = (int) screen.as_struct.x;
 		int y = (int) screen.as_struct.y;
@@ -116,14 +125,16 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 		}
 	}
 	
-	int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);
-	int vv = (int) Float3_Float3_smult (&DEPTH_VARYING_V, barw);
+	//int uu = (int) Float3_Float3_smult (&DEPTH_VARYING_U, barw);
+	int uu = (int) var->as_float[7];
+	//int vv = (int) Float3_Float3_smult (&DEPTH_VARYING_V, barw);
+	int vv = (int) var->as_float[8];
 	if (uu < 0 || vv < 0) return false;
 	
 	pixel_color_t pix;
-	if (obj->texture != NULL) {
-		if (uu >= obj->texture->w || vv >= obj->texture->h) return false;
-		wfobj_get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
+	if (obj->wfobj->texture != NULL) {
+		if (uu >= obj->wfobj->texture->w || vv >= obj->wfobj->texture->h) return false;
+		wfobj_get_rgb_from_texture (obj->wfobj, uu, vv, &pix.r, &pix.g, &pix.b);
 	}
 	else {
 		pix = set_color (128, 128, 128, 0);
@@ -131,7 +142,13 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	
 	Float3 normal;
 	for (int i = 0; i < 3; i++) {
-		normal.as_array[i] = Float3_Float3_smult (&DEPTH_VARYING_N[i], barw);
+		////normal.as_array[i] = Float3_Float3_smult (&DEPTH_VARYING_N[i], barw);
+		//float vtx0_norm = obj->varying[tri_idx*3].as_float[9+i];
+		//float vtx1_norm = obj->varying[tri_idx*3+1].as_float[9+i];
+		//float vtx2_norm = obj->varying[tri_idx*3+2].as_float[9+i];
+		//Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
+		//normal.as_array[i] = Float3_Float3_smult (&tmp, barw);
+		normal.as_array[i] = var->as_float[9+i];
 	}
 	Float3_normalize(&normal);
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
@@ -140,13 +157,13 @@ bool depth_pshader_pass2 (WFobj *obj, Float3 *barw, pixel_color_t *color) {
 	}
 	
 	float spec_intensity = 0;	
-	if (obj->specularmap != NULL) {
+	if (obj->wfobj->specularmap != NULL) {
 		float nl = diff_intensity[0]; //TBD this is float3_float3_smult (&normal, &UNIFORM_LIGHT), computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
 		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
 		Float3_normalize (&r);
 		
-		int spec_factor = wfobj_get_specularity_from_map (obj, uu, vv);
+		int spec_factor = wfobj_get_specularity_from_map (obj->wfobj, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 		
 		if (DEPTH_PSHADER2_DEBUG) {
