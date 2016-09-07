@@ -330,6 +330,20 @@ float baryc_interpolate (float a, float b, float c, Float3 bar) {
 }
 */
 
+Varying interpolate_varying (Object *obj, size_t tri_idx, Float3 *bar) {
+	
+	Varying varying;
+	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+		float vtx0_norm = obj->varying[tri_idx*3].as_float[i];
+		float vtx1_norm = obj->varying[tri_idx*3+1].as_float[i];
+		float vtx2_norm = obj->varying[tri_idx*3+2].as_float[i];
+		//Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
+		//varying.as_float[i] = Float3_Float3_smult (&tmp, bar);
+		varying.as_float[i] = vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2];
+	}
+	return varying;
+}
+
 void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
 	
@@ -404,7 +418,8 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 					for (int i = 0; i < 3; i++) {
 						bar_clip.as_array[i] /= sum_of_bars;
 					}
-
+					
+					/*
 					Varying varying;
 					for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
 						float vtx0_norm = obj->varying[tri_idx*3].as_float[i];
@@ -413,6 +428,9 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 						Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
 						varying.as_float[i] = Float3_Float3_smult (&tmp, &bar_clip);
 					}
+					*/
+					
+					Varying varying = interpolate_varying (obj, tri_idx, &bar_clip);
 					
 					if (pshader (obj, tri_idx, &varying, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
@@ -450,7 +468,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	
-	int tri_idx = 0;
+	size_t visible_tri_idx = 0;
 	for (size_t i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
 		
 		if (GL_DEBUG_0) {
@@ -462,12 +480,12 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 		Triangle screen;
 		
 		bool is_clipped = true; // sticky bit
-		
+		Varying var[3];
 		for (size_t j = 0; j < 3; j++) {
 			
-			Varying var;
-			vshader (obj, i, j, &var);
-			clip.vtx[j] = var.as_Float4[0];
+			vshader (obj, i, j, &(var[j])); // CALL VERTEX SHADER
+			
+			clip.vtx[j] = var[j].as_Float4[0];
 			
 			// clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {
@@ -480,7 +498,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
-			
+			l
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
@@ -494,13 +512,20 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
 			
-				var.as_Float4[0] = screen.vtx[j];
+				var[j].as_Float4[0] = screen.vtx[j];
 			}
-			
-			obj->varying[i*3 + j] = var;
 		}
+		
 		if (!is_clipped) {
-			draw_triangle (obj, i, pshader, zbuffer, fbuffer);
+			for (size_t j = 0; j < 3; j++) {
+				obj->varying[visible_tri_idx*3 + j] = var[j];
+			}
+			draw_triangle (obj, visible_tri_idx, pshader, zbuffer, fbuffer);
+			visible_tri_idx++;
 		}
     }
 }
+
+/*void primitive_assembler () {
+	
+}*/
