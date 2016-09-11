@@ -13,6 +13,22 @@ screenxy_t SCREEN_WIDTH;
 screenxy_t SCREEN_HEIGHT;
 screenz_t  SCREEN_DEPTH;
 
+size_t NUM_OF_TILES;
+
+
+typedef struct TiledTriangle {
+	Object *obj_ptr;
+	Varying vtx0_vars;
+	Varying vtx1_vars;
+	Varying vtx2_vars;
+} TiledTriangle;
+
+
+TiledTriangle *tiled_triangles;
+size_t *num_of_triangles_in_tile;
+
+
+
 
 int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy);
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
@@ -66,6 +82,28 @@ void set_screen_size (screenxy_t width, screenxy_t height) {
 	SCREEN_WIDTH  = width;
 	SCREEN_HEIGHT = height;
 	SCREEN_DEPTH = (screenz_t) ~0;
+	
+	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
+	/*if (tiled_triangles != NULL) {
+		free (tiled_triangles);
+	}
+	if (num_of_triangles_in_tile != NULL) {
+		free (num_of_triangles_in_tile);
+	}
+	tiled_triangles = (TiledTriangle*) calloc (NUM_OF_TILES*2048, sizeof(TiledTriangle));
+	num_of_triangles_in_tile = (size_t*) calloc (NUM_OF_TILES, sizeof (size_t));*/
+
+}
+
+void new_frame (void) {
+	if (tiled_triangles != NULL) {
+		free (tiled_triangles);
+	}
+	if (num_of_triangles_in_tile != NULL) {
+		free (num_of_triangles_in_tile);
+	}
+	tiled_triangles = (TiledTriangle*) calloc (NUM_OF_TILES*2048, sizeof(TiledTriangle));
+	num_of_triangles_in_tile = (size_t*) calloc (NUM_OF_TILES, sizeof (size_t));
 }
 
 screenxy_t get_screen_width (void) {
@@ -465,6 +503,70 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 }
 */
 
+
+void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
+	// fixed point coordinates with subpixel precision:
+	// forum.devmaster.net/t/advanced-rasterization/6145
+	screenxy_t x[3];
+	screenxy_t y[3];
+	for (int i = 0; i < 3; i++) {
+		x[i] = (screenxy_t) vtx_vars[i].as_float[0] * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) vtx_vars[i].as_float[1] * (1 << FIX_PT_PRECISION);
+	}
+	
+    // Compute triangle bounding box.
+    screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+       
+    min_x &= ~(TILE_WIDTH-1);
+    min_y &= ~(TILE_HEIGHT-1);
+    
+    TiledTriangle tt;
+    tt.obj_ptr = obj_ptr;
+    tt.vtx0_vars = vtx_vars[0];
+    tt.vtx1_vars = vtx_vars[1];
+    tt.vtx2_vars = vtx_vars[2];
+    printf ("Tiling! minx=%d maxx=%d miny=%d maxy=%d\n", min_x, max_x, min_y, max_y);
+    ScreenPt p;
+    for (p.y = min_y; p.y < max_y; p.y += TILE_HEIGHT) {	
+		for (p.x = min_x; p.x < max_x; p.x += TILE_WIDTH) {
+			// Evaluate barycentric coords in the corners of the tile:
+			
+			int x0 = p.x << FIX_PT_PRECISION;
+			int x1 = (p.x + TILE_WIDTH - 1) << FIX_PT_PRECISION;
+			int y0 = p.y << FIX_PT_PRECISION;
+			int y1 = (p.y + TILE_HEIGHT - 1) << FIX_PT_PRECISION;
+			
+			printf ("\tTile %d: x=%d y=%d\n", ((p.y*TILE_WIDTH)/TILE_HEIGHT)+(p.x/TILE_WIDTH), p.x/TILE_WIDTH, p.y/TILE_HEIGHT);
+			
+			bool edge0_corner0_outside = (edge_func(x[1], y[1], x[2], y[2], x0, y0) < 0); // not normalized
+			bool edge0_corner1_outside = (edge_func(x[1], y[1], x[2], y[2], x0, y1) < 0); // not normalized
+			bool edge0_corner2_outside = (edge_func(x[1], y[1], x[2], y[2], x1, y0) < 0); // not normalized
+			bool edge0_corner3_outside = (edge_func(x[1], y[1], x[2], y[2], x1, y1) < 0); // not normalized
+			if (edge0_corner0_outside && edge0_corner1_outside && edge0_corner2_outside && edge0_corner3_outside) continue;
+			
+			bool edge1_corner0_outside = (edge_func(x[2], y[2], x[0], y[0], x0, y0) < 0); // not normalized
+			bool edge1_corner1_outside = (edge_func(x[2], y[2], x[0], y[0], x0, y1) < 0); // not normalized
+			bool edge1_corner2_outside = (edge_func(x[2], y[2], x[0], y[0], x1, y0) < 0); // not normalized
+			bool edge1_corner3_outside = (edge_func(x[2], y[2], x[0], y[0], x1, y1) < 0); // not normalized
+			if (edge1_corner0_outside && edge1_corner1_outside && edge1_corner2_outside && edge1_corner3_outside) continue;
+			
+			bool edge2_corner0_outside = (edge_func(x[0], y[0], x[1], y[1], x0, y0) < 0); // not normalized
+			bool edge2_corner1_outside = (edge_func(x[0], y[0], x[1], y[1], x0, y1) < 0); // not normalized
+			bool edge2_corner2_outside = (edge_func(x[0], y[0], x[1], y[1], x1, y0) < 0); // not normalized
+			bool edge2_corner3_outside = (edge_func(x[0], y[0], x[1], y[1], x1, y1) < 0); // not normalized
+			if (edge2_corner0_outside && edge2_corner1_outside && edge2_corner2_outside && edge2_corner3_outside) continue;
+			
+			printf ("\t\tDrawing\n");
+			size_t tile_num = (p.y>>TILE_HEIGHT) * TILE_WIDTH + (p.x>>TILE_WIDTH);
+			tiled_triangles[tile_num + NUM_OF_TILES*num_of_triangles_in_tile[tile_num]] = tt;
+			num_of_triangles_in_tile[tile_num]++;
+		}
+	}
+}
+
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	
@@ -498,7 +600,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				}
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
-			l
+			
 			// NDC -> screen
 			if (!is_clipped) {
 				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
@@ -515,6 +617,8 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				var[j].as_Float4[0] = screen.vtx[j];
 			}
 		}
+		
+		tiler(obj, var);
 		
 		if (!is_clipped) {
 			for (size_t j = 0; j < 3; j++) {

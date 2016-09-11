@@ -261,6 +261,7 @@ int main(int argc, char** argv) {
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (!LIGHTS[i].enabled) continue;
+			new_frame();
 			init_view       (&view, &(LIGHTS[i].src), &center, &up);
 			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
 				obj_transform (object[j], &ortho_proj, &view);
@@ -269,6 +270,7 @@ int main(int argc, char** argv) {
 			}
 		}			
 		
+		new_frame();
 		init_view       (&view, &eye, &center, &up);
 		light_transform (&view);
 		for (int i = 0; i < NUM_OF_OBJECTS; i++) {
