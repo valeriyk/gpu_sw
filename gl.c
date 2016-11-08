@@ -567,8 +567,27 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
 	}
 }
 
+//
+// obj_draw: Draw 3D Object
+//
+// Arguments:
+//  *obj     - object to be drawn (object coordinates, rotation, scale, translation)
+//   vshader - pointer to vertex shader function
+//   pshader - pointer to pixel shader function
+//  *zbuffer - pointer to Z-buffer
+//  *fbuffer - pointer to framebuffer
+//
+// - For each face (triangle) of the object:
+//    - For each vertex of the face (triangle):
+//       - call vshader() which returns a Varying union containing vertex
+//         coords in clip space
+//       - transform vertex coords from clip space to NDC
+//       - check that NDC belongs to [-1:1], otherwise vertex is clipped
+//       - if the vertex is not clipped then transform its coords from
+//         NDC to screen space
+//    - If at least one vertex is not clipped, call draw_triangle()
+//
 void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
-	
 	
 	size_t visible_tri_idx = 0;
 	for (size_t i = 0; i < wfobj_get_num_of_faces(obj->wfobj); i++) {
@@ -587,17 +606,26 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 			
 			vshader (obj, i, j, &(var[j])); // CALL VERTEX SHADER
 			
-			clip.vtx[j] = var[j].as_Float4[0];
+			clip.vtx[j] = var[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
 			
-			// clip & normalize (clip -> NDC):
+			// Clip & normalize (clip -> NDC):
 			if (clip.vtx[j].as_struct.w > 0) {
-				float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; // we checked above that it's not zero
+				
+				// This division is done once here to avoid three deivisions below
+				// No div by zero because we checked above that it's > 0
+				float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
+				
+				// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
+				// If at least one coord belongs to [-1:1] then the vertex is not clipped
 				for (int k = 0; k < 3; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
 						is_clipped = false;
 					}
 				}
+				
+				// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
+				// because we have it for free here
 				ndc.vtx[j].as_struct.w = reciprocal_w;	
 			}
 			
@@ -614,11 +642,13 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 				}
 			
+				// Replace clip coords with screen coords within the Varying struct
+				// before passing it on to draw_triangle()
 				var[j].as_Float4[0] = screen.vtx[j];
 			}
 		}
 		
-		tiler(obj, var);
+		//tiler(obj, var);
 		
 		if (!is_clipped) {
 			for (size_t j = 0; j < 3; j++) {

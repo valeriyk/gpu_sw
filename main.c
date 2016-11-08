@@ -181,6 +181,30 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	*/
 }
 
+typedef struct color_ycbcr_t {
+	uint8_t y, cb, cr;
+} color_ycbcr_t;
+	
+color_ycbcr_t rgb_to_ycbcr (pixel_color_t rgb) {
+	color_ycbcr_t ycbcr;
+	ycbcr.y  =  16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
+	ycbcr.cb = 128 - rgb.r * 0.148 - rgb.g * 0.291 + rgb.b * 0.439;
+	ycbcr.cr = 128 + rgb.r * 0.439 - rgb.g * 0.368 - rgb.b * 0.071;
+	return ycbcr;
+}
+
+uint8_t rgb_to_y (pixel_color_t rgb) {
+	return 16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
+}
+
+uint8_t rgb_to_cb (pixel_color_t rgb) {
+	return 128 - rgb.r * 0.148 - rgb.g * 0.291 + rgb.b * 0.439;
+}
+
+uint8_t rgb_to_cr (pixel_color_t rgb) {
+	return 128 + rgb.r * 0.439 - rgb.g * 0.368 - rgb.b * 0.071;
+}
+
 int main(int argc, char** argv) {
        
     init_scene();
@@ -194,8 +218,21 @@ int main(int argc, char** argv) {
 		fbuffer[i] = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
 	}
     //pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-    
+	
+	
     pixel_color_t *active_fbuffer = NULL;
+    
+    
+    
+    
+	
+	
+	
+	//color_ycbcr_t *videobuffer = (color_ycbcr_t*) calloc (screen_size * NUM_OF_FRAMES, sizeof(color_ycbcr_t));;
+	
+	FILE *fp = fopen ("video.y4m", "w");
+    if (!fp) return 1;
+    fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
     
 	// 1. Model Matrix - transform local coords to global
 	
@@ -231,7 +268,7 @@ int main(int argc, char** argv) {
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
-	init_view (&view, &eye, &center, &up);
+	//init_view (&view, &eye, &center, &up);
     
     //new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
     //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
@@ -242,15 +279,23 @@ int main(int argc, char** argv) {
     
     
     //do {
+    float eye_x = 0;
+    float eye_z = 4;
+    
     static int fbuffer_idx = 0;
-    for (int m = 0; m < 1; m++) {
-		
+    printf ("Frame");
+    for (int m = 0; m < NUM_OF_FRAMES; m++) {
+		printf (" %d", m);
 		//active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
-		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		active_fbuffer = fbuffer[0];
 		//active_fbuffer = fbuffer[fbuffer_idx];
 		//fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
 		
 		for (int i = 0; i < screen_size; i++) {
+			active_fbuffer[i].r = 0;
+			active_fbuffer[i].g = 0;
+			active_fbuffer[i].b = 0;
 			zbuffer[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
@@ -270,6 +315,9 @@ int main(int argc, char** argv) {
 			}
 		}			
 		
+		eye    = Float3_set ( eye_x, 0.5f, eye_z);
+		eye_x += 1.0 / NUM_OF_FRAMES;
+		
 		new_frame();
 		init_view       (&view, &eye, &center, &up);
 		light_transform (&view);
@@ -277,8 +325,23 @@ int main(int argc, char** argv) {
 			obj_transform    (object[i], &persp_proj, &view);
 			obj_draw         (object[i], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		}
+		
+		fprintf (fp, "FRAME\n");
+		for (int j = 0; j < screen_size; j++){
+			uint8_t y = rgb_to_y (active_fbuffer[j]);
+			fwrite (&y, sizeof (uint8_t), 1, fp);
+		}
+		for (int j = 0; j < screen_size; j++){
+			uint8_t cb = rgb_to_cb (active_fbuffer[j]);
+			fwrite (&cb, sizeof (uint8_t), 1, fp);
+		}
+		for (int j = 0; j < screen_size; j++){
+			uint8_t cr = rgb_to_cr (active_fbuffer[j]);
+			fwrite (&cr, sizeof (uint8_t), 1, fp);
+		}
 	}// while (0);
 	
+	/*
     write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
     //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
     if (sizeof(screenz_t) == 1) {
@@ -296,6 +359,9 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+	*/
+	
+	fclose (fp);
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);

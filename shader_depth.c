@@ -98,7 +98,7 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		
 		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
-		float z_fighting = 50.0f;
+		float z_fighting = 251.77f;
 		if (shadow_buf_z[i] > current_z[i] + z_fighting) {
 			shadows++;
 		}
