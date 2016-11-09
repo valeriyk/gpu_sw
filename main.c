@@ -328,10 +328,10 @@ int main(int argc, char** argv) {
 			}
 		}			
 		
-		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle * 0.01745f); // degrees to rad conversion
-		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle * 0.01745f); // degrees to rad conversion
+		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
+		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
-		eye_angle += 360.0 / NUM_OF_FRAMES;
+		eye_angle += 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 				
 		
 		new_frame();
