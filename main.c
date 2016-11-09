@@ -126,18 +126,27 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
     
     int obj_idx = 0;
     
-    // Plane
+    // Central cube
+    object[obj_idx] = obj_new (my_cube);
+	obj_set_scale       (object[obj_idx], 10, 10, 10);
+	obj_set_rotation    (object[obj_idx], 0.f, 0.f, 0.f);
+	obj_set_translation (object[obj_idx], 0.f, 0.f, 0.f);
+	obj_init_model      (object[obj_idx]);
+	obj_idx++;
+	
+	
+    /*// Plane
     object[obj_idx] = obj_new (my_floor);
     obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
     obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
     obj_set_scale       (object[obj_idx], 10, 4, 10);
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
-	
-	// Plane
+	*/
+	// Bottom Plane
 	object[obj_idx] = obj_new (my_floor);
     //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
+    obj_set_translation (object[obj_idx], 0.f, 0.f, 5.0f);
     obj_set_scale       (object[obj_idx], 6, 4, 4);
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
@@ -146,7 +155,7 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
     object[obj_idx] = obj_new (my_cube);
 	obj_set_scale       (object[obj_idx], 2, 2, 2);
 	obj_set_rotation    (object[obj_idx], 45, 45, 0);
-	obj_set_translation (object[obj_idx], 1.0f, 0.f, 0.f);
+	obj_set_translation (object[obj_idx], 1.0f, 0.f, 7.f);
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
 	
@@ -155,7 +164,7 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	//obj_set_scale       (object[obj_idx], 0.5, 0.5, 0.5);
 	obj_set_scale       (object[obj_idx], 2, 2, 2);
 	obj_set_rotation    (object[obj_idx], 45, 45, 0);
-	obj_set_translation (object[obj_idx], -1.0f, 0.f, 0.f);
+	obj_set_translation (object[obj_idx], -1.0f, 0.f, 7.f);
 	obj_init_model      (object[obj_idx]);
 	obj_idx++;
 	
@@ -181,6 +190,7 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	*/
 }
 
+/*
 typedef struct color_ycbcr_t {
 	uint8_t y, cb, cr;
 } color_ycbcr_t;
@@ -192,7 +202,7 @@ color_ycbcr_t rgb_to_ycbcr (pixel_color_t rgb) {
 	ycbcr.cr = 128 + rgb.r * 0.439 - rgb.g * 0.368 - rgb.b * 0.071;
 	return ycbcr;
 }
-
+*/
 uint8_t rgb_to_y (pixel_color_t rgb) {
 	return 16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
 }
@@ -241,8 +251,7 @@ int main(int argc, char** argv) {
 	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
-	//float top   = 0.6;
-	float top   = 1;
+	float top   = 0.5;
 	float bot   = -top;
 	float right = top * aspect_ratio;
 	float left  = -right;
@@ -264,7 +273,7 @@ int main(int argc, char** argv) {
     
     // 2. View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
-    Float3 eye    = Float3_set ( -0.5f,  0.5f,   3.500f);
+    Float3 eye;
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	fmat4 view    = FMAT4_IDENTITY;	
@@ -273,14 +282,18 @@ int main(int argc, char** argv) {
     //new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
     //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
     
-    new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
+    //new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
+    new_light (0, Float3_set ( 0.f,  0.f, -10.f));					
     //new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
     //new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
     
     //do {
     float eye_x = 0;
-    float eye_z = 4;
+    float eye_y = 1;
+    float eye_z = 0;
+    float eye_angle = 0;
+    float eye_distance = 15;
     
     static int fbuffer_idx = 0;
     printf ("Frame");
@@ -315,8 +328,11 @@ int main(int argc, char** argv) {
 			}
 		}			
 		
-		eye    = Float3_set ( eye_x, 0.5f, eye_z);
-		eye_x += 1.0 / NUM_OF_FRAMES;
+		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle * 0.01745f); // degrees to rad conversion
+		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle * 0.01745f); // degrees to rad conversion
+		eye    = Float3_set ( eye_x, eye_y, eye_z);
+		eye_angle += 360.0 / NUM_OF_FRAMES;
+				
 		
 		new_frame();
 		init_view       (&view, &eye, &center, &up);
