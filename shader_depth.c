@@ -12,8 +12,8 @@ void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
-	Float4 vtx4d = fmat4_Float4_mult (&(obj->mvp), &mc);
+	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
+	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
 	
 	//return vtx4d;
 	var->as_Float4[0] = vtx4d;
@@ -65,10 +65,22 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (!LIGHTS[i].enabled) continue;
-		Float4 vtx4d_shadow = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc);
-		var->as_float[12+i*4  ] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
-		var->as_float[12+i*4+1] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
-		var->as_float[12+i*4+2] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
+		Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
+		
+		// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
+		// If at least one coord belongs to [-1:1] then the vertex is not clipped
+		Float4 shadow_ndc;
+		for (int k = 0; k < 4; k++) {
+			//TBD: danger, no check for div by zero yet implemented
+			shadow_ndc.as_array[k] = shadow_clip.as_array[k] / shadow_clip.as_struct.w; // normalize
+		}
+		
+		
+		//var->as_float[12+i*4  ] = WIDTH/2.0f + (vtx4d_shadow.as_array[0] / vtx4d_shadow.as_struct.w) * HEIGHT / 2.0f;
+		//var->as_float[12+i*4+1] = (vtx4d_shadow.as_array[1] / vtx4d_shadow.as_struct.w + 1.0f) * HEIGHT / 2.0f;
+		//var->as_float[12+i*4+2] = DEPTH * (1.0f - vtx4d_shadow.as_array[2] / vtx4d_shadow.as_struct.w) / 2.0f;
+		
+		var->as_Float4[3+i] = fmat4_Float4_mult (VIEWPORT, &shadow_ndc);
 	}	
 }
 

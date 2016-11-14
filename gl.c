@@ -27,6 +27,7 @@ typedef struct TiledTriangle {
 TiledTriangle *tiled_triangles;
 size_t *num_of_triangles_in_tile;
 
+fmat4 VIEWPORT;
 
 
 
@@ -67,16 +68,22 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	return pc;
 }
 
-/*void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
-	fmat4_set (m, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
-	fmat4_set (m, 0, 3, x + w / 2.0f);
-	fmat4_set (m, 1, 1, h / 2.0f);
-	fmat4_set (m, 1, 3, y + h / 2.0f);
-	fmat4_set (m, 2, 2, d / 2.0f);
-	fmat4_set (m, 2, 3, d / 2.0f);
-	fmat4_set (m, 3, 3, 1.0f);
-	print_fmat4 (m, "viewport matrix");
-}*/
+void init_viewport (int x, int y, int w, int h, int d) {
+
+	// X: map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
+	// Y: map [-1:1] to [0:SCREEN_HEIGHT]
+	// Z: map [-1:1] to [SCREEN_DEPTH:0]				
+	// W: leave as is
+				
+	fmat4_identity (&VIEWPORT);
+	fmat4_set (&VIEWPORT, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
+	fmat4_set (&VIEWPORT, 0, 3, x + w / 2.0f);
+	fmat4_set (&VIEWPORT, 1, 1, h / 2.0f);
+	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
+	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f);
+	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
+	//print_fmat4 (&VIEWPORT, "viewport matrix");
+}
 
 void set_screen_size (screenxy_t width, screenxy_t height) {
 	SCREEN_WIDTH  = width;
@@ -457,17 +464,6 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 						bar_clip.as_array[i] /= sum_of_bars;
 					}
 					
-					/*
-					Varying varying;
-					for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
-						float vtx0_norm = obj->varying[tri_idx*3].as_float[i];
-						float vtx1_norm = obj->varying[tri_idx*3+1].as_float[i];
-						float vtx2_norm = obj->varying[tri_idx*3+2].as_float[i];
-						Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
-						varying.as_float[i] = Float3_Float3_smult (&tmp, &bar_clip);
-					}
-					*/
-					
 					Varying varying = interpolate_varying (obj, tri_idx, &bar_clip);
 					
 					if (pshader (obj, tri_idx, &varying, &color) && (fbuffer != NULL)) {
@@ -617,34 +613,29 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				
 				// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
 				// If at least one coord belongs to [-1:1] then the vertex is not clipped
-				for (int k = 0; k < 3; k++) {
+				for (int k = 0; k < 4; k++) {
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
 						is_clipped = false;
 					}
 				}
+
+				if (!is_clipped) {
+					screen.vtx[j] = fmat4_Float4_mult (VIEWPORT, &(ndc.vtx[j]));
+
+					// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
+					// because we have it for free here
+					screen.vtx[j].as_struct.w = reciprocal_w;
+
+					if (GL_DEBUG_0) {
+						printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
+						printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
+					}
 				
-				// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
-				// because we have it for free here
-				ndc.vtx[j].as_struct.w = reciprocal_w;	
-			}
-			
-			// NDC -> screen
-			if (!is_clipped) {
-				//screen.vtx[j] = fmat4_Float4_mult (viewport, &(ndc.vtx[j]));
-				screen.vtx[j].as_struct.x = SCREEN_WIDTH / 2.0f + ndc.vtx[j].as_struct.x * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
-				screen.vtx[j].as_struct.y = (ndc.vtx[j].as_struct.y + 1.0f) * SCREEN_HEIGHT / 2.0f; // map [-1:1] to [0:SCREEN_HEIGHT]
-				screen.vtx[j].as_struct.z =  SCREEN_DEPTH * (1.0f - ndc.vtx[j].as_struct.z) / 2.0f; // map [-1:1] to [SCREEN_DEPTH:0]				
-				screen.vtx[j].as_struct.w =  ndc.vtx[j].as_struct.w;
-				
-				if (GL_DEBUG_0) {
-					printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
-					printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-				}
-			
-				// Replace clip coords with screen coords within the Varying struct
-				// before passing it on to draw_triangle()
-				var[j].as_Float4[0] = screen.vtx[j];
+					// Replace clip coords with screen coords within the Varying struct
+					// before passing it on to draw_triangle()
+					var[j].as_Float4[0] = screen.vtx[j];
+				}		
 			}
 		}
 		

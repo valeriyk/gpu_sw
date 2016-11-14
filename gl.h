@@ -68,6 +68,9 @@ typedef struct Light {
 	screenz_t	*shadow_buf;
 } Light;
 
+
+extern fmat4 VIEWPORT;
+
 extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
@@ -102,7 +105,7 @@ screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t c
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 void init_ortho_proj       (fmat4 *m, float left, float right, float top, float bot, float near, float far);
-//void init_viewport   (fmat4 *m, int x, int y, int w, int h, int d);
+void init_viewport   (int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 

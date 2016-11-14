@@ -22,8 +22,6 @@ fmat4  UNIFORM_MIT;
 Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
-
-
 void   print_fmat3 (fmat3 *m, char *header);
 void   print_fmat4 (fmat4 *m, char *header);
 
@@ -266,9 +264,8 @@ int main(int argc, char** argv) {
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
-	//init_viewport (&viewport, 0, 0, WIDTH, HEIGHT, DEPTH);
 	set_screen_size ((screenxy_t) WIDTH, (screenxy_t) HEIGHT);
-    
+    init_viewport (0, 0, get_screen_width(), get_screen_height(), get_screen_depth());
 	
     
     // 2. View Matrix - transform global coords to camera coords
