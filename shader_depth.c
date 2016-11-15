@@ -61,16 +61,19 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (!LIGHTS[i].enabled) continue;
-		Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
+		Float4 shadow_vtx4d = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
 		
+		//Perspective divide is only needed when perspective projection is used for shadows
+		// By default I sue orthographic projection, so commenting out the section below
+		/*	
 		// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
 		// If at least one coord belongs to [-1:1] then the vertex is not clipped
-		Float4 shadow_ndc;
 		for (int k = 0; k < 4; k++) {
 			//TBD: danger, no check for div by zero yet implemented
-			shadow_ndc.as_array[k] = shadow_clip.as_array[k] / shadow_clip.as_struct.w; // normalize
-		}		
-		var->as_Float4[3+i] = fmat4_Float4_mult (VIEWPORT, &shadow_ndc);
+			shadow_vtx4d.as_array[k] = shadow_vtx4d.as_array[k] / shadow_vtx4d.as_struct.w; // normalize
+		}
+		*/		
+		var->as_Float4[3+i] = fmat4_Float4_mult (&VIEWPORT, &shadow_vtx4d);
 	}	
 }
 
@@ -81,9 +84,6 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 	}
 	
 	Float3    screen;
-	screenz_t current_z    [MAX_NUM_OF_LIGHTS];
-	screenz_t shadow_buf_z [MAX_NUM_OF_LIGHTS];
-	
 	int shadows = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
@@ -91,17 +91,16 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		
 		screen = Float4_Float3_vect_conv (&(var->as_Float4[3+i]));
 		
-		int x = (int) screen.as_struct.x;
-		int y = (int) screen.as_struct.y;
+		int x        = (int)       screen.as_struct.x;
+		int y        = (int)       screen.as_struct.y;
+		screenz_t current_z = (screenz_t) screen.as_struct.z;
 		
-		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;
+		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
 		
-		current_z[i]    = (screenz_t) screen.as_struct.z;
-		
-		shadow_buf_z[i] = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
 		float z_fighting = 251.77f;
-		if (shadow_buf_z[i] > current_z[i] + z_fighting) {
+		if (shadow_buf_z > current_z + z_fighting) {
 			shadows++;
 		}
 	}

@@ -52,11 +52,11 @@ static inline int32_t max_of_two (int32_t a, int32_t b) {
 }
 
 int32_t min_of_three (int32_t a, int32_t b, int32_t c) {
-	return min_of_two (a, min_of_two (b, c));
+	return min_of_two(a, min_of_two(b, c));
 }
 
 int32_t max_of_three (int32_t a, int32_t b, int32_t c) {
-	return max_of_two (a, max_of_two (b, c));
+	return max_of_two(a, max_of_two(b, c));
 }
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
@@ -412,12 +412,12 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
 	screenxy_t y[3];
-	screenz_t  z[3];
+	//screenz_t  z[3];
 	//int w[3];
 	for (int i = 0; i < 3; i++) {
 		x[i] = (screenxy_t) t->vtx[i].as_struct.x * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) t->vtx[i].as_struct.y * (1 << FIX_PT_PRECISION);
-		z[i] = (screenz_t)  t->vtx[i].as_struct.z;// * (1 << FIX_PT_PRECISION);
+		//z[i] = (screenz_t)  t->vtx[i].as_struct.z;// * (1 << FIX_PT_PRECISION);
 		//w[i] = (screenxy_t) t->vtx[i].as_struct.w * (1 << FIX_PT_PRECISION);
 	}
 	
@@ -621,7 +621,7 @@ void obj_draw (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz
 				}
 
 				if (!is_clipped) {
-					screen.vtx[j] = fmat4_Float4_mult (VIEWPORT, &(ndc.vtx[j]));
+					screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
 
 					// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
 					// because we have it for free here

@@ -51,10 +51,10 @@ void print_fmat3 (fmat3 *m, char *header) {
 	printf("\n");
 }
 
-// Object transform, aka world transform function.  
-// Computes matrices that will be used to transform a model's vertices and normals
+// Setup object transformation, aka world transformation function.  
+// Computes matrices that will be used to transform model's vertices and normals
 // from the object space to the world space
-void obj_transform (Object *obj, fmat4 *proj, fmat4 *view) {
+void setup_transformation (Object *obj, fmat4 *proj, fmat4 *view) {
 	
 	fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
     fmat4_fmat4_mult ( proj, &UNIFORM_M, &(obj->mvp));
@@ -275,23 +275,20 @@ int main(int argc, char** argv) {
     //new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
     
-    //do {
+    
     float eye_x = 0;
     float eye_y = 1;
     float eye_z = 0;
     float eye_angle = 0;
     float eye_distance = 15;
     
-    //static int fbuffer_idx = 0;
     printf ("Frame");
+    //do {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		printf (" %d", m);
-		//active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
 		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
-		//active_fbuffer = fbuffer[0];
-		//active_fbuffer = fbuffer[fbuffer_idx];
-		//fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
 		
+		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			active_fbuffer[i].r = 0;
 			active_fbuffer[i].g = 0;
@@ -309,12 +306,13 @@ int main(int argc, char** argv) {
 			new_frame();
 			init_view       (&view, &(LIGHTS[i].src), &center, &up);
 			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
-				obj_transform (object[j], &ortho_proj, &view);
-				obj_draw      (object[j], depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
-				fmat4_copy    (&(object[j]->mvp), &(object[j]->shadow_mvp[i]));
+				setup_transformation (object[j], &ortho_proj, &view);
+				obj_draw             (object[j], depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
+				fmat4_copy           (&(object[j]->mvp), &(object[j]->shadow_mvp[i]));
 			}
 		}			
 		
+		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
@@ -325,8 +323,8 @@ int main(int argc, char** argv) {
 		init_view       (&view, &eye, &center, &up);
 		light_transform (&view);
 		for (int i = 0; i < NUM_OF_OBJECTS; i++) {
-			obj_transform    (object[i], &persp_proj, &view);
-			obj_draw         (object[i], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			setup_transformation (object[i], &persp_proj, &view);
+			obj_draw             (object[i], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		}
 		
 		fprintf (fp, "FRAME\n");
@@ -342,7 +340,8 @@ int main(int argc, char** argv) {
 			uint8_t cr = rgb_to_cr (active_fbuffer[j]);
 			fwrite (&cr, sizeof (uint8_t), 1, fp);
 		}
-	}// while (0);
+	}
+	// while (0);
 	
 	/*
     write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
