@@ -4,6 +4,8 @@
 #include <math.h>
 
 
+int count_shadows (Varying *var);
+
 void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
@@ -64,7 +66,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 		Float4 shadow_vtx4d = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
 		
 		//Perspective divide is only needed when perspective projection is used for shadows
-		// By default I sue orthographic projection, so commenting out the section below
+		// By default I use orthographic projection, so commenting out the section below
 		/*	
 		// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
 		// If at least one coord belongs to [-1:1] then the vertex is not clipped
@@ -77,13 +79,8 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	}	
 }
 
-bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
-	
-	if (DEPTH_PSHADER2_DEBUG) {
-		printf ("\t\tcall depth_pshader_pass2()\n");
-	}
-	
-	Float3    screen;
+int count_shadows (Varying *var) {
+	Float3 screen;
 	int shadows = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
@@ -104,7 +101,15 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 			shadows++;
 		}
 	}
+	return shadows;
+}
+
+bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
 	
+	if (DEPTH_PSHADER2_DEBUG) {
+		printf ("\t\tcall depth_pshader_pass2()\n");
+	}
+		
 	int uu = (int) var->as_float[8];
 	int vv = (int) var->as_float[9];
 	if (uu < 0 || vv < 0) return false;
@@ -146,7 +151,7 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		}
 	}
 	
-	float shadow_total = 1.0f - shadows/4.0f;
+	float shadow_total = 1.0f - count_shadows(var) / 4.0f;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -154,6 +159,7 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 	}
 	float intensity = shadow_total * (0.5f * diff_int_total + 0.6f * spec_intensity);
 	
+	if (intensity <= 0.1) intensity = 0.2f;
 	if (intensity <= 0.1) intensity = 0.2f;
 	
 	if (DEPTH_PSHADER2_DEBUG) {
