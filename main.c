@@ -225,19 +225,9 @@ int main(int argc, char** argv) {
     for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {
 		fbuffer[i] = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
 	}
-    //pixel_color_t *fbuffer1 = (pixel_color_t*) calloc (screen_size, sizeof(pixel_color_t));
-	
-	
+    	
     pixel_color_t *active_fbuffer = NULL;
     
-    
-    
-    
-	
-	
-	
-	//color_ycbcr_t *videobuffer = (color_ycbcr_t*) calloc (screen_size * NUM_OF_FRAMES, sizeof(color_ycbcr_t));;
-	
 	FILE *fp = fopen ("video.y4m", "w");
     if (!fp) return 1;
     fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
@@ -292,13 +282,13 @@ int main(int argc, char** argv) {
     float eye_angle = 0;
     float eye_distance = 15;
     
-    static int fbuffer_idx = 0;
+    //static int fbuffer_idx = 0;
     printf ("Frame");
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		printf (" %d", m);
 		//active_fbuffer = (active_fbuffer == fbuffer0) ? fbuffer1 : fbuffer0;
-		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
-		active_fbuffer = fbuffer[0];
+		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		//active_fbuffer = fbuffer[0];
 		//active_fbuffer = fbuffer[fbuffer_idx];
 		//fbuffer_idx = (fbuffer_idx >= NUM_OF_FRAMEBUFFERS-1) ? 0 : fbuffer_idx++;
 		
