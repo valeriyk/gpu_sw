@@ -79,31 +79,6 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	}	
 }
 
-int count_shadows (Varying *var) {
-	Float3 screen;
-	int shadows = 0;
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		
-		if (!LIGHTS[i].enabled) continue;
-		
-		screen = Float4_Float3_vect_conv (&(var->as_Float4[3+i]));
-		
-		int x        = (int)       screen.as_struct.x;
-		int y        = (int)       screen.as_struct.y;
-		screenz_t current_z = (screenz_t) screen.as_struct.z;
-		
-		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
-		
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
-		
-		float z_fighting = 251.77f;
-		if (shadow_buf_z > current_z + z_fighting) {
-			shadows++;
-		}
-	}
-	return shadows;
-}
-
 bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color_t *color) {
 	
 	if (DEPTH_PSHADER2_DEBUG) {
@@ -151,7 +126,7 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 		}
 	}
 	
-	float shadow_total = 1.0f - count_shadows(var) / 4.0f;
+	float shadow_total = 1.0f - count_shadows(var) / MAX_NUM_OF_LIGHTS;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -159,8 +134,10 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 	}
 	float intensity = shadow_total * (0.5f * diff_int_total + 0.6f * spec_intensity);
 	
-	if (intensity <= 0.1) intensity = 0.2f;
-	if (intensity <= 0.1) intensity = 0.2f;
+	float intensity_treshold = 0.2;
+	if (intensity < intensity_treshold) {
+		intensity = intensity_treshold;
+	}
 	
 	if (DEPTH_PSHADER2_DEBUG) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
@@ -178,4 +155,29 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 	
 	*color = set_color (r, g, b, 0);
 	return true;
+}
+
+int count_shadows (Varying *var) {
+	Float3 screen;
+	int shadows = 0;
+	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		
+		if (!LIGHTS[i].enabled) continue;
+		
+		screen = Float4_Float3_vect_conv (&(var->as_Float4[3+i]));
+		
+		int x        = (int)       screen.as_struct.x;
+		int y        = (int)       screen.as_struct.y;
+		screenz_t current_z = (screenz_t) screen.as_struct.z;
+		
+		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
+		
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
+		
+		float z_fighting = 251.77f;
+		if (shadow_buf_z > current_z + z_fighting) {
+			shadows++;
+		}
+	}
+	return shadows;
 }

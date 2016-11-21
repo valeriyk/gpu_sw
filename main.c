@@ -54,18 +54,42 @@ void print_fmat3 (fmat3 *m, char *header) {
 // Setup object transformation, aka world transformation function.  
 // Computes matrices that will be used to transform model's vertices and normals
 // from the object space to the world space
-void setup_transformation (Object *obj, fmat4 *proj, fmat4 *view) {
+void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) {
 	
-	fmat4_fmat4_mult ( view, &(obj->model), &UNIFORM_M);
-    fmat4_fmat4_mult ( proj, &UNIFORM_M, &(obj->mvp));
-	fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
+	ObjectNode *node = obj_list_head;
 	
-	/*print_fmat4 (&(obj->model), "model matrix");
-	print_fmat4 (view, "view matrix");
-	print_fmat4 (proj, "projection matrix");
-	print_fmat4 (&UNIFORM_M, "UNIFORM_M");
-	print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
-	*/
+	//while (node != NULL) {
+
+		fmat4_fmat4_mult ( view, &(node->obj->model), &UNIFORM_M);
+		fmat4_fmat4_mult ( proj, &UNIFORM_M, &(node->obj->mvp));
+		fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
+
+		//fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
+		/*print_fmat4 (&(obj->model), "model matrix");
+		print_fmat4 (view, "view matrix");
+		print_fmat4 (proj, "projection matrix");
+		print_fmat4 (&UNIFORM_M, "UNIFORM_M");
+		print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
+		*/
+		
+	//	node = node->next;
+	//}
+}
+
+void setup_light_transform (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
+	
+	ObjectNode *node = obj_list_head;
+	
+	while (node != NULL) {
+
+		fmat4_fmat4_mult ( view, &(node->obj->model), &UNIFORM_M);
+		fmat4_fmat4_mult ( proj, &UNIFORM_M, &(node->obj->mvp));
+		fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
+
+		fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
+		
+		node = node->next;
+	}
 }
 
 
@@ -83,7 +107,7 @@ void light_transform (fmat4 *view) {
 	}
 }
 
-void init_objects (Object *object[NUM_OF_OBJECTS]) {
+ObjectNode* init_objects (void) {
 	/*
 	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
@@ -122,49 +146,55 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
     obj_init_model      (diablo1);
     */
     
-    int obj_idx = 0;
+    ObjectNode *head;
+    ObjectNode *node;
     
+    
+        
     // Central cube
-    object[obj_idx] = obj_new (my_cube);
-	obj_set_scale       (object[obj_idx], 10, 10, 10);
-	obj_set_rotation    (object[obj_idx], 0.f, 0.f, 0.f);
-	obj_set_translation (object[obj_idx], 0.f, 0.f, 0.f);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
+    node = calloc (1, sizeof (ObjectNode));
+    node->obj  = obj_new (my_cube);
+    node->next = NULL;
+	obj_set_scale       (node->obj, 10, 10, 10);
+	obj_set_rotation    (node->obj, 0.f, 0.f, 0.f);
+	obj_set_translation (node->obj, 0.f, 0.f, 0.f);
+	obj_init_model      (node->obj);
 	
+	head = node;
 	
-    /*// Plane
-    object[obj_idx] = obj_new (my_floor);
-    obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (object[obj_idx], 0.f, -0.5f, -2.0f);
-    obj_set_scale       (object[obj_idx], 10, 4, 10);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
-	*/
 	// Bottom Plane
-	object[obj_idx] = obj_new (my_floor);
+	//node = node->next;
+	//node->obj = obj_new (my_floor);
+	//node->next = NULL;
+	node->next = calloc (1, sizeof (ObjectNode));
+	node       = node->next;
+	node->obj  = obj_new (my_floor);
+	node->next = NULL;
     //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (object[obj_idx], 0.f, 0.f, 5.0f);
-    obj_set_scale       (object[obj_idx], 6, 4, 4);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
+    obj_set_translation (node->obj, 0.f, 0.f, 5.0f);
+    obj_set_scale       (node->obj, 6, 4, 4);
+	obj_init_model      (node->obj);
+	//obj_idx++;
 	
 	// Cube
-    object[obj_idx] = obj_new (my_cube);
-	obj_set_scale       (object[obj_idx], 2, 2, 2);
-	obj_set_rotation    (object[obj_idx], 45, 45, 0);
-	obj_set_translation (object[obj_idx], 1.0f, 0.f, 7.f);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
+	node->next = calloc (1, sizeof (ObjectNode));
+	node = node->next;
+	node->obj = obj_new (my_cube);
+	node->next = NULL;
+	obj_set_scale       (node->obj, 2, 2, 2);
+	obj_set_rotation    (node->obj, 45, 45, 0);
+	obj_set_translation (node->obj, 1.0f, 0.f, 7.f);
+	obj_init_model      (node->obj);
 	
 	// Cube
-	object[obj_idx] = obj_new (my_cube);
-	//obj_set_scale       (object[obj_idx], 0.5, 0.5, 0.5);
-	obj_set_scale       (object[obj_idx], 2, 2, 2);
-	obj_set_rotation    (object[obj_idx], 45, 45, 0);
-	obj_set_translation (object[obj_idx], -1.0f, 0.f, 7.f);
-	obj_init_model      (object[obj_idx]);
-	obj_idx++;
+	node->next = calloc (1, sizeof (ObjectNode));
+	node = node->next;
+	node->obj = obj_new (my_cube);
+	node->next = NULL;
+	obj_set_scale       (node->obj, 2, 2, 2);
+	obj_set_rotation    (node->obj, 45, 45, 0);
+	obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
+	obj_init_model      (node->obj);
 	
 	
 	
@@ -186,6 +216,8 @@ void init_objects (Object *object[NUM_OF_OBJECTS]) {
 	obj_set_translation (floor3, 0.f, 0.f, 0.75f);
 	obj_build_model     (floor3);
 	*/
+	
+	return head;
 }
 
 /*
@@ -232,10 +264,8 @@ int main(int argc, char** argv) {
     if (!fp) return 1;
     fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
     
-	// 1. Model Matrix - transform local coords to global
-	
-	Object *object[NUM_OF_OBJECTS];
-	init_objects(object);	
+		
+	ObjectNode *obj_list_head = init_objects ();
 	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
@@ -304,12 +334,16 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (!LIGHTS[i].enabled) continue;
 			new_frame();
-			init_view       (&view, &(LIGHTS[i].src), &center, &up);
-			for (int j = 0; j < NUM_OF_OBJECTS; j++) {
-				setup_transformation (object[j], &ortho_proj, &view);
-				obj_draw             (object[j], depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
-				fmat4_copy           (&(object[j]->mvp), &(object[j]->shadow_mvp[i]));
+			init_view             (&view, &(LIGHTS[i].src), &center, &up);
+			
+			ObjectNode *node_light = obj_list_head;
+			while (node_light != NULL) {
+				setup_transformation (node_light, &ortho_proj, &view);
+				draw_frame            (node_light, depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
+				fmat4_copy (&(node_light->obj->mvp), &(node_light->obj->shadow_mvp[i]));	
+				node_light = node_light->next;
 			}
+			
 		}			
 		
 		// move the camera
@@ -320,11 +354,14 @@ int main(int argc, char** argv) {
 				
 		
 		new_frame();
-		init_view       (&view, &eye, &center, &up);
-		light_transform (&view);
-		for (int i = 0; i < NUM_OF_OBJECTS; i++) {
-			setup_transformation (object[i], &persp_proj, &view);
-			obj_draw             (object[i], depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+		init_view            (&view, &eye, &center, &up);
+		light_transform      (&view);
+		
+		ObjectNode *node = obj_list_head;
+		while (node != NULL) {
+			setup_transformation (node, &persp_proj, &view);
+			draw_frame           (node, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			node = node->next;
 		}
 		
 		fprintf (fp, "FRAME\n");

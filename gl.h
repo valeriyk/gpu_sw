@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #define FIX_PT_PRECISION	3
-#define MAX_NUM_OF_LIGHTS	4
+#define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 32 // must be multiple of 4
 #define TILE_WIDTH  32
 #define TILE_HEIGHT 32
@@ -59,6 +59,10 @@ typedef struct Object {
 	Varying *varying;
 } Object;
 
+typedef struct ObjectNode {
+	Object *obj;
+	struct ObjectNode *next;
+} ObjectNode;
 
 typedef struct Light {
 	bool 		enabled;
@@ -124,6 +128,6 @@ void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);
 void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
-void obj_draw            (Object *obj, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_frame           (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 void new_frame (void);
