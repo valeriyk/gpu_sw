@@ -21,6 +21,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 typedef int16_t screenxy_t;
 
 typedef uint16_t screenz_t;
+//typedef uint8_t screenz_t;
 
 typedef struct ScreenPt {
 	screenxy_t x;
@@ -55,6 +56,7 @@ typedef struct Object {
 	float3 tran;
 	fmat4  model;
 	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
+	fmat4  mit;
 	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
 	Varying *varying;
 } Object;

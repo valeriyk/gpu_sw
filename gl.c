@@ -587,7 +587,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	
 	ObjectNode *node = obj_list_head;
 	
-	//while (node != NULL) {
+	while (node != NULL) {
 		size_t visible_tri_idx = 0;
 		for (size_t i = 0; i < wfobj_get_num_of_faces(node->obj->wfobj); i++) {
 			
@@ -653,8 +653,8 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 			}
 		}
 		
-	//	node = node->next;
-	//}
+		node = node->next;
+	}
 }
 
 /*void primitive_assembler () {

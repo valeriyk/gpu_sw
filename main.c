@@ -58,11 +58,11 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 	
 	ObjectNode *node = obj_list_head;
 	
-	//while (node != NULL) {
+	while (node != NULL) {
 
 		fmat4_fmat4_mult ( view, &(node->obj->model), &UNIFORM_M);
 		fmat4_fmat4_mult ( proj, &UNIFORM_M, &(node->obj->mvp));
-		fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
+		fmat4_inv_transp (&UNIFORM_M, &(node->obj->mit));
 
 		//fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
 		/*print_fmat4 (&(obj->model), "model matrix");
@@ -72,8 +72,8 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 		print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
 		*/
 		
-	//	node = node->next;
-	//}
+		node = node->next;
+	}
 }
 
 void setup_light_transform (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
@@ -163,9 +163,6 @@ ObjectNode* init_objects (void) {
 	head = node;
 	
 	// Bottom Plane
-	//node = node->next;
-	//node->obj = obj_new (my_floor);
-	//node->next = NULL;
 	node->next = calloc (1, sizeof (ObjectNode));
 	node       = node->next;
 	node->obj  = obj_new (my_floor);
@@ -174,7 +171,16 @@ ObjectNode* init_objects (void) {
     obj_set_translation (node->obj, 0.f, 0.f, 5.0f);
     obj_set_scale       (node->obj, 6, 4, 4);
 	obj_init_model      (node->obj);
-	//obj_idx++;
+	
+	node->next = calloc (1, sizeof (ObjectNode));
+	node       = node->next;
+	node->obj  = obj_new (my_floor);
+	node->next = NULL;
+    obj_set_rotation    (node->obj, 0.f, 0.f, 180.f);
+    obj_set_translation (node->obj, 0.f, -6.01f, 5.0f);
+    obj_set_scale       (node->obj, 6, 4, 4);
+	obj_init_model      (node->obj);
+	
 	
 	// Cube
 	node->next = calloc (1, sizeof (ObjectNode));
@@ -279,7 +285,7 @@ int main(int argc, char** argv) {
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	float f = 15.0;
+	float f = 20.0;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
@@ -300,7 +306,7 @@ int main(int argc, char** argv) {
     //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
     
     //new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
-    new_light (0, Float3_set ( 0.f,  0.f, -10.f));					
+    new_light (0, Float3_set ( 0.f,  3.f, -10.f));					
     //new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
     //new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
@@ -335,15 +341,8 @@ int main(int argc, char** argv) {
 			if (!LIGHTS[i].enabled) continue;
 			new_frame();
 			init_view             (&view, &(LIGHTS[i].src), &center, &up);
-			
-			ObjectNode *node_light = obj_list_head;
-			while (node_light != NULL) {
-				setup_transformation (node_light, &ortho_proj, &view);
-				draw_frame            (node_light, depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);
-				fmat4_copy (&(node_light->obj->mvp), &(node_light->obj->shadow_mvp[i]));	
-				node_light = node_light->next;
-			}
-			
+			setup_light_transform (obj_list_head, &ortho_proj, &view, i);
+			draw_frame            (obj_list_head, depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);	
 		}			
 		
 		// move the camera
@@ -356,14 +355,9 @@ int main(int argc, char** argv) {
 		new_frame();
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
-		
-		ObjectNode *node = obj_list_head;
-		while (node != NULL) {
-			setup_transformation (node, &persp_proj, &view);
-			draw_frame           (node, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			node = node->next;
-		}
-		
+		setup_transformation (obj_list_head, &persp_proj, &view);
+		draw_frame           (obj_list_head, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
+			
 		fprintf (fp, "FRAME\n");
 		for (int j = 0; j < screen_size; j++){
 			uint8_t y = rgb_to_y (active_fbuffer[j]);
@@ -377,28 +371,32 @@ int main(int argc, char** argv) {
 			uint8_t cr = rgb_to_cr (active_fbuffer[j]);
 			fwrite (&cr, sizeof (uint8_t), 1, fp);
 		}
-	}
-	// while (0);
-	
-	/*
-    write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
-    //write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-    if (sizeof(screenz_t) == 1) {
-		write_tga_file ("zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT, 8, 1);
 		
-		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-			if (LIGHTS[i].enabled) {
-				char sb_file[32];
-				char num[32];
-				sprintf(num, "%d", i);
-				strcpy (sb_file, "shadow_buffer_");
-				strcat (sb_file, num);
-				strcat (sb_file, ".tga");
-				write_tga_file (sb_file, (tbyte *) LIGHTS[i].shadow_buf, WIDTH, HEIGHT, 8, 1);
+		if (m == NUM_OF_FRAMES / 3) {
+			write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
+			//write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
+			if (sizeof(screenz_t) == 1) {
+				write_tga_file ("zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT, 8, 1);
+				
+				for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+					if (LIGHTS[i].enabled) {
+						char sb_file[32];
+						char num[32];
+						sprintf(num, "%d", i);
+						strcpy (sb_file, "shadow_buffer_");
+						strcat (sb_file, num);
+						strcat (sb_file, ".tga");
+						write_tga_file (sb_file, (tbyte *) LIGHTS[i].shadow_buf, WIDTH, HEIGHT, 8, 1);
+					}
+				}
 			}
 		}
 	}
-	*/
+	// while (0);
+	
+	
+    
+	
 	
 	fclose (fp);
 	

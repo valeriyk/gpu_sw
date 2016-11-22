@@ -54,7 +54,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
-	var->as_Float4[1] = fmat4_Float4_mult (&UNIFORM_MIT, &norm4d);;
+	var->as_Float4[1] = fmat4_Float4_mult (&(obj->mit), &norm4d);;
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
@@ -159,7 +159,9 @@ bool depth_pshader_pass2 (Object *obj, size_t tri_idx, Varying *var, pixel_color
 
 int count_shadows (Varying *var) {
 	Float3 screen;
-	int shadows = 0;
+	int    shadows = 0;
+	float  z_fighting = 1.0f;//521.77f;
+	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
 		if (!LIGHTS[i].enabled) continue;
@@ -174,7 +176,6 @@ int count_shadows (Varying *var) {
 		
 		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
 		
-		float z_fighting = 251.77f;
 		if (shadow_buf_z > current_z + z_fighting) {
 			shadows++;
 		}
