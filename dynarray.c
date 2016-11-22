@@ -7,7 +7,7 @@ DynArray * dyn_array_create (size_t elem_size, size_t initial_max) {
 	a->data = (DynArrayItem*) calloc(initial_max, sizeof(DynArrayItem));
 	a->end = 0;
 	a->elem_size = elem_size;
-	a->expand_rate = 256;
+	a->expand_rate = initial_max;
 	
 	return a;
 }

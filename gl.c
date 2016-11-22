@@ -3,6 +3,7 @@
 #include "shader.h"
 //#include "main.h" // TBD -remove
 #include "wavefront_obj.h"
+#include "dynarray.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -586,6 +587,9 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
 void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	uintptr_t tile_idx_table[NUM_OF_TILES];
+	
+	DynArray * vtx_table = dyn_array_create (sizeof (DynArrayItem), 128);
+	
 		
 	ObjectNode *node = obj_list_head;
 	
@@ -643,6 +647,10 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					}		
 				}
 			}
+			
+			for (size_t j = 0; j < 3; j++)
+				for (size_t k = 0; k < NUM_OF_VARYING_WORDS; k++)
+					dyn_array_push  (vtx_table, &(var[j].as_float[k]));
 			
 			//tiler(obj, var);
 			

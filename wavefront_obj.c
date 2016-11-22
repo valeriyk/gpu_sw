@@ -40,7 +40,7 @@ WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bit
 	obj->priv->text = dyn_array_create (sizeof (float), 256);
 	obj->priv->face = dyn_array_create (sizeof   (int), 1152);
 	obj->priv->face_offset = 0;
-    obj->priv->vtx_offset = 0;
+    obj->priv->vtx_offset  = 0;
     
 	read_obj_file (obj_file, obj);	        
     
