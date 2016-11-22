@@ -585,6 +585,8 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
 //
 void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
+	uintptr_t tile_idx_table[NUM_OF_TILES];
+		
 	ObjectNode *node = obj_list_head;
 	
 	while (node != NULL) {

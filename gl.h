@@ -66,6 +66,17 @@ typedef struct ObjectNode {
 	struct ObjectNode *next;
 } ObjectNode;
 
+
+typedef struct TiledVtxBuf {
+	intptr_t ptr[15];
+} TiledVtxBuf;
+
+typedef struct TiledVtxBufNode {
+	TiledVtxBuf vtx;
+	struct TiledVtxBufNode *next;
+} TiledVtxBufNode;
+
+
 typedef struct Light {
 	bool 		enabled;
 	Float3		dir;

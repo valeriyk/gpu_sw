@@ -16,8 +16,8 @@
 // POSITIVE Z TOWARDS ME
 
 // these are global:
-fmat4  UNIFORM_M;
-fmat4  UNIFORM_MIT;
+//fmat4  UNIFORM_M;
+//fmat4  UNIFORM_MIT;
 
 Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
@@ -60,9 +60,10 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 	
 	while (node != NULL) {
 
-		fmat4_fmat4_mult ( view, &(node->obj->model), &UNIFORM_M);
-		fmat4_fmat4_mult ( proj, &UNIFORM_M, &(node->obj->mvp));
-		fmat4_inv_transp (&UNIFORM_M, &(node->obj->mit));
+		fmat4 modelview;
+		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
+		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
+		fmat4_inv_transp (&modelview, &(node->obj->mit));
 
 		//fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
 		/*print_fmat4 (&(obj->model), "model matrix");
@@ -81,10 +82,11 @@ void setup_light_transform (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view,
 	ObjectNode *node = obj_list_head;
 	
 	while (node != NULL) {
-
-		fmat4_fmat4_mult ( view, &(node->obj->model), &UNIFORM_M);
-		fmat4_fmat4_mult ( proj, &UNIFORM_M, &(node->obj->mvp));
-		fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
+		
+		fmat4 modelview;
+		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
+		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
+		//fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
 
 		fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
 		
@@ -153,6 +155,9 @@ ObjectNode* init_objects (void) {
         
     // Central cube
     node = calloc (1, sizeof (ObjectNode));
+    
+    head = node;
+    
     node->obj  = obj_new (my_cube);
     node->next = NULL;
 	obj_set_scale       (node->obj, 10, 10, 10);

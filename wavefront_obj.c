@@ -1,4 +1,5 @@
 #include "wavefront_obj.h"
+#include "dynarray.h"
 
 #include <stdio.h>
 #include <stdlib.h>
