@@ -9,7 +9,7 @@
 
 #define FIX_PT_PRECISION	3
 #define MAX_NUM_OF_LIGHTS	1
-#define NUM_OF_VARYING_WORDS 32 // must be multiple of 4
+#define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
 #define TILE_WIDTH  32
 #define TILE_HEIGHT 32
 
@@ -66,15 +66,22 @@ typedef struct ObjectNode {
 	struct ObjectNode *next;
 } ObjectNode;
 
+/*typedef struct VtxAttrib {
+	Varying var;
+	Object *obj;
+} VtxAttrib;
+*/
+typedef struct TriangleVtxListNode {
+	Varying varying[3];
+	Object  *obj;
+	struct TriangleVtxListNode *next;
+} TriangleVtxListNode;
 
-typedef struct TiledVtxBuf {
-	intptr_t ptr[15];
-} TiledVtxBuf;
-
-typedef struct TiledVtxBufNode {
-	TiledVtxBuf vtx;
-	struct TiledVtxBufNode *next;
-} TiledVtxBufNode;
+typedef struct TrianglePtrListNode {
+	//intptr_t ptr[15];
+	struct TriangleVtxListNode *tri;
+	struct TrianglePtrListNode *next;
+} TrianglePtrListNode;
 
 
 typedef struct Light {

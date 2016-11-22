@@ -17,16 +17,16 @@ screenz_t  SCREEN_DEPTH;
 size_t NUM_OF_TILES;
 
 
-typedef struct TiledTriangle {
+/*typedef struct TiledTriangle {
 	Object *obj_ptr;
 	Varying vtx0_vars;
 	Varying vtx1_vars;
 	Varying vtx2_vars;
 } TiledTriangle;
+*/
 
-
-TiledTriangle *tiled_triangles;
-size_t *num_of_triangles_in_tile;
+//TiledTriangle *tiled_triangles;
+//size_t *num_of_triangles_in_tile;
 
 fmat4 VIEWPORT;
 
@@ -104,7 +104,7 @@ void set_screen_size (screenxy_t width, screenxy_t height) {
 }
 
 void new_frame (void) {
-	if (tiled_triangles != NULL) {
+	/*if (tiled_triangles != NULL) {
 		free (tiled_triangles);
 	}
 	if (num_of_triangles_in_tile != NULL) {
@@ -112,6 +112,7 @@ void new_frame (void) {
 	}
 	tiled_triangles = (TiledTriangle*) calloc (NUM_OF_TILES*2048, sizeof(TiledTriangle));
 	num_of_triangles_in_tile = (size_t*) calloc (NUM_OF_TILES, sizeof (size_t));
+	*/
 }
 
 screenxy_t get_screen_width (void) {
@@ -501,14 +502,20 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 */
 
 
-void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
+void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
+	
+/*	for (size_t j = 0; j < 3; j++)
+		for (size_t k = 0; k < NUM_OF_VARYING_WORDS; k++)
+			dyn_array_push  (vtx_table, &(var[j].as_float[k]));
+	dyn_array_push (vtx_table, obj);
+*/	
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		x[i] = (screenxy_t) vtx_vars[i].as_float[0] * (1 << FIX_PT_PRECISION);
-		y[i] = (screenxy_t) vtx_vars[i].as_float[1] * (1 << FIX_PT_PRECISION);
+		x[i] = (screenxy_t) tri_node->varying[i].as_float[0] * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) tri_node->varying[i].as_float[1] * (1 << FIX_PT_PRECISION);
 	}
 	
     // Compute triangle bounding box.
@@ -520,11 +527,11 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
     
-    TiledTriangle tt;
+    /*TiledTriangle tt;
     tt.obj_ptr = obj_ptr;
     tt.vtx0_vars = vtx_vars[0];
     tt.vtx1_vars = vtx_vars[1];
-    tt.vtx2_vars = vtx_vars[2];
+    tt.vtx2_vars = vtx_vars[2];*/
     //printf ("Tiling! minx=%d maxx=%d miny=%d maxy=%d\n", min_x, max_x, min_y, max_y);
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y += TILE_HEIGHT) {	
@@ -557,9 +564,27 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
 			if (edge2_corner0_outside && edge2_corner1_outside && edge2_corner2_outside && edge2_corner3_outside) continue;
 			
 			//printf ("\t\tDrawing\n");
-			size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * TILE_WIDTH + (p.x >> (int) log2f(TILE_WIDTH));
-			tiled_triangles[tile_num + NUM_OF_TILES*num_of_triangles_in_tile[tile_num]] = tt;
-			num_of_triangles_in_tile[tile_num]++;
+			size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
+			
+			TrianglePtrListNode *node = tri_ptr[tile_num];
+			if (node == NULL) {
+				node = calloc (1, sizeof (TrianglePtrListNode));
+				node->tri  = tri_node;
+				node->next = NULL;	
+				
+				tri_ptr[tile_num] = node;
+			}
+			else {
+				while (node->next != NULL) {
+					node = node->next;
+				}
+				node->next = calloc (1, sizeof (TrianglePtrListNode));
+				node->next->tri  = tri_node;
+				node->next->next = NULL;	
+			}
+			 
+			//tiled_triangles[tile_num + NUM_OF_TILES*num_of_triangles_in_tile[tile_num]] = tt;
+			//num_of_triangles_in_tile[tile_num]++;
 		}
 	}
 }
@@ -586,16 +611,30 @@ void tiler (Object *obj_ptr, Varying vtx_vars[3]) {
 //
 void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
-	uintptr_t tile_idx_table[NUM_OF_TILES];
+	TrianglePtrListNode *tile_idx_table [NUM_OF_TILES];
+	for (int i = 0; i < NUM_OF_TILES; i++) {
+		tile_idx_table[i] = NULL;
+	}
 	
-	DynArray * vtx_table = dyn_array_create (sizeof (DynArrayItem), 128);
+	//DynArray * vtx_table = dyn_array_create (sizeof (DynArrayItem), 128);
 	
 		
-	ObjectNode *node = obj_list_head;
+	ObjectNode          *obj_list_node = obj_list_head;
+	//TriangleVtxListNode *vtx_list_node = calloc (1, sizeof (TriangleVtxListNode));
+		
+	int num_of_faces = 0;
+	while (obj_list_node != NULL) {
+		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+		obj_list_node = obj_list_node->next;
+	}
+	TriangleVtxListNode *vtx_list = calloc (num_of_faces, sizeof (TriangleVtxListNode));;
+	obj_list_node = obj_list_head;
 	
-	while (node != NULL) {
+	int tri_num = 0;
+	
+	while (obj_list_node != NULL) {
 		size_t visible_tri_idx = 0;
-		for (size_t i = 0; i < wfobj_get_num_of_faces(node->obj->wfobj); i++) {
+		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
 			
 			if (GL_DEBUG_0) {
 				printf("call obj_draw()\n");
@@ -605,13 +644,17 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 			Triangle ndc;
 			Triangle screen;
 			
+			//vtx_list_node->obj  = obj_list_node->obj;
+			//vtx_list_node->next = NULL;
+			vtx_list[tri_num].obj = obj_list_node->obj;
+			
 			bool is_clipped = true; // sticky bit
-			Varying var[3];
+			//Varying var[3];
 			for (size_t j = 0; j < 3; j++) {
 				
-				vshader (node->obj, i, j, &(var[j])); // CALL VERTEX SHADER
+				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
 				
-				clip.vtx[j] = var[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
+				clip.vtx[j] = vtx_list[tri_num].varying[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -643,27 +686,29 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						var[j].as_Float4[0] = screen.vtx[j];
+						//var[j].as_Float4[0] = screen.vtx[j];
+						vtx_list[tri_num].varying[j].as_Float4[0] = screen.vtx[j];
 					}		
 				}
 			}
 			
-			for (size_t j = 0; j < 3; j++)
-				for (size_t k = 0; k < NUM_OF_VARYING_WORDS; k++)
-					dyn_array_push  (vtx_table, &(var[j].as_float[k]));
-			
-			//tiler(obj, var);
-			
 			if (!is_clipped) {
+				
+				tiler(&(vtx_list[tri_num]), tile_idx_table);
+				//vtx_list_node->next = calloc (1, sizeof (TriangleVtxListNode));
+				//vtx_list_node = vtx_list_node->next;
+				
+				
 				for (size_t j = 0; j < 3; j++) {
-					node->obj->varying[visible_tri_idx*3 + j] = var[j];
+					obj_list_node->obj->varying[visible_tri_idx*3 + j] = vtx_list[tri_num].varying[j];
 				}
-				draw_triangle (node->obj, visible_tri_idx, pshader, zbuffer, fbuffer);
+				draw_triangle (obj_list_node->obj, visible_tri_idx, pshader, zbuffer, fbuffer);
 				visible_tri_idx++;
+				tri_num++;
 			}
 		}
 		
-		node = node->next;
+		obj_list_node = obj_list_node->next;
 	}
 }
 

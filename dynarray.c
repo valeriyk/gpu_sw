@@ -25,6 +25,10 @@ int dyn_array_expand  (DynArray *a) {
 	return 0;
 }
 
+int dyn_array_get_end (DynArray *a) {
+	return a->end;
+}
+
 void dyn_array_destroy (DynArray *a) {
 	if (a) {
 		if (a->data) free(a->data);
