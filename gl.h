@@ -151,4 +151,3 @@ void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 void draw_frame           (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
-void new_frame (void);

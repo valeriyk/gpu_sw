@@ -344,7 +344,6 @@ int main(int argc, char** argv) {
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (!LIGHTS[i].enabled) continue;
-			new_frame();
 			init_view             (&view, &(LIGHTS[i].src), &center, &up);
 			setup_light_transform (obj_list_head, &ortho_proj, &view, i);
 			draw_frame            (obj_list_head, depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);	
@@ -357,7 +356,6 @@ int main(int argc, char** argv) {
 		eye_angle += 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 				
 		
-		new_frame();
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
 		setup_transformation (obj_list_head, &persp_proj, &view);

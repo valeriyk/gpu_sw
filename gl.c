@@ -1,7 +1,6 @@
 #include "gl.h"
 #include "geometry.h"
 #include "shader.h"
-//#include "main.h" // TBD -remove
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
@@ -15,18 +14,6 @@ screenxy_t SCREEN_HEIGHT;
 screenz_t  SCREEN_DEPTH;
 
 size_t NUM_OF_TILES;
-
-
-/*typedef struct TiledTriangle {
-	Object *obj_ptr;
-	Varying vtx0_vars;
-	Varying vtx1_vars;
-	Varying vtx2_vars;
-} TiledTriangle;
-*/
-
-//TiledTriangle *tiled_triangles;
-//size_t *num_of_triangles_in_tile;
 
 fmat4 VIEWPORT;
 
@@ -92,27 +79,6 @@ void set_screen_size (screenxy_t width, screenxy_t height) {
 	SCREEN_DEPTH = (screenz_t) ~0;
 	
 	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
-	/*if (tiled_triangles != NULL) {
-		free (tiled_triangles);
-	}
-	if (num_of_triangles_in_tile != NULL) {
-		free (num_of_triangles_in_tile);
-	}
-	tiled_triangles = (TiledTriangle*) calloc (NUM_OF_TILES*2048, sizeof(TiledTriangle));
-	num_of_triangles_in_tile = (size_t*) calloc (NUM_OF_TILES, sizeof (size_t));*/
-
-}
-
-void new_frame (void) {
-	/*if (tiled_triangles != NULL) {
-		free (tiled_triangles);
-	}
-	if (num_of_triangles_in_tile != NULL) {
-		free (num_of_triangles_in_tile);
-	}
-	tiled_triangles = (TiledTriangle*) calloc (NUM_OF_TILES*2048, sizeof(TiledTriangle));
-	num_of_triangles_in_tile = (size_t*) calloc (NUM_OF_TILES, sizeof (size_t));
-	*/
 }
 
 screenxy_t get_screen_width (void) {
@@ -391,22 +357,12 @@ Varying interpolate_varying (Varying *vry, Float3 *bar) {
 void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
 	
-	//static int tri_idx=0;
-	
-	
 	Triangle tt;
 	tt.vtx[0] = varying[0].as_Float4[0];
 	tt.vtx[1] = varying[1].as_Float4[0];
 	tt.vtx[2] = varying[2].as_Float4[0];
 	Triangle *t = &tt;
-		
-		if (GL_DEBUG_0) {
-		printf ("\tcall draw_triangle()\n");
-		for (int i = 0; i < 3; i++) {
-			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
-		}
-	}
-	
+			
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
@@ -421,28 +377,11 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 	}
 	
     // Compute triangle bounding box.
-    /*screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);*/
-    screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
-    screenxy_t tile_max_x = tile_min_x -1 + TILE_WIDTH;
+    screenxy_t min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
+    screenxy_t max_x = min_x + TILE_WIDTH;
     
-    screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
-    screenxy_t tile_max_y = tile_min_y - 1 + TILE_HEIGHT;
-    
-    //screenxy_t min_x = max_of_three (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION, tile_min_x);
-    //screenxy_t max_x = min_of_three ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION, tile_max_x);
-    
-    //screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    //screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    screenxy_t min_x = tile_min_x;
-    screenxy_t max_x = tile_max_x;
-    
-    screenxy_t min_y = tile_min_y;
-    screenxy_t max_y = tile_max_y;
-    
-    //printf ("\tx %d:%d \ty %d:%d\n", min_x, max_x, min_y, max_y);
+    screenxy_t min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
+    screenxy_t max_y = min_y + TILE_HEIGHT;
      
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
@@ -518,12 +457,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 
 
 void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
-	
-/*	for (size_t j = 0; j < 3; j++)
-		for (size_t k = 0; k < NUM_OF_VARYING_WORDS; k++)
-			dyn_array_push  (vtx_table, &(var[j].as_float[k]));
-	dyn_array_push (vtx_table, obj);
-*/	
+
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
@@ -542,12 +476,6 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
     
-    /*TiledTriangle tt;
-    tt.obj_ptr = obj_ptr;
-    tt.vtx0_vars = vtx_vars[0];
-    tt.vtx1_vars = vtx_vars[1];
-    tt.vtx2_vars = vtx_vars[2];*/
-    //printf ("Tiling! minx=%d maxx=%d miny=%d maxy=%d\n", min_x, max_x, min_y, max_y);
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y += TILE_HEIGHT) {	
 		for (p.x = min_x; p.x < max_x; p.x += TILE_WIDTH) {
@@ -578,7 +506,6 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 			bool edge2_corner3_outside = (edge_func(x[0], y[0], x[1], y[1], x1, y1) < 0); // not normalized
 			if (edge2_corner0_outside && edge2_corner1_outside && edge2_corner2_outside && edge2_corner3_outside) continue;
 			
-			//printf ("\t\tDrawing\n");
 			size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
 			
 			TrianglePtrListNode *node = tri_ptr[tile_num];
@@ -597,9 +524,6 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 				node->next->tri  = tri_node;
 				node->next->next = NULL;	
 			}
-			 
-			//tiled_triangles[tile_num + NUM_OF_TILES*num_of_triangles_in_tile[tile_num]] = tt;
-			//num_of_triangles_in_tile[tile_num]++;
 		}
 	}
 }
