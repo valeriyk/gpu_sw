@@ -239,109 +239,7 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-// Rasterize:
-// 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
-// 1.a. dumb method: just compute all the values for each pixel
-// 1.b. smart method: compute values once per triangle, then just increment every
-//      pixel and every row
-// 2. interpolate values such as Z for every pixel:
-// 2.a. dumb method: Z = (z0*bar0+z1*bar1+z2*bar2)/sum_of_bar
-//      *divide by sum_of_bar because bar values are not normalized
-// 2.b. smart method: Z = z0 + bar1*(z1-z0)/sum_of_bar + bar2*(z2-z0)/sum_of_bar
-//      *can get rid of bar0
-//      **(z1-z0)/sum_of_bar is constant for a triangle
-//      ***(z2-z0)/sum_of_bar is constant for a triangle
-/*void draw_triangle (Triangle *t, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, WFobj *obj)
-{    
-	if (GL_DEBUG_0) {
-		printf ("\tcall draw_triangle()\n");
-		for (int i = 0; i < 3; i++) {
-			printf ("\t\tvertex %d: x=%f, y=%f, z=%f, w=%f\n", i, t->vtx[i].as_struct.x, t->vtx[i].as_struct.y, t->vtx[i].as_struct.z, t->vtx[i].as_struct.w);
-		}
-	}
-	
-	// fixed point coordinates with subpixel precision:
-	// forum.devmaster.net/t/advanced-rasterization/6145
-	screenxy_t x[3];
-	screenxy_t y[3];
-	for (int i = 0; i < 3; i++) {
-		x[i] = (screenxy_t) t->vtx[i].as_struct.x * (1 << FIX_PT_PRECISION);
-		y[i] = (screenxy_t) t->vtx[i].as_struct.y * (1 << FIX_PT_PRECISION);
-	}
-	
-    // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (       0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t min_y = max_of_two (       0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    
-    ScreenPt p;
-    for (p.y = min_y; p.y < max_y; p.y++) {	
-		for (p.x = min_x; p.x < max_x; p.x++) {
-			int3 bar;
-			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
-			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
-			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
-			
-			// If p is on or inside all edges, render pixel.
-			if ((bar[0] | bar[1] | bar[2]) > 0) {
-				float sum_of_bars      = 0.0f;
-				float sum_of_bar_clips = 0.0f;
-				Float3 bar_clip;
-				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
-					sum_of_bar_clips += bar_clip.as_array[i];
-					sum_of_bars += bar[i];
-				}
-				if (sum_of_bars == 0) {
-					if (GL_DEBUG_2) printf ("Im gonna die!!!\n");
-					return;
-				}				
-				
-				for (int i = 0; i < 3; i++) {
-					bar_clip.as_array[i] /= sum_of_bar_clips;
-					bar[i] /= sum_of_bars;
-				}
-				
-				
-				//p.z = (screenz_t) t->vtx[0].as_struct.z + bar_clip.as_struct.y * (t->vtx[1].as_struct.z - t->vtx[0].as_struct.z) + bar_clip.as_struct.z * (t->vtx[2].as_struct.z - t->vtx[0].as_struct.z);
-				
-				//for (int i = 0; i < 3; i++) duck += t->vtx[i].as_struct.z*bar[i];
-				//duck /= sum_of_bars;
-				
-				p.z = (screenz_t) duck; 
-				
-				// 1/z = l0/z0 + l1/z1 + l2/z2
-				//p.z = (screenz_t) 1.0f / (bar[0]/t->vtx[0].as_struct.z + bar[1]/t->vtx[1].as_struct.z + bar[2]/t->vtx[2].as_struct.z);
-				p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
-				
-				//printf ("draw_triangle: x=%d y=%d z=%d\t", p.x, p.y, p.z);
-				
-				uint32_t pix_num = p.x + p.y*SCREEN_WIDTH;
-				if (p.z > zbuffer[pix_num]) {
-					zbuffer[pix_num] = p.z;
-					pixel_color_t color;
-					if (pshader (obj, &bar_clip, &color) && (fbuffer != NULL)) {
-						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
-					}
-				}
-			}
-        }
-    }
-}
-*/
 
-
-/*
-float baryc_interpolate (float a, float b, float c, Float3 bar) {
-	//normal.as_array[i] = Float3_Float3_smult (&DEPTH_VARYING_N[i], barw);
-		float vtx0_norm = obj->varying[tri_idx*3].as_float[9+i];
-		float vtx1_norm = obj->varying[tri_idx*3+1].as_float[9+i];
-		float vtx2_norm = obj->varying[tri_idx*3+2].as_float[9+i];
-		Float3 tmp = Float3_set (a, b, cvtx0_norm, vtx1_norm, vtx2_norm);
-		normal.as_array[i] = Float3_Float3_smult (&tmp, barw);
-}
-*/
 
 Varying interpolate_varying (Varying *vry, Float3 *bar) {
 	Varying vry_interp;
@@ -354,6 +252,19 @@ Varying interpolate_varying (Varying *vry, Float3 *bar) {
 	return vry_interp;
 }
 
+
+// Rasterize:
+// 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
+// 1.a. dumb method: just compute all the values for each pixel
+// 1.b. smart method: compute values once per triangle, then just increment every
+//      pixel and every row
+// 2. interpolate values such as Z for every pixel:
+// 2.a. dumb method: Z = (z0*bar0+z1*bar1+z2*bar2)/sum_of_bar
+//      *divide by sum_of_bar because bar values are not normalized
+// 2.b. smart method: Z = z0 + bar1*(z1-z0)/sum_of_bar + bar2*(z2-z0)/sum_of_bar
+//      *can get rid of bar0
+//      **(z1-z0)/sum_of_bar is constant for a triangle
+//      ***(z2-z0)/sum_of_bar is constant for a triangle
 void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
 	
@@ -554,12 +465,8 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	for (int i = 0; i < NUM_OF_TILES; i++) {
 		tile_idx_table[i] = NULL;
 	}
-	
-	//DynArray * vtx_table = dyn_array_create (sizeof (DynArrayItem), 128);
-	
-		
+			
 	ObjectNode          *obj_list_node = obj_list_head;
-	//TriangleVtxListNode *vtx_list_node = calloc (1, sizeof (TriangleVtxListNode));
 		
 	int num_of_faces = 0;
 	while (obj_list_node != NULL) {
@@ -572,7 +479,6 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	int tri_num = 0;
 	
 	while (obj_list_node != NULL) {
-		//size_t visible_tri_idx = 0;
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
 			
 			if (GL_DEBUG_0) {
@@ -583,12 +489,9 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 			Triangle ndc;
 			Triangle screen;
 			
-			//vtx_list_node->obj  = obj_list_node->obj;
-			//vtx_list_node->next = NULL;
 			vtx_list[tri_num].obj = obj_list_node->obj;
 			
 			bool is_clipped = true; // sticky bit
-			//Varying var[3];
 			for (size_t j = 0; j < 3; j++) {
 				
 				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
@@ -625,24 +528,13 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						//var[j].as_Float4[0] = screen.vtx[j];
 						vtx_list[tri_num].varying[j].as_Float4[0] = screen.vtx[j];
 					}		
 				}
 			}
 			
 			if (!is_clipped) {
-				
 				tiler(&(vtx_list[tri_num]), tile_idx_table);
-				//vtx_list_node->next = calloc (1, sizeof (TriangleVtxListNode));
-				//vtx_list_node = vtx_list_node->next;
-				
-				
-				//for (size_t j = 0; j < 3; j++) {
-				//	obj_list_node->obj->varying[visible_tri_idx*3 + j] = vtx_list[tri_num].varying[j];
-				//}
-				//draw_triangle (obj_list_node->obj, visible_tri_idx, pshader, zbuffer, fbuffer);
-				//visible_tri_idx++;
 				tri_num++;
 			}
 		}
@@ -651,7 +543,6 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	}
 	
 	for (int i = 0; i < NUM_OF_TILES; i++) {
-	//for (int i = 0; i < 4; i++) {
 		TrianglePtrListNode *node = tile_idx_table[i];
 		while (node != NULL) {
 			TriangleVtxListNode *tri = node->tri;
