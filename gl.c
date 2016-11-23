@@ -228,7 +228,7 @@ Object* obj_new (WFobj *wfobj) {
 	}
 	//obj->data = dyn_array_create (sizeof(DynArrayItem), NUM_OF_VARYING_WORDS * wfobj_get_num_of_faces(obj->wfobj) * 3);
 	//obj->varying = dyn_array_create (sizeof(Varying), wfobj_get_num_of_faces(obj->wfobj) * 3);
-	obj->varying = (Varying*) calloc(wfobj_get_num_of_faces(obj->wfobj) * 3, sizeof(Varying));
+	//obj->varying = (Varying*) calloc(wfobj_get_num_of_faces(obj->wfobj) * 3, sizeof(Varying));
 	
 	return obj;
 }
@@ -377,30 +377,27 @@ float baryc_interpolate (float a, float b, float c, Float3 bar) {
 }
 */
 
-Varying interpolate_varying (Object *obj, size_t tri_idx, Float3 *bar) {
-	
-	Varying varying;
+Varying interpolate_varying (Varying *vry, Float3 *bar) {
+	Varying vry_interp;
 	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
-		float vtx0_norm = obj->varying[tri_idx*3].as_float[i];
-		float vtx1_norm = obj->varying[tri_idx*3+1].as_float[i];
-		float vtx2_norm = obj->varying[tri_idx*3+2].as_float[i];
-		//Float3 tmp = Float3_set (vtx0_norm, vtx1_norm, vtx2_norm);
-		//varying.as_float[i] = Float3_Float3_smult (&tmp, bar);
-		varying.as_float[i] = vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2];
+		float vtx0_norm = vry[0].as_float[i];
+		float vtx1_norm = vry[1].as_float[i];
+		float vtx2_norm = vry[2].as_float[i];
+		vry_interp.as_float[i] = vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2];
 	}
-	return varying;
+	return vry_interp;
 }
 
-void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
+void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
 	
 	//static int tri_idx=0;
 	
 	
 	Triangle tt;
-	tt.vtx[0] = obj->varying[tri_idx*3  ].as_Float4[0];
-	tt.vtx[1] = obj->varying[tri_idx*3+1].as_Float4[0];
-	tt.vtx[2] = obj->varying[tri_idx*3+2].as_Float4[0];
+	tt.vtx[0] = varying[0].as_Float4[0];
+	tt.vtx[1] = varying[1].as_Float4[0];
+	tt.vtx[2] = varying[2].as_Float4[0];
 	Triangle *t = &tt;
 		
 		if (GL_DEBUG_0) {
@@ -424,11 +421,29 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 	}
 	
     // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
+    /*screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
     screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
     screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);*/
+    screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
+    screenxy_t tile_max_x = tile_min_x -1 + TILE_WIDTH;
     
+    screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
+    screenxy_t tile_max_y = tile_min_y - 1 + TILE_HEIGHT;
+    
+    //screenxy_t min_x = max_of_three (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION, tile_min_x);
+    //screenxy_t max_x = min_of_three ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION, tile_max_x);
+    
+    //screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    //screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_x = tile_min_x;
+    screenxy_t max_x = tile_max_x;
+    
+    screenxy_t min_y = tile_min_y;
+    screenxy_t max_y = tile_max_y;
+    
+    //printf ("\tx %d:%d \ty %d:%d\n", min_x, max_x, min_y, max_y);
+     
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		for (p.x = min_x; p.x < max_x; p.x++) {
@@ -466,9 +481,9 @@ void draw_triangle (Object *obj, size_t tri_idx, pixel_shader pshader, screenz_t
 						bar_clip.as_array[i] /= sum_of_bars;
 					}
 					
-					Varying varying = interpolate_varying (obj, tri_idx, &bar_clip);
+					Varying vry_interp = interpolate_varying (varying, &bar_clip);
 					
-					if (pshader (obj, tri_idx, &varying, &color) && (fbuffer != NULL)) {
+					if (pshader (obj, &vry_interp, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
 					}
 				}
@@ -633,7 +648,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	int tri_num = 0;
 	
 	while (obj_list_node != NULL) {
-		size_t visible_tri_idx = 0;
+		//size_t visible_tri_idx = 0;
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
 			
 			if (GL_DEBUG_0) {
@@ -699,19 +714,31 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 				//vtx_list_node = vtx_list_node->next;
 				
 				
-				for (size_t j = 0; j < 3; j++) {
-					obj_list_node->obj->varying[visible_tri_idx*3 + j] = vtx_list[tri_num].varying[j];
-				}
-				draw_triangle (obj_list_node->obj, visible_tri_idx, pshader, zbuffer, fbuffer);
-				visible_tri_idx++;
+				//for (size_t j = 0; j < 3; j++) {
+				//	obj_list_node->obj->varying[visible_tri_idx*3 + j] = vtx_list[tri_num].varying[j];
+				//}
+				//draw_triangle (obj_list_node->obj, visible_tri_idx, pshader, zbuffer, fbuffer);
+				//visible_tri_idx++;
 				tri_num++;
 			}
 		}
 		
 		obj_list_node = obj_list_node->next;
 	}
+	
+	for (int i = 0; i < NUM_OF_TILES; i++) {
+	//for (int i = 0; i < 4; i++) {
+		TrianglePtrListNode *node = tile_idx_table[i];
+		while (node != NULL) {
+			TriangleVtxListNode *tri = node->tri;
+			//printf ("draw triangle, tile %d: ", i);
+			draw_triangle (tri->obj, tri->varying, i, pshader, zbuffer, fbuffer);	
+			node = node->next;
+		}		
+	}
 }
 
 /*void primitive_assembler () {
 	
 }*/
+
