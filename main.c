@@ -182,7 +182,7 @@ ObjectNode* init_objects (void) {
 		head = node;
 		node->obj = obj_new (african_head);
 		node->next = NULL;
-		obj_set_scale       (node->obj, 5, 5, 5);
+		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
 		//obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
 		obj_init_model      (node->obj);
@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
-		eye_angle += 2*3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
+		eye_angle += 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 				
 		
 		init_view            (&view, &eye, &center, &up);

@@ -34,6 +34,15 @@ int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, sc
     return bx_ax * cy_ay - by_ay * cx_ax;
 }
 
+fix16_t edge_func2 (fix16_t ax, fix16_t ay, fix16_t bx, fix16_t by, fix16_t cx, fix16_t cy) {
+    fix16_t bx_ax = fix16_sadd (bx, -ax); //subtract
+    fix16_t cy_ay = fix16_sadd (cy, -ay); //subtract
+    fix16_t by_ay = fix16_sadd (by, -ay); //subtract
+    fix16_t cx_ax = fix16_sadd (cx, -ax); //subtract
+
+    return fix16_sadd (fix16_mul (bx_ax, cy_ay), -fix16_mul (by_ay,cx_ax));
+}
+
 static inline int32_t min_of_two (int32_t a, int32_t b) {
 	return (a < b) ? a : b;
 }
@@ -304,6 +313,15 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 		//w[i] = (screenxy_t) t->vtx[i].as_struct.w * (1 << FIX_PT_PRECISION);
 	}
 	
+	
+
+	fix16_t x_fixp[3];
+	fix16_t y_fixp[3];
+	for (int i = 0; i < 3; i++) {
+		x_fixp[i] = varying[i].as_FixPt4[0].as_struct.x;
+		y_fixp[i] = varying[i].as_FixPt4[0].as_struct.y;
+	}
+	
     // Compute triangle bounding box.
     screenxy_t min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
     screenxy_t max_x = min_x + TILE_WIDTH;
@@ -315,9 +333,16 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		for (p.x = min_x; p.x < max_x; p.x++) {
 			int3 bar;
-			bar[0] = edge_func(x[1], y[1], x[2], y[2], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
-			bar[1] = edge_func(x[2], y[2], x[0], y[0], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
-			bar[2] = edge_func(x[0], y[0], x[1], y[1], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[0] = edge_func (x[1], y[1], x[2], y[2], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[1] = edge_func (x[2], y[2], x[0], y[0], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+			bar[2] = edge_func (x[0], y[0], x[1], y[1], p.x << FIX_PT_PRECISION, p.y << FIX_PT_PRECISION); // not normalized
+	
+			fix16_t bar_fixp[3];
+			fix16_t px_fixp = fix16_from_int (p.x);
+			fix16_t py_fixp = fix16_from_int (p.y);
+			bar_fixp[0] = edge_func2 (x_fixp[1], y_fixp[1], x_fixp[2], y_fixp[2], px_fixp, py_fixp); // not normalized
+			bar_fixp[1] = edge_func2 (x_fixp[2], y_fixp[2], x_fixp[0], y_fixp[0], px_fixp, py_fixp); // not normalized
+			bar_fixp[2] = edge_func2 (x_fixp[0], y_fixp[0], x_fixp[1], y_fixp[1], px_fixp, py_fixp); // not normalized
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
