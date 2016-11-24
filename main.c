@@ -6,7 +6,7 @@
 //#include "shader_phong.h"
 #include "shader_depth.h"
 #include "bitmap.h"
-#include <tga_addon.h>
+#include "tga_addon.h"
 
 #include <stdint.h>
 //#include <limits.h>
@@ -64,7 +64,29 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
 		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
 		fmat4_inv_transp (&modelview, &(node->obj->mit));
-
+		/*print_fmat4 (&(node->obj->mit), "modelview invert transpose (mit) BEFORE");
+		float min = 0;
+		float max = 0;
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				float tmp = node->obj->mit[i][j];
+				if (tmp > max) max = tmp;
+				if (tmp < min) min = tmp;
+			}
+		}
+		float div = 0;
+		if (fabsf(max) > fabsf(min)) div = max;
+		else div = min;
+		
+		if (div != 0) {
+			for (int i = 0; i < 4; i++) {
+				for (int j = 0; j < 4; j++) {
+					fmat4_set (&(node->obj->mit), i, j, node->obj->mit[i][j] / div);
+				}
+			}
+		}
+		print_fmat4 (&(node->obj->mit), "modelview invert transpose (mit) AFTER");*/
+		
 		//fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
 		/*print_fmat4 (&(obj->model), "model matrix");
 		print_fmat4 (view, "view matrix");
@@ -110,20 +132,22 @@ void light_transform (fmat4 *view) {
 }
 
 ObjectNode* init_objects (void) {
-	/*
+	
 	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-    WFobj *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
-	
+    WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
+	/*
 	Bitmap *diablo_diff = new_bitmap_from_tga ("obj/diablo/diablo3_pose_diffuse.tga");
 	Bitmap *diablo_nmap = new_bitmap_from_tga ("obj/diablo/diablo3_pose_nm.tga");
 	Bitmap *diablo_spec = new_bitmap_from_tga ("obj/diablo/diablo3_pose_spec.tga");
 	WFobj  *diablo = wfobj_new ("obj/diablo/diablo3_pose.obj", diablo_diff, diablo_nmap, diablo_spec);
 	*/
+	
+	
 	Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 	Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-	WFobj  *my_cube = wfobj_new ("obj/cube.obj", cube_diff, cube_nmap, NULL);
+	WFobj  *my_cube = wfobj_new ("obj/cube2.obj", cube_diff, cube_nmap, NULL);
 	
 	Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
 	WFobj *my_floor = wfobj_new ("obj/floor.obj", floor_diff, NULL, NULL);
@@ -151,22 +175,32 @@ ObjectNode* init_objects (void) {
     ObjectNode *head;
     ObjectNode *node;
     
+    int draw_head = 1;
     
-        
-    // Central cube
-    node = calloc (1, sizeof (ObjectNode));
-    
-    head = node;
-    
-    node->obj  = obj_new (my_cube);
-    node->next = NULL;
-	obj_set_scale       (node->obj, 10, 10, 10);
-	obj_set_rotation    (node->obj, 0.f, 0.f, 0.f);
-	obj_set_translation (node->obj, 0.f, 0.f, 0.f);
-	obj_init_model      (node->obj);
-	
-	head = node;
-	
+    if (draw_head) {
+		node = calloc (1, sizeof (ObjectNode));
+		head = node;
+		node->obj = obj_new (african_head);
+		node->next = NULL;
+		obj_set_scale       (node->obj, 5, 5, 5);
+		//obj_set_rotation    (node->obj, 45, 45, 0);
+		//obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
+		obj_init_model      (node->obj);
+		}
+	else {
+		// Central cube
+		node = calloc (1, sizeof (ObjectNode));
+		
+		head = node;
+		
+		node->obj  = obj_new (my_cube);
+		node->next = NULL;
+		obj_set_scale       (node->obj, 10, 10, 10);
+		obj_set_rotation    (node->obj, 0.f, 0.f, 0.f);
+		obj_set_translation (node->obj, 0.f, 0.f, 0.f);
+		obj_init_model      (node->obj);		
+	}
+	/*
 	// Bottom Plane
 	node->next = calloc (1, sizeof (ObjectNode));
 	node       = node->next;
@@ -208,24 +242,6 @@ ObjectNode* init_objects (void) {
 	obj_init_model      (node->obj);
 	
 	
-	
-	
-	/* 
-    Object *floor1 = obj_new (my_floor);
-    obj_set_rotation    (floor1, 90.f, 0.f, 0.f);
-    //obj_set_translation (floor1, 0.f, 0.f, -1.0f);
-	obj_init_model      (floor1);
-	
-	Object *floor2 = obj_new (my_floor);
-    obj_set_rotation    (floor2, 90.f, 0.f, 0.f);
-	obj_set_translation (floor2, -0.0f, -0.0f, -0.5f);
-	obj_set_scale       (floor2, 1.2, 1.2, 1.2);
-	obj_init_model      (floor2);
-	
-	Object *floor3 = obj_new (my_floor);
-    obj_set_rotation    (floor3, 0.f, 0.f, -90.f);
-	obj_set_translation (floor3, 0.f, 0.f, 0.75f);
-	obj_build_model     (floor3);
 	*/
 	
 	return head;
@@ -307,20 +323,14 @@ int main(int argc, char** argv) {
 	fmat4 view    = FMAT4_IDENTITY;	
 	//init_view (&view, &eye, &center, &up);
     
-    //new_light (0, Float3_set (-6.0f,  -0.5f, -5.f));					
-    //new_light (1, Float3_set ( 6.0f,  -0.5f, -5.f));
-    
-    //new_light (0, Float3_set ( 0.3f,  2.5f, -5.f));					
     new_light (0, Float3_set ( 0.f,  3.f, -10.f));					
-    //new_light (4, Float3_set ( 0.0f,  2.5f, -5.f));
-    //new_light (7, Float3_set (-0.3f,  2.5f, -5.f));
     
     
     
     float eye_x = 0;
     float eye_y = 1;
     float eye_z = 0;
-    float eye_angle = 0;
+    float eye_angle = 0.8;
     float eye_distance = 15;
     
     printf ("Frame");
@@ -353,7 +363,7 @@ int main(int argc, char** argv) {
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
-		eye_angle += 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
+		eye_angle += 2*3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 				
 		
 		init_view            (&view, &eye, &center, &up);

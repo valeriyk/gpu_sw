@@ -4,6 +4,8 @@
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
+#include <fixmath.h>
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -244,11 +246,28 @@ void obj_init_model (Object *obj) {
 Varying interpolate_varying (Varying *vry, Float3 *bar) {
 	Varying vry_interp;
 	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+		fix16_t vtx0_norm = (fix16_t) vry[0].as_float[i];
+		fix16_t vtx1_norm = (fix16_t) vry[1].as_float[i];
+		fix16_t vtx2_norm = (fix16_t) vry[2].as_float[i];
+		
+		fix16_t bar0_fxpt = fix16_from_float (bar->as_array[0]);
+		fix16_t bar1_fxpt = fix16_from_float (bar->as_array[1]);
+		fix16_t bar2_fxpt = fix16_from_float (bar->as_array[2]);
+		
+		fix16_t mpy0 = fix16_mul (vtx0_norm, bar0_fxpt);
+		fix16_t mpy1 = fix16_mul (vtx1_norm, bar1_fxpt);
+		fix16_t mpy2 = fix16_mul (vtx2_norm, bar2_fxpt);
+		
+		fix16_t res  = fix16_sadd (mpy0, fix16_sadd (mpy1, mpy2));
+		
+		vry_interp.as_float[i] = (float) res;
+	}/*
+	for (int i = 10; i < NUM_OF_VARYING_WORDS; i++) {
 		float vtx0_norm = vry[0].as_float[i];
 		float vtx1_norm = vry[1].as_float[i];
 		float vtx2_norm = vry[2].as_float[i];
-		vry_interp.as_float[i] = vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2];
-	}
+		vry_interp.as_float[i] = (vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2]);// / (bar->as_array[0] + bar->as_array[1] + bar->as_array[2]);
+	}*/
 	return vry_interp;
 }
 
