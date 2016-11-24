@@ -13,30 +13,30 @@
 typedef int32_t int3 [3];
 */
 
-typedef fix16_t fixpt2[2];
+typedef fix16_t fix16_t2[2];
 typedef struct FixPtUV {
 	fix16_t u, v;
 } FixPtUV;
 typedef union FixPt2 {
-	fixpt2 as_array;
+	fix16_t2 as_array;
 	FixPtUV as_struct;
 } FixPt2;
 
-typedef fix16_t fixpt3[3];
+typedef fix16_t fix16_t3[3];
 typedef struct FixPtXYZ {
 	fix16_t x, y, z;
 } FixPtXYZ;
 typedef union FixPt3 {
-	fixpt3 as_array;
+	fix16_t3 as_array;
 	FixPtXYZ as_struct;
 } FixPt3;
 
-typedef fix16_t fixpt4[4];
+typedef fix16_t fix16_t4[4];
 typedef struct FixPtXYZW {
 	fix16_t x, y, z, w;
 } FixPtXYZW;
 typedef union FixPt4 {
-	fixpt4 as_array;
+	fix16_t4 as_array;
 	FixPtXYZW as_struct;
 } FixPt4;
 

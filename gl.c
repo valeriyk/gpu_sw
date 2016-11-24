@@ -1,6 +1,6 @@
 #include "gl.h"
-#include "geometry.h"
-#include "geometry_fixpt.h"
+//#include "geometry.h"
+//#include "geometry_fixpt.h"
 #include "shader.h"
 #include "wavefront_obj.h"
 #include "dynarray.h"
@@ -195,10 +195,6 @@ Object* obj_new (WFobj *wfobj) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		fmat4_identity (&(obj->shadow_mvp[i]));
 	}
-	//obj->data = dyn_array_create (sizeof(DynArrayItem), NUM_OF_VARYING_WORDS * wfobj_get_num_of_faces(obj->wfobj) * 3);
-	//obj->varying = dyn_array_create (sizeof(Varying), wfobj_get_num_of_faces(obj->wfobj) * 3);
-	//obj->varying = (Varying*) calloc(wfobj_get_num_of_faces(obj->wfobj) * 3, sizeof(Varying));
-	
 	return obj;
 }
 
@@ -247,9 +243,12 @@ void obj_init_model (Object *obj) {
 Varying interpolate_varying (Varying *vry, Float3 *bar) {
 	Varying vry_interp;
 	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
-		fix16_t vtx0_norm = (fix16_t) vry[0].as_float[i];
-		fix16_t vtx1_norm = (fix16_t) vry[1].as_float[i];
-		fix16_t vtx2_norm = (fix16_t) vry[2].as_float[i];
+		//fix16_t vtx0_norm = (fix16_t) vry[0].as_float[i];
+		//fix16_t vtx1_norm = (fix16_t) vry[1].as_float[i];
+		//fix16_t vtx2_norm = (fix16_t) vry[2].as_float[i];
+		fix16_t vtx0_norm = vry[0].as_fix16_t[i];
+		fix16_t vtx1_norm = vry[1].as_fix16_t[i];
+		fix16_t vtx2_norm = vry[2].as_fix16_t[i];
 		
 		fix16_t bar0_fxpt = fix16_from_float (bar->as_array[0]);
 		fix16_t bar1_fxpt = fix16_from_float (bar->as_array[1]);
@@ -259,9 +258,7 @@ Varying interpolate_varying (Varying *vry, Float3 *bar) {
 		fix16_t mpy1 = fix16_mul (vtx1_norm, bar1_fxpt);
 		fix16_t mpy2 = fix16_mul (vtx2_norm, bar2_fxpt);
 		
-		fix16_t res  = fix16_sadd (mpy0, fix16_sadd (mpy1, mpy2));
-		
-		vry_interp.as_float[i] = (float) res;
+		vry_interp.as_fix16_t[i] = fix16_sadd (mpy0, fix16_sadd (mpy1, mpy2));
 	}/*
 	for (int i = 10; i < NUM_OF_VARYING_WORDS; i++) {
 		float vtx0_norm = vry[0].as_float[i];
@@ -290,11 +287,8 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 	
 	Triangle tt;
 	for (int i = 0; i < 3; i++) {
-		FixPt4 coords = Float4_FixPt4_cast(&(varying[i].as_Float4[0]));
-		tt.vtx[i] = FixPt4_Float4_conv(&coords);
+		tt.vtx[i] = FixPt4_Float4_conv(&(varying[i].as_FixPt4[0]));
 	}
-	//tt.vtx[1] = varying[1].as_Float4[0];
-	//tt.vtx[2] = varying[2].as_Float4[0];
 	Triangle *t = &tt;
 			
 	// fixed point coordinates with subpixel precision:
@@ -397,8 +391,7 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		FixPt2 coords_fx = Float2_FixPt2_cast(&(tri_node->varying[i].as_Float2[0]));
-		Float2 coords    = FixPt2_Float2_conv(&coords_fx);
+		Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].as_FixPt2[0]));
 		
 		x[i] = (screenxy_t) coords.as_array[0] * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) coords.as_array[1] * (1 << FIX_PT_PRECISION);
@@ -524,9 +517,8 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 				
 				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
 				
-				//clip.vtx[j] = vtx_list[tri_num].varying[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
-				FixPt4 clip_fx = Float4_FixPt4_cast(&(vtx_list[tri_num].varying[j].as_Float4[0])); // First four floats of Varying contain XYZW of a vertex in clip space
-				clip.vtx[j] = FixPt4_Float4_conv (&clip_fx);
+				// First four floats of Varying contain XYZW of a vertex in clip space
+				clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].as_FixPt4[0]));
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -558,9 +550,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						//vtx_list[tri_num].varying[j].as_Float4[0] = screen.vtx[j];
-						FixPt4 screen_fx = Float4_FixPt4_conv(&(screen.vtx[j]));
-						vtx_list[tri_num].varying[j].as_Float4[0] = FixPt4_Float4_cast (&screen_fx);
+						vtx_list[tri_num].varying[j].as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
 					}		
 				}
 			}

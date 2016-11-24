@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry.h"
+#include "geometry_fixpt.h"
 #include "wavefront_obj.h"
 
 #include <stdint.h>
@@ -43,10 +44,22 @@ typedef float  varying_float  [NUM_OF_VARYING_WORDS];
 typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
 //typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
 typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
-typedef union Varying {
+
+/*typedef union Varying {
 	varying_float  as_float;
 	varying_Float2 as_Float2;
 	varying_Float4 as_Float4;
+} Varying;*/
+
+typedef fix16_t varying_fix16_t [NUM_OF_VARYING_WORDS];
+typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
+//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
+typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
+
+typedef union Varying {
+	varying_fix16_t  as_fix16_t;
+	varying_FixPt2 as_FixPt2;
+	varying_FixPt4 as_FixPt4;
 } Varying;
 
 typedef struct Object {
