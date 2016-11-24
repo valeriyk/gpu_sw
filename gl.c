@@ -1,5 +1,6 @@
 #include "gl.h"
 #include "geometry.h"
+#include "geometry_fixpt.h"
 #include "shader.h"
 #include "wavefront_obj.h"
 #include "dynarray.h"
@@ -288,9 +289,12 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 {    
 	
 	Triangle tt;
-	tt.vtx[0] = varying[0].as_Float4[0];
-	tt.vtx[1] = varying[1].as_Float4[0];
-	tt.vtx[2] = varying[2].as_Float4[0];
+	for (int i = 0; i < 3; i++) {
+		FixPt4 coords = Float4_FixPt4_cast(&(varying[i].as_Float4[0]));
+		tt.vtx[i] = FixPt4_Float4_conv(&coords);
+	}
+	//tt.vtx[1] = varying[1].as_Float4[0];
+	//tt.vtx[2] = varying[2].as_Float4[0];
 	Triangle *t = &tt;
 			
 	// fixed point coordinates with subpixel precision:
@@ -393,8 +397,13 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		x[i] = (screenxy_t) tri_node->varying[i].as_float[0] * (1 << FIX_PT_PRECISION);
-		y[i] = (screenxy_t) tri_node->varying[i].as_float[1] * (1 << FIX_PT_PRECISION);
+		FixPt2 coords_fx = Float2_FixPt2_cast(&(tri_node->varying[i].as_Float2[0]));
+		Float2 coords    = FixPt2_Float2_conv(&coords_fx);
+		
+		x[i] = (screenxy_t) coords.as_array[0] * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) coords.as_array[1] * (1 << FIX_PT_PRECISION);
+		//x[i] = (screenxy_t) tri_node->varying[i].as_float[0] * (1 << FIX_PT_PRECISION);
+		//y[i] = (screenxy_t) tri_node->varying[i].as_float[1] * (1 << FIX_PT_PRECISION);
 	}
 	
     // Compute triangle bounding box.
@@ -515,7 +524,9 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 				
 				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
 				
-				clip.vtx[j] = vtx_list[tri_num].varying[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
+				//clip.vtx[j] = vtx_list[tri_num].varying[j].as_Float4[0]; // First four floats of Varying contain XYZW of a vertex in clip space
+				FixPt4 clip_fx = Float4_FixPt4_cast(&(vtx_list[tri_num].varying[j].as_Float4[0])); // First four floats of Varying contain XYZW of a vertex in clip space
+				clip.vtx[j] = FixPt4_Float4_conv (&clip_fx);
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -547,7 +558,9 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						vtx_list[tri_num].varying[j].as_Float4[0] = screen.vtx[j];
+						//vtx_list[tri_num].varying[j].as_Float4[0] = screen.vtx[j];
+						FixPt4 screen_fx = Float4_FixPt4_conv(&(screen.vtx[j]));
+						vtx_list[tri_num].varying[j].as_Float4[0] = FixPt4_Float4_cast (&screen_fx);
 					}		
 				}
 			}

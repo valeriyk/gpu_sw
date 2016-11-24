@@ -22,7 +22,8 @@ void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
 	
 	//return vtx4d;
-	vry->as_Float4[0] = vtx4d;
+	FixPt4 vtx4d_fx = Float4_FixPt4_conv (&vtx4d);
+	vry->as_Float4[0] = FixPt4_Float4_cast (&vtx4d_fx);
 }
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -53,7 +54,10 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc = Float3_Float4_conv (&vtx3d, 1);
-	vry->as_Float4[0] = fmat4_Float4_mult (&(obj->mvp), &mc);
+	//vry->as_Float4[0] = fmat4_Float4_mult (&(obj->mvp), &mc);
+	Float4 clip = fmat4_Float4_mult (&(obj->mvp), &mc);
+	FixPt4 clip_fx = Float4_FixPt4_conv (&clip);
+	vry->as_Float4[0] = FixPt4_Float4_cast (&clip_fx);
 	
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
