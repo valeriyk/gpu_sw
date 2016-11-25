@@ -102,6 +102,11 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	pixel_color_t pix;
 	if (obj->wfobj->texture != NULL) {
 		if ((text.as_struct.u >= obj->wfobj->texture->w) || (text.as_struct.v >= obj->wfobj->texture->h)) {
+			printf ("y");
+			return false;
+		}
+		if ((text.as_struct.u < 0) || (text.as_struct.v < 0)) {
+			printf ("Y");
 			return false;
 		}
 		wfobj_get_rgb_from_texture (obj->wfobj, text.as_struct.u, text.as_struct.v, &pix.r, &pix.g, &pix.b);

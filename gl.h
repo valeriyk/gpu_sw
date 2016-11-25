@@ -21,7 +21,8 @@ typedef enum {X = 0, Y, Z, W} axis;
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
 typedef int16_t screenxy_t;
 
-typedef uint16_t screenz_t;
+//typedef uint16_t screenz_t;
+typedef fix16_t screenz_t;
 //typedef uint8_t screenz_t;
 
 typedef struct ScreenPt {

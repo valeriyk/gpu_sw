@@ -35,12 +35,12 @@ int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, sc
 }
 
 fix16_t edge_func2 (fix16_t ax, fix16_t ay, fix16_t bx, fix16_t by, fix16_t cx, fix16_t cy) {
-    fix16_t bx_ax = fix16_sadd (bx, -ax); //subtract
-    fix16_t cy_ay = fix16_sadd (cy, -ay); //subtract
-    fix16_t by_ay = fix16_sadd (by, -ay); //subtract
-    fix16_t cx_ax = fix16_sadd (cx, -ax); //subtract
+    fix16_t bx_ax = fix16_sub (bx, ax); //subtract
+    fix16_t cy_ay = fix16_sub (cy, ay); //subtract
+    fix16_t by_ay = fix16_sub (by, ay); //subtract
+    fix16_t cx_ax = fix16_sub (cx, ax); //subtract
 
-    return fix16_sadd (fix16_mul (bx_ax, cy_ay), -fix16_mul (by_ay,cx_ax));
+    return fix16_sub (fix16_mul (bx_ax, cy_ay), fix16_mul (by_ay,cx_ax));
 }
 
 static inline int32_t min_of_two (int32_t a, int32_t b) {
@@ -72,7 +72,7 @@ void init_viewport (int x, int y, int w, int h, int d) {
 
 	// X: map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
 	// Y: map [-1:1] to [0:SCREEN_HEIGHT]
-	// Z: map [-1:1] to [SCREEN_DEPTH:0]				
+	// Z: map [-1:1] to [-SCREEN_DEPTH/2:SCREEN_DEPTH/2]				
 	// W: leave as is
 				
 	fmat4_identity (&VIEWPORT);
@@ -80,8 +80,8 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 0, 3, x + w / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 1, h / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
-	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f);
-	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
+	fmat4_set (&VIEWPORT, 2, 2, d / 2.0f);
+	fmat4_set (&VIEWPORT, 2, 3, 0);
 	//print_fmat4 (&VIEWPORT, "viewport matrix");
 }
 
@@ -267,7 +267,7 @@ Varying interpolate_varying (Varying *vry, Float3 *bar) {
 		fix16_t mpy1 = fix16_mul (vtx1_norm, bar1_fxpt);
 		fix16_t mpy2 = fix16_mul (vtx2_norm, bar2_fxpt);
 		
-		vry_interp.as_fix16_t[i] = fix16_sadd (mpy0, fix16_sadd (mpy1, mpy2));
+		vry_interp.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
 	}/*
 	for (int i = 10; i < NUM_OF_VARYING_WORDS; i++) {
 		float vtx0_norm = vry[0].as_float[i];
@@ -276,6 +276,25 @@ Varying interpolate_varying (Varying *vry, Float3 *bar) {
 		vry_interp.as_float[i] = (vtx0_norm*bar->as_array[0] + vtx1_norm*bar->as_array[1] + vtx2_norm*bar->as_array[2]);// / (bar->as_array[0] + bar->as_array[1] + bar->as_array[2]);
 	}*/
 	return vry_interp;
+}
+
+Varying interpolate_varying2 (Varying *vry, FixPt3 *bar) {
+	Varying vry_interp;
+	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+		fix16_t vtx0_norm = vry[0].as_fix16_t[i];
+		fix16_t vtx1_norm = vry[1].as_fix16_t[i];
+		fix16_t vtx2_norm = vry[2].as_fix16_t[i];
+		
+		//fix16_t bar0_fxpt = fix16_from_float (bar->as_array[0]);
+		//fix16_t bar1_fxpt = fix16_from_float (bar->as_array[1]);
+		//fix16_t bar2_fxpt = fix16_from_float (bar->as_array[2]);
+		
+		fix16_t mpy0 = fix16_mul (vtx0_norm, bar->as_array[0]);
+		fix16_t mpy1 = fix16_mul (vtx1_norm, bar->as_array[1]);
+		fix16_t mpy2 = fix16_mul (vtx2_norm, bar->as_array[2]);
+		
+		vry_interp.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
+	}	return vry_interp;
 }
 
 
@@ -346,8 +365,18 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar[0] | bar[1] | bar[2]) > 0) {
-				float z_float = (bar[0]*t->vtx[0].as_struct.z + bar[1] * t->vtx[1].as_struct.z + bar[2] * t->vtx[2].as_struct.z) / (bar[0] + bar[1] + bar[2]);
-				p.z = (screenz_t) z_float;
+				//float z_float = (bar[0] * t->vtx[0].as_struct.z + bar[1] * t->vtx[1].as_struct.z + bar[2] * t->vtx[2].as_struct.z) / (bar[0] + bar[1] + bar[2]);
+				fix16_t mpy_fixp[3];
+				fix16_t acc_fixp = 0;
+				fix16_t sum_of_bars = 0;
+				for (int i = 0; i < 3; i++) {
+					mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].as_FixPt4[0].as_struct.z); 
+					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
+					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
+				}
+				//float z_float = fix16_to_float (fix16_div (acc_fixp, sum_of_bars)); // no div by zero here
+				//p.z = (screenz_t) z_float;
+				p.z = fix16_div (acc_fixp, sum_of_bars);
 				
 				// this doesn't work:
 				//uint32_t tmpz = (bar[0] * z[0] + bar[1] * z[1] + bar[2] * z[2]) / (bar[0] + bar[1] + bar[2]);
@@ -360,7 +389,7 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 				if (p.z > zbuffer[pix_num]) {
 					zbuffer[pix_num] = p.z;
 					pixel_color_t color;
-					float sum_of_bars      = 0.0f;
+					/*float sum_of_bars      = 0.0f;
 					Float3 bar_clip;
 					for (int i = 0; i < 3; i++) {
 						bar_clip.as_array[i] = (float) bar[i] * t->vtx[i].as_struct.w; // W here actually contains 1/W
@@ -371,12 +400,25 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 										
 					for (int i = 0; i < 3; i++) {
 						bar_clip.as_array[i] /= sum_of_bars;
+					}*/
+					sum_of_bars = 0;
+					FixPt3 bar_clip;
+					for (int i = 0; i < 3; i++) {
+						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].as_FixPt4[0].as_struct.w); // W here actually contains 1/W
+						sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
 					}
 					
-					Varying vry_interp = interpolate_varying (varying, &bar_clip);
-					
-					if (pshader (obj, &vry_interp, &color) && (fbuffer != NULL)) {
-						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1)*SCREEN_WIDTH] = color;
+					if (sum_of_bars != 0) {					
+						for (int i = 0; i < 3; i++) {
+							//bar_clip.as_array[i] /= sum_of_bars;
+							bar_clip.as_array[i] = fix16_div (bar_clip.as_array[i], sum_of_bars);
+						}
+						
+						Varying vry_interp = interpolate_varying2 (varying, &bar_clip);
+						
+						if (pshader (obj, &vry_interp, &color) && (fbuffer != NULL)) {
+							fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
+						}
 					}
 				}
 			}

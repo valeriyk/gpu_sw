@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
        
     init_scene();
     
-    size_t screen_size = WIDTH*HEIGHT;
+    size_t screen_size = WIDTH * HEIGHT;
     
     screenz_t *zbuffer = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
     
@@ -330,7 +330,7 @@ int main(int argc, char** argv) {
     float eye_x = 0;
     float eye_y = 1;
     float eye_z = 0;
-    float eye_angle = 0.8;
+    float eye_angle = 0;
     float eye_distance = 15;
     
     printf ("Frame");
@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
 			active_fbuffer[i].r = 0;
 			active_fbuffer[i].g = 0;
 			active_fbuffer[i].b = 0;
-			zbuffer[i] = 0;
+			zbuffer[i] = fix16_minimum;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
 					LIGHTS[j].shadow_buf[i] = 0;
