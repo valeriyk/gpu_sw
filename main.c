@@ -175,7 +175,7 @@ ObjectNode* init_objects (void) {
     ObjectNode *head;
     ObjectNode *node;
     
-    int draw_head = 1;
+    int draw_head = 0;
     
     if (draw_head) {
 		node = calloc (1, sizeof (ObjectNode));
@@ -195,7 +195,8 @@ ObjectNode* init_objects (void) {
 		
 		node->obj  = obj_new (my_cube);
 		node->next = NULL;
-		obj_set_scale       (node->obj, 10, 10, 10);
+		//obj_set_scale       (node->obj, 10, 10, 10);
+		obj_set_scale       (node->obj, 5, 5, 5);
 		obj_set_rotation    (node->obj, 0.f, 0.f, 0.f);
 		obj_set_translation (node->obj, 0.f, 0.f, 0.f);
 		obj_init_model      (node->obj);		
@@ -330,7 +331,7 @@ int main(int argc, char** argv) {
     float eye_x = 0;
     float eye_y = 1;
     float eye_z = 0;
-    float eye_angle = 0;
+    float eye_angle = 0; // rad
     float eye_distance = 15;
     
     printf ("Frame");
@@ -347,7 +348,7 @@ int main(int argc, char** argv) {
 			zbuffer[i] = fix16_minimum;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
-					LIGHTS[j].shadow_buf[i] = 0;
+					LIGHTS[j].shadow_buf[i] = fix16_minimum;
 				}
 			}
 		}

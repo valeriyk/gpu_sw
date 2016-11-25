@@ -1,5 +1,5 @@
 TCF          = ../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
-#OPT = -O3
+OPT = -O3
 #SYSCONF_LINK_x86 = gcc -ggdb -g3 -pg -O0 -I.
 SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -Ithirdparty/libtga -Ithirdparty/libfixmath -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 $(OPT)
 
