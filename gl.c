@@ -353,50 +353,50 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		
 		for (p.x = min_x; p.x < max_x; p.x++) {
 			
-			
 			// If p is on or inside all edges, render pixel.
-			if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
+			//if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
+			if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) >= 0) { // TBD fix the dumb fill rule here
 				fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
 				for (int i = 0; i < 3; i++) { // interpolate
-					//mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.z); 
 					mpy_fixp[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.z); 
 					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
 					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
 				}
-				p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
-				
-				// this doesn't work:
-				//uint32_t tmpz = (bar[0] * z[0] + bar[1] * z[1] + bar[2] * z[2]) / (bar[0] + bar[1] + bar[2]);
-				//p.z = (screenz_t) tmpz;
-				// but this works too:
-				// p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
-							
-				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
-				if (p.z > zbuffer[pix_num]) {
-					zbuffer[pix_num] = p.z;
-					sum_of_bars = 0;
-					FixPt3 bar_clip;
-					for (int i = 0; i < 3; i++) {
-						//bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.w); // W here actually contains 1/W
-						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.w); // W here actually contains 1/W
-						sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
-					}
+				if (sum_of_bars != 0) {
+					p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
 					
-					if (sum_of_bars != 0) {					
+					// this doesn't work:
+					//uint32_t tmpz = (bar[0] * z[0] + bar[1] * z[1] + bar[2] * z[2]) / (bar[0] + bar[1] + bar[2]);
+					//p.z = (screenz_t) tmpz;
+					// but this works too:
+					// p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
+								
+					size_t pix_num = p.x + p.y * SCREEN_WIDTH;
+					if (p.z > zbuffer[pix_num]) {
+						zbuffer[pix_num] = p.z;
+						sum_of_bars = 0;
+						FixPt3 bar_clip;
 						for (int i = 0; i < 3; i++) {
-							bar_clip.as_array[i] = fix16_div (bar_clip.as_array[i], sum_of_bars);
+							bar_clip.as_array[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.w); // W here actually contains 1/W
+							sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
 						}
 						
-						pixel_color_t color;
-						Varying vry_interp = interpolate_varying (tri->varying, &bar_clip);
-						if (GL_DEBUG_0) {
-							printf("\t\tcall pshader()\n");
-						}
-						
-						if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
-							fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
+						if (sum_of_bars != 0) {					
+							for (int i = 0; i < 3; i++) {
+								bar_clip.as_array[i] = fix16_div (bar_clip.as_array[i], sum_of_bars);
+							}
+							
+							pixel_color_t color;
+							Varying vry_interp = interpolate_varying (tri->varying, &bar_clip);
+							if (GL_DEBUG_0) {
+								printf("\t\tcall pshader()\n");
+							}
+							
+							if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
+								fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
+							}
 						}
 					}
 				}
