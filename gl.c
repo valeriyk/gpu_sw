@@ -327,16 +327,32 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
 	}
 	
-     
-    ScreenPt p;
+    fix16_t bar_fixp_row[3];
+    fix16_t bar_fixp[3];
+	fix16_t px_fixp = fix16_from_int (min_x);
+	fix16_t py_fixp = fix16_from_int (min_y);
+	bar_fixp_row[0] = edge_func_fixp (x_fixp[1], y_fixp[1], x_fixp[2], y_fixp[2], px_fixp, py_fixp); // not normalized
+	bar_fixp_row[1] = edge_func_fixp (x_fixp[2], y_fixp[2], x_fixp[0], y_fixp[0], px_fixp, py_fixp); // not normalized
+	bar_fixp_row[2] = edge_func_fixp (x_fixp[0], y_fixp[0], x_fixp[1], y_fixp[1], px_fixp, py_fixp); // not normalized
+	
+	fix16_t bar_row_incr[3];
+	bar_row_incr[0] = x_fixp[2] - x_fixp[1];
+	bar_row_incr[1] = x_fixp[0] - x_fixp[2];
+	bar_row_incr[2] = x_fixp[1] - x_fixp[0];
+	fix16_t bar_col_incr[3];
+    bar_col_incr[0] = y_fixp[1] - y_fixp[2];
+	bar_col_incr[1] = y_fixp[2] - y_fixp[0];
+	bar_col_incr[2] = y_fixp[0] - y_fixp[1];
+	
+	ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
+		
+		for (int i = 0; i < 3; i++) {
+			bar_fixp[i] = bar_fixp_row[i];
+		}
+		
 		for (p.x = min_x; p.x < max_x; p.x++) {
-			fix16_t bar_fixp[3];
-			fix16_t px_fixp = fix16_from_int (p.x);
-			fix16_t py_fixp = fix16_from_int (p.y);
-			bar_fixp[0] = edge_func_fixp (x_fixp[1], y_fixp[1], x_fixp[2], y_fixp[2], px_fixp, py_fixp); // not normalized
-			bar_fixp[1] = edge_func_fixp (x_fixp[2], y_fixp[2], x_fixp[0], y_fixp[0], px_fixp, py_fixp); // not normalized
-			bar_fixp[2] = edge_func_fixp (x_fixp[0], y_fixp[0], x_fixp[1], y_fixp[1], px_fixp, py_fixp); // not normalized
+			
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
@@ -385,7 +401,16 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 					}
 				}
 			}
+			
+			for (int i = 0; i < 3; i++) {
+				bar_fixp[i] += bar_col_incr[i];
+			}
+			
         }
+        
+        for (int i = 0; i < 3; i++) {
+			bar_fixp_row[i] += bar_row_incr[i];
+		}
     }
 }
 /*
