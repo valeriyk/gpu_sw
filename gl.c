@@ -254,15 +254,15 @@ void obj_init_model (Object *obj) {
 Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 	Varying vry_interp;
 	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
-		fix16_t vtx0_norm = vry[0].as_fix16_t[i];
-		fix16_t vtx1_norm = vry[1].as_fix16_t[i];
-		fix16_t vtx2_norm = vry[2].as_fix16_t[i];
+		fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
+		fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
+		fix16_t vtx2_norm = vry[2].data.as_fix16_t[i];
 		
 		fix16_t mpy0 = fix16_mul (vtx0_norm, bar->as_array[0]);
 		fix16_t mpy1 = fix16_mul (vtx1_norm, bar->as_array[1]);
 		fix16_t mpy2 = fix16_mul (vtx2_norm, bar->as_array[2]);
 		
-		vry_interp.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
+		vry_interp.data.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
 	}
 	return vry_interp;
 }
@@ -290,8 +290,8 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 	screenxy_t x_int[3];
 	screenxy_t y_int[3];
 	for (int i = 0; i < 3; i++) {
-		x_fixp[i] = varying[i].as_FixPt4[0].as_struct.x;
-		y_fixp[i] = varying[i].as_FixPt4[0].as_struct.y;
+		x_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.x;
+		y_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.y;
 		
 		//x_int[i] = fix16_to_int (x_fixp[i]);
 		//y_int[i] = fix16_to_int (y_fixp[i]);
@@ -338,7 +338,7 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
 				for (int i = 0; i < 3; i++) { // interpolate
-					mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].as_FixPt4[0].as_struct.z); 
+					mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.z); 
 					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
 					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
 				}
@@ -356,7 +356,7 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 					sum_of_bars = 0;
 					FixPt3 bar_clip;
 					for (int i = 0; i < 3; i++) {
-						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].as_FixPt4[0].as_struct.w); // W here actually contains 1/W
+						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.w); // W here actually contains 1/W
 						sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
 					}
 					
@@ -410,7 +410,7 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].as_FixPt2[0]));
+		Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].data.as_FixPt2[0]));
 		
 		x[i] = (screenxy_t) coords.as_array[0] * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) coords.as_array[1] * (1 << FIX_PT_PRECISION);
@@ -535,7 +535,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
 				
 				// First four floats of Varying contain XYZW of a vertex in clip space
-				clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].as_FixPt4[0]));
+				clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].data.as_FixPt4[0]));
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -567,7 +567,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						vtx_list[tri_num].varying[j].as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						vtx_list[tri_num].varying[j].data.as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
 					}		
 				}
 			}

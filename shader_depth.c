@@ -21,7 +21,7 @@ void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
 	
-	vry->as_FixPt4[0] = Float4_FixPt4_conv (&vtx4d);
+	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&vtx4d);
 }
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -53,14 +53,14 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc    = Float3_Float4_conv (&vtx3d, 1);
 	Float4 clip  = fmat4_Float4_mult (&(obj->mvp), &mc);
-	vry->as_FixPt4[0] = Float4_FixPt4_conv (&clip);
+	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&clip);
 	
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	
 	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
-	vry->as_FixPt4[1] = Float4_FixPt4_conv (&transformed);
+	vry->data.as_FixPt4[1] = Float4_FixPt4_conv (&transformed);
 	
 //printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
 //printf ("                      \tMIT*norm4d x=%f y=%f z=%f w=%f\n\n", vry->as_Float4[1].as_struct.x, vry->as_Float4[1].as_struct.y, vry->as_Float4[1].as_struct.z, vry->as_Float4[1].as_struct.w);
@@ -68,7 +68,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
 		Float2 text       = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		vry->as_FixPt2[4] = Float2_FixPt2_conv (&text);
+		vry->data.as_FixPt2[4] = Float2_FixPt2_conv (&text);
 	}
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -87,7 +87,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 		*/
 		
 		Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_vtx4d);
-		vry->as_FixPt4[3+i] = Float4_FixPt4_conv (&shadow_screen);
+		vry->data.as_FixPt4[3+i] = Float4_FixPt4_conv (&shadow_screen);
 	}	
 }
 
@@ -97,7 +97,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
 	}
 	
-	Float2 text = FixPt2_Float2_conv (&(vry->as_FixPt2[4]));
+	Float2 text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[4]));
 	
 	pixel_color_t pix;
 	if (obj->wfobj->texture != NULL) {
@@ -115,7 +115,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		pix = set_color (128, 128, 128, 0);
 	}
 	
-	Float4 norm4   = FixPt4_Float4_conv (&(vry->as_FixPt4[1]));
+	Float4 norm4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[1]));
 	Float3 normal  = Float4_Float3_vect_conv (&norm4);
 	
 	Float3_normalize (&normal);
@@ -191,7 +191,7 @@ int count_shadows (Varying *vry) {
 		
 		if (!LIGHTS[i].enabled) continue;
 		
-		Float4 screen4   = FixPt4_Float4_conv (&(vry->as_FixPt4[3+i]));
+		Float4 screen4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[3+i]));
 		screen = Float4_Float3_vect_conv (&screen4);
 		
 		int x        = (int)       screen.as_struct.x;
