@@ -175,7 +175,7 @@ ObjectNode* init_objects (void) {
     ObjectNode *head;
     ObjectNode *node;
     
-    int draw_head = 0;
+    int draw_head = 1;
     
     if (draw_head) {
 		node = calloc (1, sizeof (ObjectNode));
@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
-		eye_angle += 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
+		eye_angle += 2 * 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 				
 		
 		init_view            (&view, &eye, &center, &up);

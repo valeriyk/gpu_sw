@@ -285,18 +285,41 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	
-	fix16_t x_fixp[3];
-	fix16_t y_fixp[3];
+	fix16_t    x_fixp[3];
+	fix16_t    y_fixp[3];
+	screenxy_t x_int[3];
+	screenxy_t y_int[3];
 	for (int i = 0; i < 3; i++) {
 		x_fixp[i] = varying[i].as_FixPt4[0].as_struct.x;
 		y_fixp[i] = varying[i].as_FixPt4[0].as_struct.y;
+		
+		//x_int[i] = fix16_to_int (x_fixp[i]);
+		//y_int[i] = fix16_to_int (y_fixp[i]);
 	}
 	
+    // Compute tile bounding box.
+    screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
+    screenxy_t tile_max_x = tile_min_x + TILE_WIDTH; 
+    screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
+    screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
+    tile_min_x &= ~(TILE_WIDTH-1);
+    tile_min_y &= ~(TILE_HEIGHT-1);
+    
     // Compute triangle bounding box.
-    screenxy_t min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
-    screenxy_t max_x = min_x + TILE_WIDTH; 
-    screenxy_t min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
-    screenxy_t max_y = min_y + TILE_HEIGHT;
+    /*screenxy_t tri_min_x = max_of_two (              0, min_of_three (x_int[0], x_int[1], x_int[2]));
+    screenxy_t tri_max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x_int[0], x_int[1], x_int[2]));
+    screenxy_t tri_min_y = max_of_two (              0, min_of_three (y_int[0], y_int[1], y_int[2]));
+    screenxy_t tri_max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y_int[0], y_int[1], y_int[2]));
+    */
+    screenxy_t tri_min_x = fix16_to_int (min_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
+    screenxy_t tri_max_x = fix16_to_int (max_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
+    screenxy_t tri_min_y = fix16_to_int (min_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
+    screenxy_t tri_max_y = fix16_to_int (max_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
+    
+    screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
+    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x);
+    screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
+    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y);
      
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	

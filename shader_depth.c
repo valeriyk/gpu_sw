@@ -119,8 +119,8 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	Float3 normal  = Float4_Float3_vect_conv (&norm4);
 	
 	Float3_normalize (&normal);
-	float norm_len = sqrtf(normal.as_struct.x * normal.as_struct.x + normal.as_struct.y * normal.as_struct.y + normal.as_struct.z * normal.as_struct.z);
-	if ((norm_len > 1.01) || (norm_len < 0.99)) printf ("%f\t", norm_len);
+	//float norm_len = sqrtf(normal.as_struct.x * normal.as_struct.x + normal.as_struct.y * normal.as_struct.y + normal.as_struct.z * normal.as_struct.z);
+	//if ((norm_len > 1.01) || (norm_len < 0.99)) printf ("%f\t", norm_len);
 //printf ("pshader\tnormal from vtxsh x=%f y=%f z=%f\n", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
 	//lFloat3_normalize (&normal);
 //printf ("pshader\tnormalized normal x=%f y=%f z=%f\n\n", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
@@ -150,8 +150,8 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		}
 	}
 	
-	//float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
-	float shadow_total = 1.0f;
+	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
+	shadow_total = 1.0f;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
