@@ -294,13 +294,8 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	screenxy_t x_int[3];
 	screenxy_t y_int[3];
 	for (int i = 0; i < 3; i++) {
-		//x_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.x;
-		//y_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.y;
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
-		
-		// //x_int[i] = fix16_to_int (x_fixp[i]);
-		// //y_int[i] = fix16_to_int (y_fixp[i]);
 	}
 	
     // Compute tile bounding box.
@@ -315,11 +310,6 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	}
     
     // Compute triangle bounding box.
-    /*screenxy_t tri_min_x = max_of_two (              0, min_of_three (x_int[0], x_int[1], x_int[2]));
-    screenxy_t tri_max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x_int[0], x_int[1], x_int[2]));
-    screenxy_t tri_min_y = max_of_two (              0, min_of_three (y_int[0], y_int[1], y_int[2]));
-    screenxy_t tri_max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y_int[0], y_int[1], y_int[2]));
-    */
     screenxy_t tri_min_x = fix16_to_int (min_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
     screenxy_t tri_max_x = fix16_to_int (max_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
     screenxy_t tri_min_y = fix16_to_int (min_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
@@ -435,9 +425,7 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		//Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].data.as_FixPt2[0]));
 		Float4 coords = FixPt4_Float4_conv(&(tri_node->screen_coords[i]));
-		
 		x[i] = (screenxy_t) coords.as_struct.x * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) coords.as_struct.y * (1 << FIX_PT_PRECISION);
 	}
