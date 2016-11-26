@@ -65,9 +65,23 @@ typedef union VaryingFixPt {
 } VaryingFixPt;
 
 typedef struct Varying {
-	uint32_t num_of_words;
+	int32_t num_of_words;
 	VaryingFixPt data;
 } Varying;
+
+/*void varying_push1 (Varying *vry, fix16_t value) {
+	vry->data.as_fix16_t[vry->num_of_words] = value;
+	vry->num_of_words++;
+}
+
+fix16_t varying_pop1 (Varying *vry) {
+	if (vry->num_of_words < 0) {
+		return 0;
+	}
+	else {
+		return vry->data.as_fix16_t[vry->num_of_words--];
+	}
+}*/
 
 typedef struct Object {
 	WFobj *wfobj;

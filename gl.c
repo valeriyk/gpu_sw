@@ -253,7 +253,8 @@ void obj_init_model (Object *obj) {
 
 Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 	Varying vry_interp;
-	for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+	//for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
+	for (int i = 4; i < vry->num_of_words; i++) {
 		fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
 		fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
 		fix16_t vtx2_norm = vry[2].data.as_fix16_t[i];

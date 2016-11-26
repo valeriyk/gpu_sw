@@ -22,6 +22,7 @@ void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
 	
 	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&vtx4d);
+	vry->num_of_words = 4;
 }
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -54,6 +55,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float4 mc    = Float3_Float4_conv (&vtx3d, 1);
 	Float4 clip  = fmat4_Float4_mult (&(obj->mvp), &mc);
 	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&clip);
+	vry->num_of_words = 4;
 	
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
@@ -61,6 +63,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	
 	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
 	vry->data.as_FixPt4[1] = Float4_FixPt4_conv (&transformed);
+	vry->num_of_words += 4;
 	
 //printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
 //printf ("                      \tMIT*norm4d x=%f y=%f z=%f w=%f\n\n", vry->as_Float4[1].as_struct.x, vry->as_Float4[1].as_struct.y, vry->as_Float4[1].as_struct.z, vry->as_Float4[1].as_struct.w);
@@ -69,6 +72,9 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	if (obj->wfobj->texture != NULL) {
 		Float2 text       = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
 		vry->data.as_FixPt2[4] = Float2_FixPt2_conv (&text);
+		vry->data.as_fix16_t[10] = 0;
+		vry->data.as_fix16_t[11] = 0;
+		vry->num_of_words += 4;
 	}
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -88,6 +94,7 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 		
 		Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_vtx4d);
 		vry->data.as_FixPt4[3+i] = Float4_FixPt4_conv (&shadow_screen);
+		vry->num_of_words += 4;
 	}	
 }
 
