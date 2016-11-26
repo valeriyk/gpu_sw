@@ -254,7 +254,7 @@ void obj_init_model (Object *obj) {
 Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 	Varying vry_interp;
 	//for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
-	for (int i = 4; i < vry->num_of_words; i++) {
+	for (int i = 0; i < vry->num_of_words; i++) {
 		fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
 		fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
 		fix16_t vtx2_norm = vry[2].data.as_fix16_t[i];
@@ -281,8 +281,11 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
+void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
 {    
+	if (GL_DEBUG_0) {
+		printf("\tcall draw_triangle()\n");
+	}
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	
@@ -291,11 +294,13 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 	screenxy_t x_int[3];
 	screenxy_t y_int[3];
 	for (int i = 0; i < 3; i++) {
-		x_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.x;
-		y_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.y;
+		//x_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.x;
+		//y_fixp[i] = varying[i].data.as_FixPt4[0].as_struct.y;
+		x_fixp[i] = tri->screen_coords[i].as_struct.x;
+		y_fixp[i] = tri->screen_coords[i].as_struct.y;
 		
-		//x_int[i] = fix16_to_int (x_fixp[i]);
-		//y_int[i] = fix16_to_int (y_fixp[i]);
+		// //x_int[i] = fix16_to_int (x_fixp[i]);
+		// //y_int[i] = fix16_to_int (y_fixp[i]);
 	}
 	
     // Compute tile bounding box.
@@ -305,6 +310,9 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
     screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
     tile_min_x &= ~(TILE_WIDTH-1);
     tile_min_y &= ~(TILE_HEIGHT-1);
+    if (GL_DEBUG_1) {
+		printf("\t\ttile bounding box: x %d;%d\ty %d;%d\n", tile_min_x, tile_max_x, tile_min_y, tile_max_y);
+	}
     
     // Compute triangle bounding box.
     /*screenxy_t tri_min_x = max_of_two (              0, min_of_three (x_int[0], x_int[1], x_int[2]));
@@ -316,11 +324,19 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
     screenxy_t tri_max_x = fix16_to_int (max_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
     screenxy_t tri_min_y = fix16_to_int (min_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
     screenxy_t tri_max_y = fix16_to_int (max_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
+    if (GL_DEBUG_1) {
+		 printf("\t\ttriangle bounding box: x %d;%d\ty %d;%d\n", tri_min_x, tri_max_x, tri_min_y, tri_max_y);
+    }
     
     screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
     screenxy_t max_x = min_of_two (tile_max_x, tri_max_x);
     screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
     screenxy_t max_y = min_of_two (tile_max_y, tri_max_y);
+    
+    if (GL_DEBUG_1) {
+		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
+	}
+	
      
     ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
@@ -334,12 +350,12 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
-				
 				fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
 				for (int i = 0; i < 3; i++) { // interpolate
-					mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.z); 
+					//mpy_fixp[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.z); 
+					mpy_fixp[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.z); 
 					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
 					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
 				}
@@ -357,7 +373,8 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 					sum_of_bars = 0;
 					FixPt3 bar_clip;
 					for (int i = 0; i < 3; i++) {
-						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.w); // W here actually contains 1/W
+						//bar_clip.as_array[i] = fix16_mul (bar_fixp[i], varying[i].data.as_FixPt4[0].as_struct.w); // W here actually contains 1/W
+						bar_clip.as_array[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.w); // W here actually contains 1/W
 						sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
 					}
 					
@@ -367,9 +384,12 @@ void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader ps
 						}
 						
 						pixel_color_t color;
-						Varying vry_interp = interpolate_varying (varying, &bar_clip);
+						Varying vry_interp = interpolate_varying (tri->varying, &bar_clip);
+						if (GL_DEBUG_0) {
+							printf("\t\tcall pshader()\n");
+						}
 						
-						if (pshader (obj, &vry_interp, &color) && (fbuffer != NULL)) {
+						if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
 							fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
 						}
 					}
@@ -405,16 +425,21 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 
 
 void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
-
+	
+	if (GL_DEBUG_0) {
+		printf("\tcall tiler()\n");
+	}
+	
 	// fixed point coordinates with subpixel precision:
 	// forum.devmaster.net/t/advanced-rasterization/6145
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].data.as_FixPt2[0]));
+		//Float2 coords = FixPt2_Float2_conv(&(tri_node->varying[i].data.as_FixPt2[0]));
+		Float4 coords = FixPt4_Float4_conv(&(tri_node->screen_coords[i]));
 		
-		x[i] = (screenxy_t) coords.as_array[0] * (1 << FIX_PT_PRECISION);
-		y[i] = (screenxy_t) coords.as_array[1] * (1 << FIX_PT_PRECISION);
+		x[i] = (screenxy_t) coords.as_struct.x * (1 << FIX_PT_PRECISION);
+		y[i] = (screenxy_t) coords.as_struct.y * (1 << FIX_PT_PRECISION);
 	}
 	
     // Compute triangle bounding box.
@@ -422,7 +447,6 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
     screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
     screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
     screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-       
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
     
@@ -500,6 +524,10 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 //
 void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
+	if (GL_DEBUG_0) {
+		printf("call draw_frame()\n");
+	}
+			
 	TrianglePtrListNode *tile_idx_table [NUM_OF_TILES];
 	for (int i = 0; i < NUM_OF_TILES; i++) {
 		tile_idx_table[i] = NULL;
@@ -519,11 +547,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	
 	while (obj_list_node != NULL) {
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
-			
-			if (GL_DEBUG_0) {
-				printf("call obj_draw()\n");
-			}
-			
+						
 			Triangle clip;
 			Triangle ndc;
 			Triangle screen;
@@ -533,10 +557,11 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 			bool is_clipped = true; // sticky bit
 			for (size_t j = 0; j < 3; j++) {
 				
-				vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
+				FixPt4 clip_fixp = vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
 				
-				// First four floats of Varying contain XYZW of a vertex in clip space
-				clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].data.as_FixPt4[0]));
+				// // First four floats of Varying contain XYZW of a vertex in clip space
+				// clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].data.as_FixPt4[0]));
+				clip.vtx[j] = FixPt4_Float4_conv (&clip_fixp);
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -561,14 +586,17 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 						// because we have it for free here
 						screen.vtx[j].as_struct.w = reciprocal_w;
 
+						/*
 						if (GL_DEBUG_0) {
 							printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
 							printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
 						}
-					
-						// Replace clip coords with screen coords within the Varying struct
-						// before passing it on to draw_triangle()
-						vtx_list[tri_num].varying[j].data.as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						*/
+						
+						// // Replace clip coords with screen coords within the Varying struct
+						// // before passing it on to draw_triangle()
+						// vtx_list[tri_num].varying[j].data.as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						vtx_list[tri_num].screen_coords[j] = Float4_FixPt4_conv(&(screen.vtx[j]));
 					}		
 				}
 			}
@@ -587,7 +615,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		while (node != NULL) {
 			TriangleVtxListNode *tri = node->tri;
 			//printf ("draw triangle, tile %d: ", i);
-			draw_triangle (tri->obj, tri->varying, i, pshader, zbuffer, fbuffer);	
+			draw_triangle (tri, i, pshader, zbuffer, fbuffer);	
 			node = node->next;
 		}		
 	}

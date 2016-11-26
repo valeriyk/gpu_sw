@@ -106,9 +106,9 @@ typedef struct ObjectNode {
 } TriangleVtx;
 */
 typedef struct TriangleVtxListNode {
+	FixPt4  screen_coords[3];
 	Varying varying[3];
 	Object  *obj;
-	//TriangleVtx data;
 	struct TriangleVtxListNode *next;
 } TriangleVtxListNode;
 
@@ -134,7 +134,7 @@ extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
 
-typedef void (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
+typedef FixPt4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
 typedef bool (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
 
 
@@ -168,7 +168,7 @@ void init_viewport   (int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (Object *obj, Varying *varying, int tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 

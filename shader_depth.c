@@ -10,7 +10,7 @@
 
 int count_shadows (Varying *vry);
 
-void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+FixPt4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -20,9 +20,7 @@ void depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
-	
-	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&vtx4d);
-	vry->num_of_words = 4;
+	return Float4_FixPt4_conv (&vtx4d);
 }
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -31,7 +29,7 @@ bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+FixPt4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	if (DEPTH_VSHADER2_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -40,30 +38,26 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	// Layout of 32 varying words:
 	//     
 	//     0    1    2    3
-	// 0   x    y    z    w   - coords of the vertex
-	// 1   xn   yn   zn   wn  - coords of the normal
-	// 2   u    v             - texture coords
-	// 3   xs0  ys0  zs0  ws0 - coords of the shadow 0
-	// 4   xs1  ys1  zs1  ws1 - coords of the shadow 1
-	// 5   xs2  ys2  zs2  ws2 - coords of the shadow 2
-	// 6   xs3  ys3  zs3  ws3 - coords of the shadow 3
-	// 7   -    -    -    -   - not used 
-	
+	// 0   xn   yn   zn   wn  - coords of the normal
+	// 1   u    v             - texture coords
+	// 2   xs0  ys0  zs0  ws0 - coords of the shadow 0
+	// 3   xs1  ys1  zs1  ws1 - coords of the shadow 1
+	// 4   xs2  ys2  zs2  ws2 - coords of the shadow 2
+	// 5   xs3  ys3  zs3  ws3 - coords of the shadow 3
+	// 6   -    -    -    -   - not used 
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc    = Float3_Float4_conv (&vtx3d, 1);
-	Float4 clip  = fmat4_Float4_mult (&(obj->mvp), &mc);
-	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&clip);
-	vry->num_of_words = 4;
+	Float4 clip  = fmat4_Float4_mult (&(obj->mvp), &mc); // this is the return value
 	
 	// transform the normal vector to the vertex
 	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	
 	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
-	vry->data.as_FixPt4[1] = Float4_FixPt4_conv (&transformed);
-	vry->num_of_words += 4;
+	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&transformed);
+	vry->num_of_words = 4;
 	
 //printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
 //printf ("                      \tMIT*norm4d x=%f y=%f z=%f w=%f\n\n", vry->as_Float4[1].as_struct.x, vry->as_Float4[1].as_struct.y, vry->as_Float4[1].as_struct.z, vry->as_Float4[1].as_struct.w);
@@ -71,9 +65,9 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
 		Float2 text       = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		vry->data.as_FixPt2[4] = Float2_FixPt2_conv (&text);
-		vry->data.as_fix16_t[10] = 0;
-		vry->data.as_fix16_t[11] = 0;
+		vry->data.as_FixPt2[2] = Float2_FixPt2_conv (&text);
+		vry->data.as_fix16_t[6] = 0;
+		vry->data.as_fix16_t[7] = 0;
 		vry->num_of_words += 4;
 	}
 	
@@ -93,9 +87,11 @@ void depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying 
 		*/
 		
 		Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_vtx4d);
-		vry->data.as_FixPt4[3+i] = Float4_FixPt4_conv (&shadow_screen);
+		vry->data.as_FixPt4[2+i] = Float4_FixPt4_conv (&shadow_screen);
 		vry->num_of_words += 4;
-	}	
+	}
+		
+	return Float4_FixPt4_conv (&clip);		
 }
 
 bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -104,7 +100,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
 	}
 	
-	Float2 text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[4]));
+	Float2 text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[2]));
 	
 	pixel_color_t pix;
 	if (obj->wfobj->texture != NULL) {
@@ -122,15 +118,11 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		pix = set_color (128, 128, 128, 0);
 	}
 	
-	Float4 norm4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[1]));
+	Float4 norm4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[0]));
 	Float3 normal  = Float4_Float3_vect_conv (&norm4);
 	
 	Float3_normalize (&normal);
-	//float norm_len = sqrtf(normal.as_struct.x * normal.as_struct.x + normal.as_struct.y * normal.as_struct.y + normal.as_struct.z * normal.as_struct.z);
-	//if ((norm_len > 1.01) || (norm_len < 0.99)) printf ("%f\t", norm_len);
-//printf ("pshader\tnormal from vtxsh x=%f y=%f z=%f\n", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
-	//lFloat3_normalize (&normal);
-//printf ("pshader\tnormalized normal x=%f y=%f z=%f\n\n", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
+	
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		diff_intensity[i] = (LIGHTS[i].enabled) ? -Float3_Float3_smult (&normal, &(LIGHTS[i].eye)) : 0;
@@ -145,16 +137,6 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		
 		int spec_factor = wfobj_get_specularity_from_map (obj->wfobj, text.as_struct.u, text.as_struct.v);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
-		
-		if (DEPTH_PSHADER2_DEBUG) {
-			if (spec_intensity >= 0.5f) {
-				printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
-				printf ("nl=%f ", nl);
-				printf ("nnl2=(%f;%f;%f) ", nnl2.as_struct.x, nnl2.as_struct.y, nnl2.as_struct.z);
-				printf ("r=(%f;%f;%f) ", r.as_struct.x, r.as_struct.y, r.as_struct.z);
-				printf ("spec_f=%d spec_i=%f\n", spec_factor, spec_intensity);
-			}
-		}
 	}
 	
 	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
@@ -198,7 +180,7 @@ int count_shadows (Varying *vry) {
 		
 		if (!LIGHTS[i].enabled) continue;
 		
-		Float4 screen4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[3+i]));
+		Float4 screen4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[2+i]));
 		screen = Float4_Float3_vect_conv (&screen4);
 		
 		int x        = (int)       screen.as_struct.x;

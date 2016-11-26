@@ -334,10 +334,8 @@ int main(int argc, char** argv) {
     float eye_angle = 0; // rad
     float eye_distance = 15;
     
-    printf ("Frame");
     //do {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
-		printf (" %d", m);
 		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
 		
 		// clean up active framebuffer, zbuffer and all shadowbuffers
