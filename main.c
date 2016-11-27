@@ -136,8 +136,8 @@ ObjectNode* init_objects (void) {
 	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-    //WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
-    WFobj  *african_head = wfobj_new ("obj/african_head.obj", NULL, NULL, NULL);
+    WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
+    //WFobj  *african_head = wfobj_new ("obj/african_head.obj", NULL, NULL, NULL);
 	/*
 	Bitmap *diablo_diff = new_bitmap_from_tga ("obj/diablo/diablo3_pose_diffuse.tga");
 	Bitmap *diablo_nmap = new_bitmap_from_tga ("obj/diablo/diablo3_pose_nm.tga");
@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
-		eye_angle += 2 * 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
+		eye_angle += ROTATION_INCR;
 				
 		
 		init_view            (&view, &eye, &center, &up);
