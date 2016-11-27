@@ -53,6 +53,7 @@ fix16_t edge_func_fixp (fix16_t ax, fix16_t ay, fix16_t bx, fix16_t by, fix16_t 
 
     fix16_t res = fix16_sub (fix16_mul (bx_ax, cy_ay), fix16_mul (by_ay,cx_ax));
     
+    // left-top fill rule:
     bool downwards  = (by_ay  < 0);
     bool horizontal = (by_ay == 0);
     bool leftwards  = (bx_ax  < 0);
@@ -340,12 +341,6 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
     if (GL_DEBUG_1) {
 		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
 	}
-
-/*    screenxy_t min_x = tile_min_x;
-    screenxy_t max_x = tile_max_x;
-    screenxy_t min_y = tile_min_y;
-    screenxy_t max_y = tile_max_y;
-*/
 	
     fix16_t bar_fixp_row[3];
     fix16_t bar_fixp[3];
@@ -374,9 +369,9 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		for (p.x = min_x; p.x < max_x; p.x++) {
 			
 			// If p is on or inside all edges, render pixel.
-			//if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
-			//if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) >= 0) { // TBD fix the dumb fill rule here
-			if ((bar_fixp[0] > 0) && (bar_fixp[1] > 0) && (bar_fixp[2] > 0)) { // TBD fix the dumb fill rule here
+			if ((bar_fixp[0] > 0) && (bar_fixp[1] > 0) && (bar_fixp[2] > 0)) { // left-top fill rule
+				
+				// Interpolate and normalize Z
 				fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
@@ -385,18 +380,15 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
 					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
 				}
-				if (sum_of_bars != 0) {
-					p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
-					
-					// this doesn't work:
-					//uint32_t tmpz = (bar[0] * z[0] + bar[1] * z[1] + bar[2] * z[2]) / (bar[0] + bar[1] + bar[2]);
-					//p.z = (screenz_t) tmpz;
-					// but this works too:
-					// p.z = (screenz_t) 1.0f / (bar_clip.as_array[0]/t->vtx[0].as_struct.z + bar_clip.as_array[1]/t->vtx[1].as_struct.z + bar_clip.as_array[2]/t->vtx[2].as_struct.z);
-								
-					size_t pix_num = p.x + p.y * SCREEN_WIDTH;
-					if (p.z > zbuffer[pix_num]) {
-						zbuffer[pix_num] = p.z;
+				
+				p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
+				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
+				if (p.z > zbuffer[pix_num]) {
+					zbuffer[pix_num] = p.z;
+
+					// Interpolate and normalize Z with perspective correction
+					// for interpolation of Varying values:
+					if (tri->varying[0].num_of_words > 0) {
 						sum_of_bars = 0;
 						FixPt3 bar_clip;
 						for (int i = 0; i < 3; i++) {
@@ -409,12 +401,12 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 								bar_clip.as_array[i] = fix16_div (bar_clip.as_array[i], sum_of_bars);
 							}
 							
-							pixel_color_t color;
 							Varying vry_interp = interpolate_varying (tri->varying, &bar_clip);
 							if (GL_DEBUG_0) {
 								printf("\t\tcall pshader()\n");
 							}
 							
+							pixel_color_t color;
 							if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
 								fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
 							}
