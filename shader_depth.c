@@ -139,8 +139,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
 	
-	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
-	shadow_total = 1.0f;
+	float shadow_total = 1.0f;// - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {

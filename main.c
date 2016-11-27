@@ -136,7 +136,8 @@ ObjectNode* init_objects (void) {
 	Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
     Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
     Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-    WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
+    //WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
+    WFobj  *african_head = wfobj_new ("obj/african_head.obj", NULL, NULL, NULL);
 	/*
 	Bitmap *diablo_diff = new_bitmap_from_tga ("obj/diablo/diablo3_pose_diffuse.tga");
 	Bitmap *diablo_nmap = new_bitmap_from_tga ("obj/diablo/diablo3_pose_nm.tga");
@@ -331,7 +332,7 @@ int main(int argc, char** argv) {
     float eye_x = 0;
     float eye_y = 1;
     float eye_z = 0;
-    float eye_angle = 0; // rad
+    float eye_angle = ROTATION_INIT; // rad
     float eye_distance = 15;
     
     //do {
@@ -341,7 +342,7 @@ int main(int argc, char** argv) {
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			active_fbuffer[i].r = 0;
-			active_fbuffer[i].g = 0;
+			active_fbuffer[i].g = 255;
 			active_fbuffer[i].b = 0;
 			zbuffer[i] = fix16_minimum;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {

@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define FIX_PT_PRECISION	3
+#define FIX_PT_PRECISION	4
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
 #define TILE_WIDTH  32

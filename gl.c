@@ -34,7 +34,15 @@ int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, sc
     int32_t cy_ay = (int32_t) cy - (int32_t) ay;
     int32_t by_ay = (int32_t) by - (int32_t) ay;
     int32_t cx_ax = (int32_t) cx - (int32_t) ax;
-    return bx_ax * cy_ay - by_ay * cx_ax;
+    
+    int32_t res = bx_ax * cy_ay - by_ay * cx_ax;
+    
+    bool downwards  = (by_ay  < 0);
+    bool horizontal = (by_ay == 0);
+    bool leftwards  = (bx_ax  < 0);
+    bool topleft    = downwards || (horizontal && leftwards);
+    
+    return topleft ? ++res : res;
 }
 	
 fix16_t edge_func_fixp (fix16_t ax, fix16_t ay, fix16_t bx, fix16_t by, fix16_t cx, fix16_t cy) {
@@ -43,9 +51,15 @@ fix16_t edge_func_fixp (fix16_t ax, fix16_t ay, fix16_t bx, fix16_t by, fix16_t 
     fix16_t by_ay = fix16_sub (by, ay); //subtract
     fix16_t cx_ax = fix16_sub (cx, ax); //subtract
 
-    return fix16_sub (fix16_mul (bx_ax, cy_ay), fix16_mul (by_ay,cx_ax));
-}
-	
+    fix16_t res = fix16_sub (fix16_mul (bx_ax, cy_ay), fix16_mul (by_ay,cx_ax));
+    
+    bool downwards  = (by_ay  < 0);
+    bool horizontal = (by_ay == 0);
+    bool leftwards  = (bx_ax  < 0);
+    bool topleft    = downwards || (horizontal && leftwards);
+    
+    return topleft ? ++res : res;
+}	
 
 static inline int32_t min_of_two (int32_t a, int32_t b) {
 	return (a < b) ? a : b;
@@ -253,7 +267,6 @@ void obj_init_model (Object *obj) {
 
 Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 	Varying vry_interp;
-	//for (int i = 4; i < NUM_OF_VARYING_WORDS; i++) {
 	for (int i = 0; i < vry->num_of_words; i++) {
 		fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
 		fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
@@ -268,7 +281,6 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 	return vry_interp;
 }
 
-
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
 // 1.a. dumb method: just compute all the values for each pixel
@@ -281,8 +293,7 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer)
-{    
+void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {    
 	if (GL_DEBUG_0) {
 		printf("\tcall draw_triangle()\n");
 	}
@@ -303,12 +314,15 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
     screenxy_t tile_max_x = tile_min_x + TILE_WIDTH; 
     screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
     screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
-    tile_min_x &= ~(TILE_WIDTH-1);
-    tile_min_y &= ~(TILE_HEIGHT-1);
+    
+    //tile_min_x &= ~(TILE_WIDTH-1);
+    //tile_min_y &= ~(TILE_HEIGHT-1);
+    
+    
     if (GL_DEBUG_1) {
 		printf("\t\ttile bounding box: x %d;%d\ty %d;%d\n", tile_min_x, tile_max_x, tile_min_y, tile_max_y);
 	}
-    
+   
     // Compute triangle bounding box.
     screenxy_t tri_min_x = fix16_to_int (min_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
     screenxy_t tri_max_x = fix16_to_int (max_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
@@ -318,14 +332,20 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		 printf("\t\ttriangle bounding box: x %d;%d\ty %d;%d\n", tri_min_x, tri_max_x, tri_min_y, tri_max_y);
     }
     
-    screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
-    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x);
-    screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
-    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y);
-    
+    screenxy_t min_x = max_of_two (tile_min_x, tri_min_x) - 10;
+    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + 10;
+    screenxy_t min_y = max_of_two (tile_min_y, tri_min_y) - 10;
+    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + 10;
+ 
     if (GL_DEBUG_1) {
 		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
 	}
+
+/*    screenxy_t min_x = tile_min_x;
+    screenxy_t max_x = tile_max_x;
+    screenxy_t min_y = tile_min_y;
+    screenxy_t max_y = tile_max_y;
+*/
 	
     fix16_t bar_fixp_row[3];
     fix16_t bar_fixp[3];
@@ -355,7 +375,8 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 			
 			// If p is on or inside all edges, render pixel.
 			//if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) > 0) {
-			if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) >= 0) { // TBD fix the dumb fill rule here
+			//if ((bar_fixp[0] | bar_fixp[1] | bar_fixp[2]) >= 0) { // TBD fix the dumb fill rule here
+			if ((bar_fixp[0] > 0) && (bar_fixp[1] > 0) && (bar_fixp[2] > 0)) { // TBD fix the dumb fill rule here
 				fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
@@ -413,6 +434,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		}
     }
 }
+
 /*
 void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
     bool steep = false;
@@ -451,15 +473,18 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
 		Float4 coords = FixPt4_Float4_conv(&(tri_node->screen_coords[i]));
+		//x[i] = (screenxy_t) fix16_to_int (coords.as_struct.x);// * (1 << FIX_PT_PRECISION);
+		//y[i] = (screenxy_t) fix16_to_int (coords.as_struct.y);// * (1 << FIX_PT_PRECISION);
 		x[i] = (screenxy_t) coords.as_struct.x * (1 << FIX_PT_PRECISION);
 		y[i] = (screenxy_t) coords.as_struct.y * (1 << FIX_PT_PRECISION);
 	}
 	
     // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (              0, min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION);
-    screenxy_t min_y = max_of_two (              0, min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION);
+    screenxy_t min_x = max_of_two (              0, (min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) - 10);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + 10);
+    screenxy_t min_y = max_of_two (              0, (min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) - 10);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + 10);
+    
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
     
@@ -475,22 +500,22 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 			
 			//printf ("\tTile %d: x=%d y=%d\n", ((p.y/TILE_HEIGHT)*(SCREEN_WIDTH/TILE_WIDTH)+(p.x/TILE_WIDTH)), p.x/TILE_WIDTH, p.y/TILE_HEIGHT);
 			
-			bool edge0_corner0_outside = (edge_func(x[1], y[1], x[2], y[2], x0, y0) < 0); // not normalized
-			bool edge0_corner1_outside = (edge_func(x[1], y[1], x[2], y[2], x0, y1) < 0); // not normalized
-			bool edge0_corner2_outside = (edge_func(x[1], y[1], x[2], y[2], x1, y0) < 0); // not normalized
-			bool edge0_corner3_outside = (edge_func(x[1], y[1], x[2], y[2], x1, y1) < 0); // not normalized
+			bool edge0_corner0_outside = (edge_func (x[1], y[1], x[2], y[2], x0, y0) < 0); // not normalized
+			bool edge0_corner1_outside = (edge_func (x[1], y[1], x[2], y[2], x0, y1) < 0); // not normalized
+			bool edge0_corner2_outside = (edge_func (x[1], y[1], x[2], y[2], x1, y0) < 0); // not normalized
+			bool edge0_corner3_outside = (edge_func (x[1], y[1], x[2], y[2], x1, y1) < 0); // not normalized
 			if (edge0_corner0_outside && edge0_corner1_outside && edge0_corner2_outside && edge0_corner3_outside) continue;
 			
-			bool edge1_corner0_outside = (edge_func(x[2], y[2], x[0], y[0], x0, y0) < 0); // not normalized
-			bool edge1_corner1_outside = (edge_func(x[2], y[2], x[0], y[0], x0, y1) < 0); // not normalized
-			bool edge1_corner2_outside = (edge_func(x[2], y[2], x[0], y[0], x1, y0) < 0); // not normalized
-			bool edge1_corner3_outside = (edge_func(x[2], y[2], x[0], y[0], x1, y1) < 0); // not normalized
+			bool edge1_corner0_outside = (edge_func (x[2], y[2], x[0], y[0], x0, y0) < 0); // not normalized
+			bool edge1_corner1_outside = (edge_func (x[2], y[2], x[0], y[0], x0, y1) < 0); // not normalized
+			bool edge1_corner2_outside = (edge_func (x[2], y[2], x[0], y[0], x1, y0) < 0); // not normalized
+			bool edge1_corner3_outside = (edge_func (x[2], y[2], x[0], y[0], x1, y1) < 0); // not normalized
 			if (edge1_corner0_outside && edge1_corner1_outside && edge1_corner2_outside && edge1_corner3_outside) continue;
 			
-			bool edge2_corner0_outside = (edge_func(x[0], y[0], x[1], y[1], x0, y0) < 0); // not normalized
-			bool edge2_corner1_outside = (edge_func(x[0], y[0], x[1], y[1], x0, y1) < 0); // not normalized
-			bool edge2_corner2_outside = (edge_func(x[0], y[0], x[1], y[1], x1, y0) < 0); // not normalized
-			bool edge2_corner3_outside = (edge_func(x[0], y[0], x[1], y[1], x1, y1) < 0); // not normalized
+			bool edge2_corner0_outside = (edge_func (x[0], y[0], x[1], y[1], x0, y0) < 0); // not normalized
+			bool edge2_corner1_outside = (edge_func (x[0], y[0], x[1], y[1], x0, y1) < 0); // not normalized
+			bool edge2_corner2_outside = (edge_func (x[0], y[0], x[1], y[1], x1, y0) < 0); // not normalized
+			bool edge2_corner3_outside = (edge_func (x[0], y[0], x[1], y[1], x1, y1) < 0); // not normalized
 			if (edge2_corner0_outside && edge2_corner1_outside && edge2_corner2_outside && edge2_corner3_outside) continue;
 			
 			size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
@@ -537,19 +562,22 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 //
 void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
-	if (GL_DEBUG_0) {
+	if (GL_DEBUG_0)
+	{
 		printf("call draw_frame()\n");
 	}
 			
 	TrianglePtrListNode *tile_idx_table [NUM_OF_TILES];
-	for (int i = 0; i < NUM_OF_TILES; i++) {
+	for (int i = 0; i < NUM_OF_TILES; i++)
+	{
 		tile_idx_table[i] = NULL;
 	}
 			
 	ObjectNode          *obj_list_node = obj_list_head;
 		
 	int num_of_faces = 0;
-	while (obj_list_node != NULL) {
+	while (obj_list_node != NULL)
+	{
 		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
 		obj_list_node = obj_list_node->next;
 	}
