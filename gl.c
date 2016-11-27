@@ -326,6 +326,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	fix16_t    y_fixp[3];
 	screenxy_t x_int[3];
 	screenxy_t y_int[3];
+	
 	for (int i = 0; i < 3; i++) {
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
@@ -355,9 +356,9 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
     }
     
     screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
-    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + 10;
+    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + 1;
     screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
-    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + 10;
+    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + 1;
  
     if (GL_DEBUG_1) {
 		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
@@ -575,15 +576,17 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		tile_idx_table[i] = NULL;
 	}
 			
-	ObjectNode          *obj_list_node = obj_list_head;
-		
+	ObjectNode *obj_list_node;
+	
+	obj_list_node = obj_list_head;		
 	int num_of_faces = 0;
 	while (obj_list_node != NULL)
 	{
 		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
 		obj_list_node = obj_list_node->next;
 	}
-	TriangleVtxListNode *vtx_list = calloc (num_of_faces, sizeof (TriangleVtxListNode));;
+	TriangleVtxListNode *vtx_list = calloc (num_of_faces, sizeof (TriangleVtxListNode));
+	
 	obj_list_node = obj_list_head;
 	
 	int tri_num = 0;
@@ -657,7 +660,6 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		TrianglePtrListNode *node = tile_idx_table[i];
 		while (node != NULL) {
 			TriangleVtxListNode *tri = node->tri;
-			//printf ("draw triangle, tile %d: ", i);
 			draw_triangle (tri, i, pshader, zbuffer, fbuffer);	
 			node = node->next;
 		}		

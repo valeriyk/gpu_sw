@@ -177,7 +177,7 @@ ObjectNode* init_objects (void) {
     ObjectNode *node;
     
     int draw_planes = 0;
-    int draw_head = 0;
+    int draw_head = 1;
     int draw_second_head = 1;
     int draw_all_cubes = 1;
     
@@ -187,7 +187,7 @@ ObjectNode* init_objects (void) {
 		head = node;
 		node->obj = obj_new (my_floor);
 		node->next = NULL;
-		/*obj_set_rotation    (node->obj, 45.f, 0.f, 0.f);
+		obj_set_rotation    (node->obj, 45.f, 0.f, 0.f);
 		obj_set_translation (node->obj, 0.f, 2.f, -4.6f);
 		obj_set_scale       (node->obj, 5, 5, 5);
 		obj_init_model      (node->obj);
@@ -195,7 +195,7 @@ ObjectNode* init_objects (void) {
 		node->next = calloc (1, sizeof (ObjectNode));
 		node       = node->next;
 		node->obj  = obj_new (my_floor);
-		node->next = NULL;*/
+		node->next = NULL;
 		obj_set_scale       (node->obj, 5, 5, 5);
 		obj_set_rotation    (node->obj, 90, 0, 0);
 		obj_set_translation (node->obj, 0.0f, 0.f, -6.f);
@@ -207,7 +207,7 @@ ObjectNode* init_objects (void) {
 		head = node;
 		node->obj = obj_new (african_head);
 		node->next = NULL;
-		obj_set_scale       (node->obj, 5, 5, 5);
+		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
 		obj_set_translation (node->obj, -1.0f, 0.f, 0.f);
 		obj_init_model      (node->obj);
@@ -218,8 +218,8 @@ ObjectNode* init_objects (void) {
 			node->obj  = obj_new (african_head);
 			node->next = NULL;
 			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-			obj_set_translation (node->obj, 1.f, 0.f, -4.0f);
-			obj_set_scale       (node->obj, 5, 5, 5);
+			obj_set_translation (node->obj, 1.f, 0.f, -10.0f);
+			obj_set_scale       (node->obj, 7, 7, 7);
 			obj_init_model      (node->obj);
 		}
 	}
@@ -403,14 +403,14 @@ int main(int argc, char** argv) {
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
 		eye_angle += ROTATION_INCR;
 		
-		/*ObjectNode *scene_obj = obj_list_head;
+		ObjectNode *scene_obj = obj_list_head;
 		while (scene_obj != NULL) {	
 			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
 			obj_init_model   (scene_obj->obj);			
 			scene_obj = scene_obj->next;
 		}
-		obj_angle += 270 / NUM_OF_FRAMES;
-		*/
+		obj_angle += 360 / NUM_OF_FRAMES;
+		
 		
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
