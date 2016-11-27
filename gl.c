@@ -266,18 +266,37 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-Varying interpolate_varying (Varying *vry, FixPt3 *bar) {
+Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
+
 	Varying vry_interp;
-	for (int i = 0; i < vry->num_of_words; i++) {
-		fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
-		fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
-		fix16_t vtx2_norm = vry[2].data.as_fix16_t[i];
+	
+	vry_interp.num_of_words = vry[0].num_of_words;
+
+	if (vry_interp.num_of_words > 0) {
+		// Interpolate Z with perspective correction
+		fix16_t sum_of_bars = 0;
+		FixPt3 bar_clip;
+		for (int i = 0; i < 3; i++) {
+			bar_clip.as_array[i] = fix16_mul (bar->as_array[i], one_over_w->as_array[i]); // multiply by 1/W instead of dividing by W
+			sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
+		}
 		
-		fix16_t mpy0 = fix16_mul (vtx0_norm, bar->as_array[0]);
-		fix16_t mpy1 = fix16_mul (vtx1_norm, bar->as_array[1]);
-		fix16_t mpy2 = fix16_mul (vtx2_norm, bar->as_array[2]);
+		// Normalize Z
+		for (int i = 0; i < 3; i++) {
+			bar_clip.as_array[i] = (sum_of_bars == 0) ? 0 : fix16_div (bar_clip.as_array[i], sum_of_bars);
+		}
 		
-		vry_interp.data.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
+		for (int i = 0; i < vry_interp.num_of_words; i++) {
+			fix16_t vtx0_norm = vry[0].data.as_fix16_t[i];
+			fix16_t vtx1_norm = vry[1].data.as_fix16_t[i];
+			fix16_t vtx2_norm = vry[2].data.as_fix16_t[i];
+			
+			fix16_t mpy0 = fix16_mul (vtx0_norm, bar_clip.as_array[0]);
+			fix16_t mpy1 = fix16_mul (vtx1_norm, bar_clip.as_array[1]);
+			fix16_t mpy2 = fix16_mul (vtx2_norm, bar_clip.as_array[2]);
+			
+			vry_interp.data.as_fix16_t[i] = fix16_add (mpy0, fix16_add (mpy1, mpy2));
+		}
 	}
 	return vry_interp;
 }
@@ -343,7 +362,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	}
 	
     fix16_t bar_fixp_row[3];
-    fix16_t bar_fixp[3];
+    FixPt3 bar_fixp;
 	fix16_t px_fixp = fix16_from_int (min_x);
 	fix16_t py_fixp = fix16_from_int (min_y);
 	bar_fixp_row[0] = edge_func_fixp (x_fixp[1], y_fixp[1], x_fixp[2], y_fixp[2], px_fixp, py_fixp); // not normalized
@@ -363,22 +382,22 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		
 		for (int i = 0; i < 3; i++) {
-			bar_fixp[i] = bar_fixp_row[i];
+			bar_fixp.as_array[i] = bar_fixp_row[i];
 		}
 		
 		for (p.x = min_x; p.x < max_x; p.x++) {
 			
 			// If p is on or inside all edges, render pixel.
-			if ((bar_fixp[0] > 0) && (bar_fixp[1] > 0) && (bar_fixp[2] > 0)) { // left-top fill rule
+			if ((bar_fixp.as_array[0] > 0) && (bar_fixp.as_array[1] > 0) && (bar_fixp.as_array[2] > 0)) { // left-top fill rule
 				
 				// Interpolate and normalize Z
 				fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
 				for (int i = 0; i < 3; i++) { // interpolate
-					mpy_fixp[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.z); 
+					mpy_fixp[i] = fix16_mul (bar_fixp.as_array[i], tri->screen_coords[i].as_struct.z); 
 					acc_fixp    = fix16_add (acc_fixp, mpy_fixp[i]);
-					sum_of_bars = fix16_add (sum_of_bars, bar_fixp[i]);
+					sum_of_bars = fix16_add (sum_of_bars, bar_fixp.as_array[i]);
 				}
 				
 				p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
@@ -386,37 +405,25 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 				if (p.z > zbuffer[pix_num]) {
 					zbuffer[pix_num] = p.z;
 
-					// Interpolate and normalize Z with perspective correction
-					// for interpolation of Varying values:
-					if (tri->varying[0].num_of_words > 0) {
-						sum_of_bars = 0;
-						FixPt3 bar_clip;
-						for (int i = 0; i < 3; i++) {
-							bar_clip.as_array[i] = fix16_mul (bar_fixp[i], tri->screen_coords[i].as_struct.w); // W here actually contains 1/W
-							sum_of_bars = fix16_add (sum_of_bars, bar_clip.as_array[i]);
-						}
-						
-						if (sum_of_bars != 0) {					
-							for (int i = 0; i < 3; i++) {
-								bar_clip.as_array[i] = fix16_div (bar_clip.as_array[i], sum_of_bars);
-							}
-							
-							Varying vry_interp = interpolate_varying (tri->varying, &bar_clip);
-							if (GL_DEBUG_0) {
-								printf("\t\tcall pshader()\n");
-							}
-							
-							pixel_color_t color;
-							if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
-								fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
-							}
-						}
+					// Interpolation of Varying values:
+					FixPt3 one_over_w;
+					for (int i = 0; i < 3; i++) {
+						one_over_w.as_array[i] = tri->screen_coords[i].as_struct.w;
+					}
+					Varying vry_interp = interpolate_varying (tri->varying, &bar_fixp, &one_over_w);
+					if (GL_DEBUG_0) {
+						printf("\t\tcall pshader()\n");
+					}
+					
+					pixel_color_t color;
+					if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
+						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
 					}
 				}
 			}
 			
 			for (int j = 0; j < 3; j++) {
-				bar_fixp[j] = fix16_add (bar_fixp[j], bar_col_incr[j]);
+				bar_fixp.as_array[j] = fix16_add (bar_fixp.as_array[j], bar_col_incr[j]);
 			}
 			
         }
