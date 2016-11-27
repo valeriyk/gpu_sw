@@ -101,13 +101,15 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
 	fmat4_set (&VIEWPORT, 2, 2, d / 2.0f);
 	fmat4_set (&VIEWPORT, 2, 3, 0);
+	//fmat4_set (&VIEWPORT, 2, 2, d / 4.0f);
+	//fmat4_set (&VIEWPORT, 2, 3, d / 4.0f);
 	//print_fmat4 (&VIEWPORT, "viewport matrix");
 }
 
 void set_screen_size (screenxy_t width, screenxy_t height) {
 	SCREEN_WIDTH  = width;
 	SCREEN_HEIGHT = height;
-	SCREEN_DEPTH = (screenz_t) ~0;
+	SCREEN_DEPTH  = (screenz_t) ~0; // all ones
 	
 	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
 }
@@ -121,7 +123,7 @@ screenxy_t get_screen_height (void) {
 }
 
 screenz_t get_screen_depth (void) {
-	return SCREEN_DEPTH;
+	return SCREEN_DEPTH >> 16; // return integer part of Q16.16
 }
 
 
@@ -402,7 +404,8 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 				
 				p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
-				if (p.z > zbuffer[pix_num]) {
+				//if (p.z > zbuffer[pix_num]) {
+				if (fix16_ssub(p.z, zbuffer[pix_num]) > 0) {
 					zbuffer[pix_num] = p.z;
 
 					// Interpolation of Varying values:
@@ -411,10 +414,10 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 						one_over_w.as_array[i] = tri->screen_coords[i].as_struct.w;
 					}
 					Varying vry_interp = interpolate_varying (tri->varying, &bar_fixp, &one_over_w);
+					
 					if (GL_DEBUG_0) {
 						printf("\t\tcall pshader()\n");
 					}
-					
 					pixel_color_t color;
 					if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
@@ -480,9 +483,9 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	
     // Compute triangle bounding box.
     screenxy_t min_x = max_of_two (              0, (min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + 10);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + 1);
     screenxy_t min_y = max_of_two (              0, (min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + 10);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + 1);
     
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
@@ -660,8 +663,3 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		}		
 	}
 }
-
-/*void primitive_assembler () {
-	
-}*/
-

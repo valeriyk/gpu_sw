@@ -4,17 +4,18 @@
 const int height = 720;
 const int depth  = 1000000;//16000000;//30000;//65536;
 */
-#define WIDTH  512//1280
-#define HEIGHT 512//720
+#define WIDTH  384//1280
+#define HEIGHT 256//720
 //#define DEPTH  65535//256
 //const int SCREEN_SIZE[3] = {WIDTH, HEIGHT, DEPTH};
 
 //#define NUM_OF_OBJECTS	4
-#define NUM_OF_FRAMES 30
+#define NUM_OF_FRAMES 180
+#define PRINTSCREEN_FRAME 0
 #define NUM_OF_FRAMEBUFFERS	2 // must be 2 for now
 
-#define ROTATION_INIT 0
-#define ROTATION_INCR 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
+#define ROTATION_INIT 2.0f
+#define ROTATION_INCR 2 * 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 
 
 

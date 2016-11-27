@@ -139,7 +139,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
 	
-	float shadow_total = 1.0f;// - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
+	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -147,7 +147,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	}
 	float intensity = shadow_total * (1.f * diff_int_total + 0.6f * spec_intensity);
 	
-	float intensity_treshold = 0.1;
+	float intensity_treshold = 0.3;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
@@ -173,24 +173,30 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 int count_shadows (Varying *vry) {
 	Float3 screen;
 	int    shadows = 0;
-	float  z_fighting = 521.77f;
+	float  z_fighting = 0;//521.77f;
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
 		if (!LIGHTS[i].enabled) continue;
 		
-		Float4 screen4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[2+i]));
-		screen = Float4_Float3_vect_conv (&screen4);
+		//Float4 screen4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[2+i]));
+		//screen = Float4_Float3_vect_conv (&screen4);
 		
-		int x        = (int)       screen.as_struct.x;
-		int y        = (int)       screen.as_struct.y;
-		screenz_t current_z = (screenz_t) screen.as_struct.z;
+		//int x        = (int)       screen.as_struct.x;
+		//int y        = (int)       screen.as_struct.y;
+		//screenz_t current_z = (screenz_t) screen.as_struct.z;
 		
-		if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
+		FixPt4 my_shadow = vry->data.as_FixPt4[2+i];
+		//if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
+		if (my_shadow.as_struct.x < 0) continue;
+		if (my_shadow.as_struct.y < 0) continue;
+		if (my_shadow.as_struct.x >= fix16_from_int (get_screen_width ())) continue;
+		if (my_shadow.as_struct.y >= fix16_from_int (get_screen_height())) continue;
 		
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y*get_screen_width()];
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[fix16_to_int(my_shadow.as_struct.x) + fix16_to_int(my_shadow.as_struct.y) * get_screen_width()];
 		
-		if (shadow_buf_z > current_z + z_fighting) {
+		if (fix16_sub(shadow_buf_z, fix16_add(my_shadow.as_struct.z, 0x100)) > 0) {
+		//if (shadow_buf_z > current_z + z_fighting) {
 			shadows++;
 		}
 	}

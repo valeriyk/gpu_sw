@@ -148,7 +148,7 @@ ObjectNode* init_objects (void) {
 	
 	Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 	Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-	WFobj  *my_cube = wfobj_new ("obj/cube2.obj", cube_diff, cube_nmap, NULL);
+	WFobj  *my_cube = wfobj_new ("obj/cube.obj", cube_diff, cube_nmap, NULL);
 	
 	Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
 	WFobj *my_floor = wfobj_new ("obj/floor.obj", floor_diff, NULL, NULL);
@@ -176,18 +176,53 @@ ObjectNode* init_objects (void) {
     ObjectNode *head;
     ObjectNode *node;
     
-    int draw_head = 1;
+    int draw_planes = 0;
+    int draw_head = 0;
+    int draw_second_head = 1;
+    int draw_all_cubes = 1;
     
-    if (draw_head) {
+    if (draw_planes) {
+
+		node = calloc (1, sizeof (ObjectNode));
+		head = node;
+		node->obj = obj_new (my_floor);
+		node->next = NULL;
+		/*obj_set_rotation    (node->obj, 45.f, 0.f, 0.f);
+		obj_set_translation (node->obj, 0.f, 2.f, -4.6f);
+		obj_set_scale       (node->obj, 5, 5, 5);
+		obj_init_model      (node->obj);
+
+		node->next = calloc (1, sizeof (ObjectNode));
+		node       = node->next;
+		node->obj  = obj_new (my_floor);
+		node->next = NULL;*/
+		obj_set_scale       (node->obj, 5, 5, 5);
+		obj_set_rotation    (node->obj, 90, 0, 0);
+		obj_set_translation (node->obj, 0.0f, 0.f, -6.f);
+		obj_init_model      (node->obj);
+
+	}
+	else if (draw_head) {
 		node = calloc (1, sizeof (ObjectNode));
 		head = node;
 		node->obj = obj_new (african_head);
 		node->next = NULL;
-		obj_set_scale       (node->obj, 7, 7, 7);
+		obj_set_scale       (node->obj, 5, 5, 5);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
-		//obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
+		obj_set_translation (node->obj, -1.0f, 0.f, 0.f);
 		obj_init_model      (node->obj);
+
+		if (draw_second_head) {
+			node->next = calloc (1, sizeof (ObjectNode));
+			node       = node->next;
+			node->obj  = obj_new (african_head);
+			node->next = NULL;
+			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+			obj_set_translation (node->obj, 1.f, 0.f, -4.0f);
+			obj_set_scale       (node->obj, 5, 5, 5);
+			obj_init_model      (node->obj);
 		}
+	}
 	else {
 		// Central cube
 		node = calloc (1, sizeof (ObjectNode));
@@ -196,55 +231,55 @@ ObjectNode* init_objects (void) {
 		
 		node->obj  = obj_new (my_cube);
 		node->next = NULL;
-		//obj_set_scale       (node->obj, 10, 10, 10);
-		obj_set_scale       (node->obj, 5, 5, 5);
+		obj_set_scale       (node->obj, 10, 10, 10);
+		//obj_set_scale       (node->obj, 2, 2, 2);
 		obj_set_rotation    (node->obj, 0.f, 0.f, 0.f);
 		obj_set_translation (node->obj, 0.f, 0.f, 0.f);
 		obj_init_model      (node->obj);		
+	
+		if (draw_all_cubes) {
+			// Bottom Plane
+			node->next = calloc (1, sizeof (ObjectNode));
+			node       = node->next;
+			node->obj  = obj_new (my_floor);
+			node->next = NULL;
+			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
+			obj_set_translation (node->obj, 0.f, 0.f, 5.0f);
+			obj_set_scale       (node->obj, 6, 4, 4);
+			obj_init_model      (node->obj);
+			
+			node->next = calloc (1, sizeof (ObjectNode));
+			node       = node->next;
+			node->obj  = obj_new (my_floor);
+			node->next = NULL;
+			obj_set_rotation    (node->obj, 0.f, 0.f, 180.f);
+			obj_set_translation (node->obj, 0.f, -6.01f, 5.0f);
+			obj_set_scale       (node->obj, 6, 4, 4);
+			obj_init_model      (node->obj);
+			
+			
+			// Cube
+			node->next = calloc (1, sizeof (ObjectNode));
+			node = node->next;
+			node->obj = obj_new (my_cube);
+			node->next = NULL;
+			obj_set_scale       (node->obj, 2, 2, 2);
+			obj_set_rotation    (node->obj, 45, 45, 0);
+			obj_set_translation (node->obj, 1.0f, 0.f, 7.f);
+			obj_init_model      (node->obj);
+			
+			// Cube
+			node->next = calloc (1, sizeof (ObjectNode));
+			node = node->next;
+			node->obj = obj_new (my_cube);
+			node->next = NULL;
+			obj_set_scale       (node->obj, 2, 2, 2);
+			obj_set_rotation    (node->obj, 45, 45, 0);
+			obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
+			obj_init_model      (node->obj);
+			
+		}
 	}
-	/*
-	// Bottom Plane
-	node->next = calloc (1, sizeof (ObjectNode));
-	node       = node->next;
-	node->obj  = obj_new (my_floor);
-	node->next = NULL;
-    //obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-    obj_set_translation (node->obj, 0.f, 0.f, 5.0f);
-    obj_set_scale       (node->obj, 6, 4, 4);
-	obj_init_model      (node->obj);
-	
-	node->next = calloc (1, sizeof (ObjectNode));
-	node       = node->next;
-	node->obj  = obj_new (my_floor);
-	node->next = NULL;
-    obj_set_rotation    (node->obj, 0.f, 0.f, 180.f);
-    obj_set_translation (node->obj, 0.f, -6.01f, 5.0f);
-    obj_set_scale       (node->obj, 6, 4, 4);
-	obj_init_model      (node->obj);
-	
-	
-	// Cube
-	node->next = calloc (1, sizeof (ObjectNode));
-	node = node->next;
-	node->obj = obj_new (my_cube);
-	node->next = NULL;
-	obj_set_scale       (node->obj, 2, 2, 2);
-	obj_set_rotation    (node->obj, 45, 45, 0);
-	obj_set_translation (node->obj, 1.0f, 0.f, 7.f);
-	obj_init_model      (node->obj);
-	
-	// Cube
-	node->next = calloc (1, sizeof (ObjectNode));
-	node = node->next;
-	node->obj = obj_new (my_cube);
-	node->next = NULL;
-	obj_set_scale       (node->obj, 2, 2, 2);
-	obj_set_rotation    (node->obj, 45, 45, 0);
-	obj_set_translation (node->obj, -1.0f, 0.f, 7.f);
-	obj_init_model      (node->obj);
-	
-	
-	*/
 	
 	return head;
 }
@@ -303,12 +338,13 @@ int main(int argc, char** argv) {
 	float right = top * aspect_ratio;
 	float left  = -right;
 	float near  = 1;
-	float far   = 50;
+	float far   = 100;
 	
 	fmat4 persp_proj  = FMAT4_IDENTITY;
 	fmat4 ortho_proj  = FMAT4_IDENTITY;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	float f = 20.0;
+	
+	float f = 10.0;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
@@ -325,7 +361,7 @@ int main(int argc, char** argv) {
 	fmat4 view    = FMAT4_IDENTITY;	
 	//init_view (&view, &eye, &center, &up);
     
-    new_light (0, Float3_set ( 0.f,  3.f, -10.f));					
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f));					
     
     
     
@@ -333,7 +369,9 @@ int main(int argc, char** argv) {
     float eye_y = 1;
     float eye_z = 0;
     float eye_angle = ROTATION_INIT; // rad
-    float eye_distance = 15;
+    float eye_distance = 20;
+    
+    float obj_angle = 0;
     
     //do {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
@@ -342,7 +380,7 @@ int main(int argc, char** argv) {
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			active_fbuffer[i].r = 0;
-			active_fbuffer[i].g = 255;
+			active_fbuffer[i].g = 0;
 			active_fbuffer[i].b = 0;
 			zbuffer[i] = fix16_minimum;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
@@ -364,7 +402,15 @@ int main(int argc, char** argv) {
 		eye_z = center.as_struct.z + eye_distance * sinf(eye_angle);
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
 		eye_angle += ROTATION_INCR;
-				
+		
+		/*ObjectNode *scene_obj = obj_list_head;
+		while (scene_obj != NULL) {	
+			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
+			obj_init_model   (scene_obj->obj);			
+			scene_obj = scene_obj->next;
+		}
+		obj_angle += 270 / NUM_OF_FRAMES;
+		*/
 		
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
@@ -385,12 +431,16 @@ int main(int argc, char** argv) {
 			fwrite (&cr, sizeof (uint8_t), 1, fp);
 		}
 		
-		if (m == NUM_OF_FRAMES / 3) {
+		if (-1 == PRINTSCREEN_FRAME) {
 			write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
 			//write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-			if (sizeof(screenz_t) == 1) {
-				write_tga_file ("zbuffer.tga", (tbyte *)  zbuffer, WIDTH, HEIGHT, 8, 1);
+			//if (sizeof(screenz_t) == 1) {
+			{
 				
+				tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
+				for (int i = 0; i < screen_size; i++) tmp[i] = (fix16_to_int (zbuffer[i]) >> 8) + 128;
+				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
+				free (tmp);
 				for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 					if (LIGHTS[i].enabled) {
 						char sb_file[32];
@@ -399,9 +449,13 @@ int main(int argc, char** argv) {
 						strcpy (sb_file, "shadow_buffer_");
 						strcat (sb_file, num);
 						strcat (sb_file, ".tga");
-						write_tga_file (sb_file, (tbyte *) LIGHTS[i].shadow_buf, WIDTH, HEIGHT, 8, 1);
+						
+						tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
+						for (int j = 0; j < screen_size; j++) tmp[j] = (fix16_to_int (LIGHTS[i].shadow_buf[j]) >> 8) + 128;
+						write_tga_file (sb_file, tmp, WIDTH, HEIGHT, 8, 1);
+						free (tmp);
 					}
-				}
+				}				
 			}
 		}
 	}
