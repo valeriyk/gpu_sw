@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <time.h>
+
 // POSITIVE Z TOWARDS ME
 
 // these are global:
@@ -323,12 +325,7 @@ int main(int argc, char** argv) {
 	}
     	
     pixel_color_t *active_fbuffer = NULL;
-    
-	FILE *fp = fopen ("video.y4m", "w");
-    if (!fp) return 1;
-    fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
-    
-		
+    		
 	ObjectNode *obj_list_head = init_objects ();
 	
     // 3. Projection Matrix - perspective correction
@@ -374,8 +371,16 @@ int main(int argc, char** argv) {
     float obj_angle = 0;
     
     //do {
+    
+    
+    clock_t clk_begin = clock();
+    
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
-		active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		
+		clock_t clk_frame_begin = clock();
+		
+		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		active_fbuffer = fbuffer[m];
 		
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
@@ -416,20 +421,9 @@ int main(int argc, char** argv) {
 		light_transform      (&view);
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		draw_frame           (obj_list_head, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
-			
-		fprintf (fp, "FRAME\n");
-		for (int j = 0; j < screen_size; j++){
-			uint8_t y = rgb_to_y (active_fbuffer[j]);
-			fwrite (&y, sizeof (uint8_t), 1, fp);
-		}
-		for (int j = 0; j < screen_size; j++){
-			uint8_t cb = rgb_to_cb (active_fbuffer[j]);
-			fwrite (&cb, sizeof (uint8_t), 1, fp);
-		}
-		for (int j = 0; j < screen_size; j++){
-			uint8_t cr = rgb_to_cr (active_fbuffer[j]);
-			fwrite (&cr, sizeof (uint8_t), 1, fp);
-		}
+		
+		clock_t clk_frame_end = clock();
+		printf ("\nFrame %d took %f clocks\n", (double) clk_frame_end - clk_frame_begin);
 		
 		if (-1 == PRINTSCREEN_FRAME) {
 			write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
@@ -461,11 +455,38 @@ int main(int argc, char** argv) {
 	}
 	// while (0);
 	
+	clock_t clk_end = clock();
+	printf ("\nClocks spent: %f", (double) clk_end - clk_begin);
+	
+	
+	if (RECORD_VIDEO) {		
+		FILE *fp = fopen ("video.y4m", "w");
+		if (!fp) return 1;
+		fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
+		
+		for (int i = 0; i < NUM_OF_FRAMES; i++) {
+			fprintf (fp, "FRAME\n");
+			for (int j = 0; j < screen_size; j++){
+				uint8_t y = rgb_to_y (fbuffer[i][j]);
+				fwrite (&y, sizeof (uint8_t), 1, fp);
+			}
+			for (int j = 0; j < screen_size; j++){
+				uint8_t cb = rgb_to_cb (fbuffer[i][j]);
+				fwrite (&cb, sizeof (uint8_t), 1, fp);
+			}
+			for (int j = 0; j < screen_size; j++){
+				uint8_t cr = rgb_to_cr (fbuffer[i][j]);
+				fwrite (&cr, sizeof (uint8_t), 1, fp);
+			}
+		}
+		fclose (fp);
+	}
+	
 	
     
 	
 	
-	fclose (fp);
+	
 	
 	//wfobj_free(african_head);
 	//wfobj_free(my_floor);
