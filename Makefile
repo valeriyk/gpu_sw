@@ -49,3 +49,4 @@ clean:
 	-rm -f *.elf
 	-rm -f *.a
 	-rm -f *.tga
+	-rm -f *.y4m
