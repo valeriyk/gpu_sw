@@ -356,9 +356,9 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
     }
     
     screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
-    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + 1;
+    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + BOUNDBOX_PRECISION_HACK;
     screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
-    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + 1;
+    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + BOUNDBOX_PRECISION_HACK;
  
     if (GL_DEBUG_1) {
 		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
@@ -484,9 +484,9 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	
     // Compute triangle bounding box.
     screenxy_t min_x = max_of_two (              0, (min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + 1);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + BOUNDBOX_PRECISION_HACK);
     screenxy_t min_y = max_of_two (              0, (min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + 1);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + BOUNDBOX_PRECISION_HACK);
     
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);

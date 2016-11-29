@@ -8,6 +8,8 @@
 #include "bitmap.h"
 #include "tga_addon.h"
 
+#include "profiling.h"
+
 #include <stdint.h>
 //#include <limits.h>
 #include <stdlib.h>
@@ -372,12 +374,12 @@ int main(int argc, char** argv) {
     
     //do {
     
-    
-    clock_t clk_begin = clock();
+	if (ENABLE_PERF) {
+		setup_counters();
+		start_counters();
+	}
     
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
-		
-		clock_t clk_frame_begin = clock();
 		
 		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
 		active_fbuffer = fbuffer[m];
@@ -422,9 +424,6 @@ int main(int argc, char** argv) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		draw_frame           (obj_list_head, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		
-		clock_t clk_frame_end = clock();
-		printf ("\nFrame %d took %f clocks\n", (double) clk_frame_end - clk_frame_begin);
-		
 		if (-1 == PRINTSCREEN_FRAME) {
 			write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
 			//write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
@@ -455,9 +454,10 @@ int main(int argc, char** argv) {
 	}
 	// while (0);
 	
-	clock_t clk_end = clock();
-	printf ("\nClocks spent: %f", (double) clk_end - clk_begin);
-	
+	if (ENABLE_PERF) {
+		stop_counters();
+		read_counters();
+	}
 	
 	if (RECORD_VIDEO) {		
 		FILE *fp = fopen ("video.y4m", "w");

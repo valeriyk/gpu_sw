@@ -8,6 +8,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define BOUNDBOX_PRECISION_HACK 0 // TBD remove
+
+
 #define FIX_PT_PRECISION	4
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
