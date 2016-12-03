@@ -2,7 +2,7 @@ TCF          = ../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
 OPT = -O3
 FIXMATH = -DFIXMATH_NO_ROUNDING
 #SYSCONF_LINK_x86 = gcc -ggdb -g3 -pg -O0 -I.
-SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -Ithirdparty/libtga -Ithirdparty/libfixmath -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 $(OPT) $(FIXMATH)
+SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -Ilibtga-1.0.1/src -Ilibfixmath -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 $(OPT) $(FIXMATH)
 
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF)
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.
@@ -19,7 +19,7 @@ TARGET_ARC = main.elf
 
 #VPATH=thirdparty/libtga
 
-OBJECTS_x86 := $(patsubst %.c,%_x86.o,$(wildcard *.c) $(wildcard thirdparty/libtga/*.c) $(wildcard thirdparty/libfixmath/*.c))
+OBJECTS_x86 := $(patsubst %.c,%_x86.o,$(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c) $(wildcard libfixmath/*.c))
 OBJECTS_ARC := $(patsubst %.c,%_arc.o,$(wildcard *.c)) 
 
 all: x86 arc
