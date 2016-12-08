@@ -324,12 +324,16 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	
 	fix16_t    x_fixp[3];
 	fix16_t    y_fixp[3];
-	screenxy_t x_int[3];
-	screenxy_t y_int[3];
+	fix16_t    z_fixp[3];
+	fix16_t    w_fixp[3];
+	//screenxy_t x_int[3];
+	//screenxy_t y_int[3];
 	
 	for (int i = 0; i < 3; i++) {
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
+		z_fixp[i] = tri->screen_coords[i].as_struct.z;
+		w_fixp[i] = tri->screen_coords[i].as_struct.w;
 	}
 	
     // Compute tile bounding box.
@@ -381,6 +385,10 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	bar_col_incr[1] = fix16_sub (y_fixp[2], y_fixp[0]);
 	bar_col_incr[2] = fix16_sub (y_fixp[0], y_fixp[1]);
 	
+	fix16_t sum_of_bars2 = fix16_add (bar_fixp_row[0], fix16_add (bar_fixp_row[1], bar_fixp_row[2]));
+	fix16_t z1z0 = fix16_div (fix16_sub (z_fixp[1], z_fixp[0]), sum_of_bars2);
+	fix16_t z2z0 = fix16_div (fix16_sub (z_fixp[2], z_fixp[0]), sum_of_bars2);
+	
 	ScreenPt p;
     for (p.y = min_y; p.y < max_y; p.y++) {	
 		
@@ -394,7 +402,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 			if ((bar_fixp.as_array[0] > 0) && (bar_fixp.as_array[1] > 0) && (bar_fixp.as_array[2] > 0)) { // left-top fill rule
 				
 				// Interpolate and normalize Z
-				fix16_t mpy_fixp[3];
+				/*fix16_t mpy_fixp[3];
 				fix16_t acc_fixp = 0;
 				fix16_t sum_of_bars = 0;
 				for (int i = 0; i < 3; i++) { // interpolate
@@ -404,6 +412,9 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 				}
 				
 				p.z = fix16_div (acc_fixp, sum_of_bars); // normalize
+				*/
+				p.z = fix16_add (z_fixp[0], fix16_add (fix16_mul (z1z0, bar_fixp.as_array[1]), fix16_mul (z2z0, bar_fixp.as_array[2])));
+				
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				//if (p.z > zbuffer[pix_num]) {
 				if (fix16_ssub(p.z, zbuffer[pix_num]) > 0) {
