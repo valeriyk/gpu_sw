@@ -1,5 +1,8 @@
 #pragma once
 
+#define NDEBUG
+#include <assert.h>
+
 #include "geometry.h"
 #include "geometry_fixpt.h"
 #include "wavefront_obj.h"
@@ -14,8 +17,14 @@
 #define FIX_PT_PRECISION	4
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
-#define TILE_WIDTH  16
-#define TILE_HEIGHT 16
+#define TILE_WIDTH  512//16
+#define TILE_HEIGHT 512//16
+
+
+#define INT_BITS 16
+#define FRACT_BITS 16
+typedef int32_t  fixpt_t;
+typedef int64_t dfixpt_t;
 
 typedef enum {X = 0, Y, Z, W} axis;
 
@@ -25,7 +34,7 @@ typedef enum {X = 0, Y, Z, W} axis;
 typedef int16_t screenxy_t;
 
 //typedef uint16_t screenz_t;
-typedef fix16_t screenz_t;
+typedef fixpt_t screenz_t;
 //typedef uint8_t screenz_t;
 
 typedef struct ScreenPt {
@@ -56,13 +65,13 @@ typedef union VaryingFloat {
 	varying_Float4 as_Float4;
 } VaryingFloat;
 */
-typedef fix16_t varying_fix16_t [NUM_OF_VARYING_WORDS];
+typedef fixpt_t varying_fixpt_t [NUM_OF_VARYING_WORDS];
 typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
 //typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
 typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
 
 typedef union VaryingFixPt {
-	varying_fix16_t  as_fix16_t;
+	varying_fixpt_t  as_fixpt_t;
 	varying_FixPt2 as_FixPt2;
 	varying_FixPt4 as_FixPt4;
 } VaryingFixPt;
@@ -188,3 +197,95 @@ void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 void draw_frame           (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
+
+
+
+
+
+
+
+
+
+static inline fixpt_t fixpt_add (fixpt_t a, fixpt_t b) {
+	fixpt_t c = a + b;
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	return c;
+}
+
+static inline fixpt_t fixpt_sub (fixpt_t a, fixpt_t b) {
+	fixpt_t c = a - b;
+	assert ((a > 0) && (b < 0) && (c > 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	return c;
+}
+
+static inline fixpt_t fixpt_mul (fixpt_t a, fixpt_t b) {
+	dfixpt_t c = (dfixpt_t) a * (dfixpt_t) b;
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	assert ((a > 0) && (b < 0) && (c < 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	assert ((a == 0) && (c == 0));
+	assert ((b == 0) && (c == 0));
+	assert ((c >> (INT_BITS + FRACT_BITS*2)) == 0 );
+	return (fixpt_t) (c >> FRACT_BITS);
+}
+
+static inline fixpt_t fixpt_div (fixpt_t a, fixpt_t b) {
+	dfixpt_t ad = ((dfixpt_t) a) << FRACT_BITS;
+	dfixpt_t c = ad / (dfixpt_t) b;
+	//assert ();
+	return (fixpt_t) c;
+}
+
+
+
+static inline fixpt_t fixpt_from_float (float a) {
+	fixpt_t c = (fixpt_t) a * (1 << FRACT_BITS);
+	//assert ();
+	return c;
+}
+
+static inline float   fixpt_to_float (fixpt_t a) {
+	return ((float) a) / ((float) (1 << FRACT_BITS));
+}
+
+
+
+
+static inline fixpt_t fixpt_from_int32 (int32_t a) {
+	fixpt_t c = (fixpt_t) (a << FRACT_BITS);
+	//assert ();
+	return c;
+}
+
+static inline int32_t   fixpt_to_int32 (fixpt_t a) {
+	return (a >> FRACT_BITS);
+}
+
+
+
+
+static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
+	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	//assert ();
+	return c;
+}
+
+static inline screenxy_t   fixpt_to_screenxy (fixpt_t a) {
+	return (screenxy_t) (a >> FRACT_BITS);
+}
+
+
+
+
+static inline fixpt_t fixpt_from_fix16 (fix16_t a) {
+	fixpt_t c = (fixpt_t) a;
+	//assert ();
+	return c;
+}
+
+static inline fix16_t   fixpt_to_fix16 (fixpt_t a) {
+	return ((float) a) / ((float) (1 << FRACT_BITS));
+}

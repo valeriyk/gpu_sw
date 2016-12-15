@@ -4,13 +4,13 @@
 const int height = 720;
 const int depth  = 1000000;//16000000;//30000;//65536;
 */
-#define WIDTH  1280
-#define HEIGHT 720
+#define WIDTH  512//1280
+#define HEIGHT 512//720
 //#define DEPTH  65535//256
 //const int SCREEN_SIZE[3] = {WIDTH, HEIGHT, DEPTH};
 
 //#define NUM_OF_OBJECTS	4
-#define NUM_OF_FRAMES 30
+#define NUM_OF_FRAMES 60
 #define PRINTSCREEN_FRAME 0
 #define NUM_OF_FRAMEBUFFERS	NUM_OF_FRAMES // must be 2 for now
 

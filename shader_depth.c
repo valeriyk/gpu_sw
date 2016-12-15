@@ -66,8 +66,8 @@ FixPt4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	if (obj->wfobj->texture != NULL) {
 		Float2 text       = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
 		vry->data.as_FixPt2[2] = Float2_FixPt2_conv (&text);
-		vry->data.as_fix16_t[6] = 0;
-		vry->data.as_fix16_t[7] = 0;
+		vry->data.as_fixpt_t[6] = 0;
+		vry->data.as_fixpt_t[7] = 0;
 		vry->num_of_words += 4;
 	}
 	
