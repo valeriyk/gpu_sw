@@ -389,10 +389,10 @@ int main(int argc, char** argv) {
 			active_fbuffer[i].r = 0;
 			active_fbuffer[i].g = 0;
 			active_fbuffer[i].b = 0;
-			zbuffer[i] = fix16_minimum;
+			zbuffer[i] = fixpt_get_min();
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
-					LIGHTS[j].shadow_buf[i] = fix16_minimum;
+					LIGHTS[j].shadow_buf[i] = fixpt_get_min();
 				}
 			}
 		}
@@ -431,7 +431,7 @@ int main(int argc, char** argv) {
 			{
 				
 				tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
-				for (int i = 0; i < screen_size; i++) tmp[i] = (fix16_to_int (zbuffer[i]) >> 8) + 128;
+				for (int i = 0; i < screen_size; i++) tmp[i] = (fixpt_to_int32 (zbuffer[i]) >> 8) + 128;
 				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
 				free (tmp);
 				for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -444,7 +444,7 @@ int main(int argc, char** argv) {
 						strcat (sb_file, ".tga");
 						
 						tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
-						for (int j = 0; j < screen_size; j++) tmp[j] = (fix16_to_int (LIGHTS[i].shadow_buf[j]) >> 8) + 128;
+						for (int j = 0; j < screen_size; j++) tmp[j] = (fixpt_to_int32 (LIGHTS[i].shadow_buf[j]) >> 8) + 128;
 						write_tga_file (sb_file, tmp, WIDTH, HEIGHT, 8, 1);
 						free (tmp);
 					}

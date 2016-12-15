@@ -5,7 +5,7 @@
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
-#include <fixmath.h>
+//#include <fixmath.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -124,7 +124,7 @@ screenxy_t get_screen_height (void) {
 }
 
 screenz_t get_screen_depth (void) {
-	return SCREEN_DEPTH >> 16; // return integer part of Q16.16
+	return SCREEN_DEPTH >> FRACT_BITS; // return integer part of QM.N
 }
 
 
@@ -410,9 +410,13 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 						
 				
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
+				
+				screenz_t z_diff = fixpt_sub(p.z, zbuffer[pix_num]);
+				if ((p.z > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
+				else if ((p.z < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
+								
 				//if (p.z > zbuffer[pix_num]) {
-				if (fix16_ssub(p.z, zbuffer[pix_num]) > 0) {
-				//if (fixpt_sub(p.z, zbuffer[pix_num]) > 0) {
+				if (z_diff > 0) {
 					zbuffer[pix_num] = p.z;
 
 					// Interpolation of Varying values:

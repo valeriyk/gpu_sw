@@ -1,10 +1,28 @@
 #pragma once
 
 #include "geometry.h"
-#include <fixmath.h>
+//#include <fixmath.h>
+//#include "fixpt.h"
+
+#define NDEBUG
+#include <assert.h>
 
 #include <stdint.h>
 #include <stdbool.h>
+
+
+
+
+
+typedef int32_t  fixpt_t;
+typedef int64_t dfixpt_t;
+
+
+#define FIXPT_BITS (sizeof(fixpt_t) * 8)
+#define FRACT_BITS 16
+
+#define FIX_PT_PRECISION	4
+
 
 
 /*#define FMAT4_IDENTITY	{{1.f, 0.f, 0.f, 0.f}, {0.f, 1.f, 0.f, 0.f}, {0.f, 0.f, 1.f, 0.f}, {0.f, 0.f, 0.f, 1.f}}
@@ -13,30 +31,30 @@
 typedef int32_t int3 [3];
 */
 
-typedef fix16_t fix16_t2[2];
+typedef fixpt_t fixpt_t2[2];
 typedef struct FixPtUV {
-	fix16_t u, v;
+	fixpt_t u, v;
 } FixPtUV;
 typedef union FixPt2 {
-	fix16_t2 as_array;
+	fixpt_t2 as_array;
 	FixPtUV as_struct;
 } FixPt2;
 
-typedef fix16_t fix16_t3[3];
+typedef fixpt_t fixpt_t3[3];
 typedef struct FixPtXYZ {
-	fix16_t x, y, z;
+	fixpt_t x, y, z;
 } FixPtXYZ;
 typedef union FixPt3 {
-	fix16_t3 as_array;
+	fixpt_t3 as_array;
 	FixPtXYZ as_struct;
 } FixPt3;
 
-typedef fix16_t fix16_t4[4];
+typedef fixpt_t fixpt_t4[4];
 typedef struct FixPtXYZW {
-	fix16_t x, y, z, w;
+	fixpt_t x, y, z, w;
 } FixPtXYZW;
 typedef union FixPt4 {
-	fix16_t4 as_array;
+	fixpt_t4 as_array;
 	FixPtXYZW as_struct;
 } FixPt4;
 
@@ -52,6 +70,78 @@ Float2 FixPt2_Float2_cast (FixPt2 *in);
 
 FixPt4 Float4_FixPt4_cast (Float4 *in);
 Float4 FixPt4_Float4_cast (FixPt4 *in);
+
+
+
+
+static inline fixpt_t fixpt_add (fixpt_t a, fixpt_t b) {
+	fixpt_t c = a + b;
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	return c;
+}
+
+static inline fixpt_t fixpt_sub (fixpt_t a, fixpt_t b) {
+	fixpt_t c = a - b;
+	assert ((a > 0) && (b < 0) && (c > 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	return c;
+}
+
+static inline fixpt_t fixpt_mul (fixpt_t a, fixpt_t b) {
+	dfixpt_t c = (dfixpt_t) a * (dfixpt_t) b;
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	assert ((a > 0) && (b < 0) && (c < 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	assert ((a == 0) && (c == 0));
+	assert ((b == 0) && (c == 0));
+	assert ((c >> (FIXPT_BITS + FRACT_BITS)) == 0 );
+	return (fixpt_t) (c >> FRACT_BITS);
+}
+
+static inline fixpt_t fixpt_div (fixpt_t a, fixpt_t b) {
+	dfixpt_t ad = ((dfixpt_t) a) << FRACT_BITS;
+	assert (b != 0);
+	dfixpt_t c;
+	if (b != 0) c = ad / (dfixpt_t) b;
+	else c = 0; //TBD
+	return (fixpt_t) c;
+}
+
+
+static inline fixpt_t fixpt_get_min (void) {
+	return 0x80000000;
+}
+
+static inline fixpt_t fixpt_get_max (void) {
+	return 0x7FFFFFFF;
+}
+
+static inline fixpt_t fixpt_from_float (float a) {
+	fixpt_t c = (fixpt_t) (a * (1 << FRACT_BITS));
+	//assert ();
+	return c;
+}
+
+static inline float   fixpt_to_float (fixpt_t a) {
+	return ((float) a) / ((float) (1 << FRACT_BITS));
+}
+
+
+
+
+static inline fixpt_t fixpt_from_int32 (int32_t a) {
+	fixpt_t c = (fixpt_t) (a << FRACT_BITS);
+	//assert ();
+	return c;
+}
+
+static inline int32_t   fixpt_to_int32 (fixpt_t a) {
+	return (a >> FRACT_BITS);
+}
+
+
 
 /*
 

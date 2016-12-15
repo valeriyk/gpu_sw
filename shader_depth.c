@@ -3,7 +3,7 @@
 
 #include "geometry_fixpt.h"
 
-#include <fixmath.h>
+//#include <fixmath.h>
 
 #include <math.h>
 
@@ -190,12 +190,12 @@ int count_shadows (Varying *vry) {
 		//if ((x < 0) || (y < 0) || (x >= get_screen_width()) || (y >= get_screen_height())) continue;	
 		if (my_shadow.as_struct.x < 0) continue;
 		if (my_shadow.as_struct.y < 0) continue;
-		if (my_shadow.as_struct.x >= fix16_from_int (get_screen_width ())) continue;
-		if (my_shadow.as_struct.y >= fix16_from_int (get_screen_height())) continue;
+		if (my_shadow.as_struct.x >= fixpt_from_screenxy (get_screen_width ())) continue;
+		if (my_shadow.as_struct.y >= fixpt_from_screenxy (get_screen_height())) continue;
 		
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[fix16_to_int(my_shadow.as_struct.x) + fix16_to_int(my_shadow.as_struct.y) * get_screen_width()];
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[fixpt_to_int32(my_shadow.as_struct.x) + fixpt_to_int32(my_shadow.as_struct.y) * get_screen_width()];
 		
-		if (fix16_sub(shadow_buf_z, fix16_add(my_shadow.as_struct.z, 0x100)) > 0) {
+		if (fixpt_sub(shadow_buf_z, fixpt_add(my_shadow.as_struct.z, 0x100)) > 0) {
 		//if (shadow_buf_z > current_z + z_fighting) {
 			shadows++;
 		}
