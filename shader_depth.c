@@ -10,7 +10,7 @@
 
 int count_shadows (Varying *vry);
 
-FixPt4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	if (DEPTH_VSHADER1_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -20,7 +20,7 @@ FixPt4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
 	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
-	return Float4_FixPt4_conv (&vtx4d);
+	return vtx4d;
 }
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
@@ -29,7 +29,7 @@ bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FixPt4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	if (DEPTH_VSHADER2_DEBUG) {
 		printf ("\tcall depth_vertex_shader()\n");
@@ -91,7 +91,7 @@ FixPt4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 		vry->num_of_words += 4;
 	}
 		
-	return Float4_FixPt4_conv (&clip);		
+	return clip;		
 }
 
 bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {

@@ -411,6 +411,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 				
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				
+				// saturating subtraction:
 				screenz_t z_diff = fixpt_sub(p.z, zbuffer[pix_num]);
 				if ((p.z > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
 				else if ((p.z < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
@@ -631,11 +632,9 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 			bool is_clipped = true; // sticky bit
 			for (size_t j = 0; j < 3; j++) {
 				
-				FixPt4 clip_fixp = vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j])); // CALL VERTEX SHADER
-				
 				// // First four floats of Varying contain XYZW of a vertex in clip space
 				// clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].data.as_FixPt4[0]));
-				clip.vtx[j] = FixPt4_Float4_conv (&clip_fixp);
+				clip.vtx[j] = vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j]) ); // CALL VERTEX SHADER
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {

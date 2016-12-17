@@ -139,7 +139,7 @@ extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
 
-typedef FixPt4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
+typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
 typedef bool (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
 
 
