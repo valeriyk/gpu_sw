@@ -193,7 +193,7 @@ void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);
 void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
-void draw_frame           (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_frame          (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 
 

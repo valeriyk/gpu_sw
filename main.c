@@ -339,8 +339,8 @@ int main(int argc, char** argv) {
 	float near  = 1;
 	float far   = 100;
 	
-	fmat4 persp_proj  = FMAT4_IDENTITY;
-	fmat4 ortho_proj  = FMAT4_IDENTITY;
+	fmat4 persp_proj;
+	fmat4 ortho_proj;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
 	
 	float f = 15.0;
@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
     Float3 eye;
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
-	fmat4 view    = FMAT4_IDENTITY;	
+	fmat4 view;	
 	//init_view (&view, &eye, &center, &up);
     
     new_light (0, Float3_set ( 0.f,  -2.f, -10.f));					

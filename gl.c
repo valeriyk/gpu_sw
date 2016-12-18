@@ -45,7 +45,7 @@ int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, sc
     return topleft ? ++res : res;
 }
 	
-fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
+/*fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
     
     fixpt_t bx_ax = fixpt_sub (bx, ax);
     fixpt_t cy_ay = fixpt_sub (cy, ay);
@@ -61,7 +61,29 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
     bool topleft    = downwards || (horizontal && leftwards);
     
     return topleft ? fixpt_add (res, 1) : res;
-}	
+}*/	
+
+fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
+    
+    dfixpt_t bx_ax = (dfixpt_t) bx - (dfixpt_t) ax;
+    dfixpt_t cy_ay = (dfixpt_t) cy - (dfixpt_t) ay;
+    dfixpt_t by_ay = (dfixpt_t) by - (dfixpt_t) ay;
+    dfixpt_t cx_ax = (dfixpt_t) cx - (dfixpt_t) ax;
+
+    //fixpt_t res = fixpt_sub (fixpt_mul (bx_ax, cy_ay), fixpt_mul (by_ay,cx_ax));
+    dfixpt_t mul_0 = bx_ax * cy_ay;
+    dfixpt_t mul_1 = by_ay * cx_ax;
+    dfixpt_t diff  = mul_0 - mul_1;
+    fixpt_t res = (fixpt_t) (diff >> FRACT_BITS);
+    
+    // left-top fill rule:
+    bool downwards  = (by_ay  < 0);
+    bool horizontal = (by_ay == 0);
+    bool leftwards  = (bx_ax  < 0);
+    bool topleft    = downwards || (horizontal && leftwards);
+    
+    return topleft ? res + 1 : res;
+}
 
 static inline int32_t min_of_two (int32_t a, int32_t b) {
 	return (a < b) ? a : b;
@@ -150,6 +172,7 @@ void init_scene (void) {
 
 
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
+	fmat4_identity (m);
 	fmat4_set (m, 0, 0,       ( 2.0f * near) / (right - left));
 	fmat4_set (m, 0, 2,       (right + left) / (right - left));
 	fmat4_set (m, 1, 1,       ( 2.0f * near) / (  top -  bot));
@@ -161,6 +184,7 @@ void init_perspective_proj (fmat4 *m, float left, float right, float top, float 
 }
 
 void init_ortho_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
+	fmat4_identity (m);
 	fmat4_set (m, 0, 0,            2.0f / (right - left));
 	fmat4_set (m, 0, 3, -(right + left) / (right - left));
 	fmat4_set (m, 1, 1,            2.0f / (  top -  bot));
@@ -389,6 +413,7 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	fixpt_t    z_fixp[3];
 	fixpt_t    w_fixp[3];
 	
+	// re-pack X, Y, Z, W coords of the three vertices
 	for (int i = 0; i < 3; i++) {
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
