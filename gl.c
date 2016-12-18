@@ -278,6 +278,29 @@ fixpt_t interpolate_z (fixpt_t z0, fixpt_t z1z0, fixpt_t z2z0, FixPt3 *bar) {
 	return (fixpt_t) (acc >> FRACT_BITS);
 }
 
+screenz_t interpolate2_z (fixpt_t z[3], FixPt3 *bar) {
+	//fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
+	dfixpt_t mul_0 = z[0] * bar->as_array[0];
+	dfixpt_t mul_1 = z[1] * bar->as_array[1];
+	dfixpt_t mul_2 = z[2] * bar->as_array[2];
+	//dfixpt_t z0_1  = ((dfixpt_t) z0) << FRACT_BITS;
+	dfixpt_t acc = mul_0 + mul_1 + mul_2;
+	
+	assert ((mul_0 > 0) && (mul_1 > 0) && (mul_2 > 0) && (acc > 0));
+	assert ((mul_0 < 0) && (mul_1 < 0) && (mul_2 < 0) && (acc < 0));
+	dfixpt_t sum_of_bars = bar->as_array[0] + bar->as_array[1] + bar->as_array[2];
+	dfixpt_t dres = acc / sum_of_bars;
+	fixpt_t   res = (fixpt_t) dres;
+	
+	assert ((res < z[0]) || (res < z[1]) || (res < z[2]));
+	assert (res >= 0);
+	
+	if (res < 0) res = 0;
+	if (res >= (get_screen_depth() << FRACT_BITS)) res = get_screen_depth();
+	//if (res < 0) printf ("neg Z! acc=%llx, sumob=%llx, dres=%llx, res=%x\n", acc, sum_of_bars, dres, res);
+	return fixpt_to_screenz (res);
+}
+
 Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 
 	Varying vry_interp;
@@ -313,6 +336,10 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 	return vry_interp;
 }
 
+/*get_bounding_box () {
+	
+}*/
+
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
 // 1.a. dumb method: just compute all the values for each pixel
@@ -343,6 +370,7 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
 		z_fixp[i] = tri->screen_coords[i].as_struct.z;
+		if (DEBUG_Z) if (z_fixp[i] < 0) printf ("Fixp Z < 0: %x\n", z_fixp[i]);
 		w_fixp[i] = tri->screen_coords[i].as_struct.w;
 	}
 	
@@ -415,22 +443,25 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 			if ((bar_fixp.as_array[0] > 0) && (bar_fixp.as_array[1] > 0) && (bar_fixp.as_array[2] > 0)) { // left-top fill rule
 				
 				// Interpolate and normalize Z
-				fixpt_t z = interpolate_z (z_fixp[0], z1z0, z2z0, &bar_fixp); //fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
-						
+				//fixpt_t z = fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
+				fixpt_t z = interpolate_z (z_fixp[0], z1z0, z2z0, &bar_fixp);
+				//screenz_t z = interpolate2_z (z_fixp, &bar_fixp);
 				
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				
 				// saturating subtraction:
-				fixpt_t z_diff = fixpt_sub(z, fixpt_from_screenz (zbuffer[pix_num]) );
+				//int32_t z_diff = z - zbuffer[pix_num];
+				fixpt_t z_diff = fixpt_sub (z, fixpt_from_screenz(zbuffer[pix_num]));
 				if ((z > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
 				else if ((z < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
 								
 				//if (p.z > zbuffer[pix_num]) {
 				if (z_diff > 0) {
+					//zbuffer[pix_num] = z;
 					zbuffer[pix_num] = fixpt_to_screenz (z);
 
 					// Interpolation of Varying values:
-					
+
 					Varying vry_interp;					
 					vry_interp.num_of_words = tri->varying[0].num_of_words;
 					if (vry_interp.num_of_words > 0) {
@@ -663,6 +694,11 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 
 					if (!is_clipped) {
 						screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
+						
+						if (DEBUG_Z) {
+							if (screen.vtx[j].as_struct.z < 0) printf ("Z < 0: %f\n", screen.vtx[j].as_struct.z);
+							if (screen.vtx[j].as_struct.z > get_screen_depth()) printf ("Z > depth: %f\n", screen.vtx[j].as_struct.z);
+						}
 
 						// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
 						// because we have it for free here

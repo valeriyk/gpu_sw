@@ -124,7 +124,7 @@ static inline fixpt_t fixpt_from_float (float a) {
 	return c;
 }
 
-static inline float   fixpt_to_float (fixpt_t a) {
+static inline float fixpt_to_float (fixpt_t a) {
 	return ((float) a) / ((float) (1 << FRACT_BITS));
 }
 

@@ -195,7 +195,10 @@ int count_shadows (Varying *vry) {
 		
 		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[fixpt_to_int32(my_shadow.as_struct.x) + fixpt_to_int32(my_shadow.as_struct.y) * get_screen_width()];
 		
-		if (fixpt_sub(shadow_buf_z, fixpt_add(my_shadow.as_struct.z, 0x100)) > 0) {
+		//if (fixpt_sub(shadow_buf_z, fixpt_add(my_shadow.as_struct.z, 0x100)) > 0) {
+		//int32_t z_diff = shadow_buf_z - fixpt_to_screenz (fixpt_add (my_shadow.as_struct.z, 0x100));
+		int32_t z_diff = shadow_buf_z - fixpt_to_screenz (my_shadow.as_struct.z);
+		if (z_diff > 0) {
 		//if (shadow_buf_z > current_z + z_fighting) {
 			shadows++;
 		}
