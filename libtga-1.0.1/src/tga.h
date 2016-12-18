@@ -92,6 +92,9 @@ enum {  TGA_OK = 0, 		/* success */
 #define TGA_ERRORS 8  /* total number of error codes */
 
 /* text strings corresponding to the error codes */
+
+/*
+//valeriyk: commented out
 static char*
 tga_error_strings[] = {
 	"Success",
@@ -103,7 +106,7 @@ tga_error_strings[] = {
 	"Write failed",
 	"Unknown sub-format"
 };
-
+*/
 
 #if SIZEOF_UNSIGNED_INT == 4
         typedef unsigned int tuint32;

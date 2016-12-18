@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
 	
 	// 4. Viewport Matrix - move to screen coords
 	//fmat4 viewport = FMAT4_IDENTITY;
-	set_screen_size ((screenxy_t) WIDTH, (screenxy_t) HEIGHT);
+	set_screen_size ((size_t) WIDTH, (size_t) HEIGHT);
     init_viewport (0, 0, get_screen_width(), get_screen_height(), get_screen_depth());
 	
     
@@ -389,10 +389,10 @@ int main(int argc, char** argv) {
 			active_fbuffer[i].r = 0;
 			active_fbuffer[i].g = 0;
 			active_fbuffer[i].b = 0;
-			zbuffer[i] = fixpt_get_min();
+			zbuffer[i] = 0;//fixpt_get_min();
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
-					LIGHTS[j].shadow_buf[i] = fixpt_get_min();
+					LIGHTS[j].shadow_buf[i] = 0;//fixpt_get_min();
 				}
 			}
 		}
@@ -424,32 +424,34 @@ int main(int argc, char** argv) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		draw_frame           (obj_list_head, depth_vshader_pass2, depth_pshader_pass2, zbuffer, active_fbuffer);
 		
-		if (-1 == PRINTSCREEN_FRAME) {
-			write_tga_file ("framebuffer_0.tga", (tbyte *) fbuffer[0], WIDTH, HEIGHT, 24, 1);
-			//write_tga_file ("output_fb1.tga", (tbyte *) fbuffer1, WIDTH, HEIGHT, 24, 1);
-			//if (sizeof(screenz_t) == 1) {
-			{
-				
-				tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
-				for (int i = 0; i < screen_size; i++) tmp[i] = (fixpt_to_int32 (zbuffer[i]) >> 8) + 128;
-				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
-				free (tmp);
-				for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-					if (LIGHTS[i].enabled) {
-						char sb_file[32];
-						char num[32];
-						sprintf(num, "%d", i);
-						strcpy (sb_file, "shadow_buffer_");
-						strcat (sb_file, num);
-						strcat (sb_file, ".tga");
-						
-						tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
-						for (int j = 0; j < screen_size; j++) tmp[j] = (fixpt_to_int32 (LIGHTS[i].shadow_buf[j]) >> 8) + 128;
-						write_tga_file (sb_file, tmp, WIDTH, HEIGHT, 8, 1);
-						free (tmp);
-					}
-				}				
+		if (m == PRINTSCREEN_FRAME) {
+			
+			write_tga_file ("framebuffer_0.tga", (tbyte *) active_fbuffer, WIDTH, HEIGHT, 24, 1);
+			
+			tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
+			
+			for (int i = 0; i < screen_size; i++) {
+				tmp[i] = zbuffer[i] >> 4;// >> (8 * (sizeof(screenz_t) - 1) );
 			}
+			write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
+			
+			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+				if (LIGHTS[i].enabled) {
+					char sb_file[32];
+					char num[32];
+					sprintf(num, "%d", i);
+					strcpy (sb_file, "shadow_buffer_");
+					strcat (sb_file, num);
+					strcat (sb_file, ".tga");
+					
+					for (int j = 0; j < screen_size; j++) {
+						tmp[j] = LIGHTS[i].shadow_buf[j] >> (8 * (sizeof(screenz_t) - 1) );
+					}
+					write_tga_file (sb_file, tmp, WIDTH, HEIGHT, 8, 1);		
+				}
+			}		
+			
+			free (tmp);		
 		}
 	}
 	// while (0);

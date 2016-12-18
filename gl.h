@@ -26,8 +26,8 @@ typedef enum {X = 0, Y, Z, W} axis;
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
 typedef int16_t screenxy_t;
 
-//typedef uint16_t screenz_t;
-typedef fixpt_t screenz_t;
+typedef uint16_t screenz_t;
+//typedef fixpt_t screenz_t;
 //typedef uint8_t screenz_t;
 
 typedef struct ScreenPt {
@@ -154,12 +154,12 @@ void init_scene (void);
 
 void create_light (Float3 dir, screenz_t *shadow_buf, int light_num);
 
-void       set_screen_size   (screenxy_t width, screenxy_t height);
-screenxy_t get_screen_width  (void);
-screenxy_t get_screen_height (void);
-screenz_t  get_screen_depth  (void);
+void   set_screen_size   (size_t width, size_t height);
+size_t get_screen_width  (void);
+size_t get_screen_height (void);
+size_t get_screen_depth  (void);
 
-int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
+//int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
 
 //void  world2screen (float4 &w, ScreenPt &s);
 
@@ -206,8 +206,19 @@ static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
 	return c;
 }
 
-static inline screenxy_t   fixpt_to_screenxy (fixpt_t a) {
+static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
 	return (screenxy_t) (a >> FRACT_BITS);
+}
+
+
+
+static inline fixpt_t fixpt_from_screenz (screenz_t a) {
+	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	return c;
+}
+
+static inline screenz_t fixpt_to_screenz (fixpt_t a) {
+	return (screenz_t) (a >> FRACT_BITS);
 }
 
 

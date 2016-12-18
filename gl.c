@@ -12,9 +12,9 @@
 #include <stdint.h>
 
 
-screenxy_t SCREEN_WIDTH;
-screenxy_t SCREEN_HEIGHT;
-screenz_t  SCREEN_DEPTH;
+size_t SCREEN_WIDTH;
+size_t SCREEN_HEIGHT;
+size_t SCREEN_DEPTH;
 
 size_t NUM_OF_TILES;
 
@@ -92,7 +92,7 @@ void init_viewport (int x, int y, int w, int h, int d) {
 
 	// X: map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
 	// Y: map [-1:1] to [0:SCREEN_HEIGHT]
-	// Z: map [-1:1] to [-SCREEN_DEPTH/2:SCREEN_DEPTH/2]				
+	// Z: map [-1:1] to [SCREEN_DEPTH:0]				
 	// W: leave as is
 				
 	fmat4_identity (&VIEWPORT);
@@ -100,14 +100,14 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 0, 3, x + w / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 1, h / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
-	fmat4_set (&VIEWPORT, 2, 2, d / 2.0f);
-	fmat4_set (&VIEWPORT, 2, 3, 0);
-	//fmat4_set (&VIEWPORT, 2, 2, d / 4.0f);
-	//fmat4_set (&VIEWPORT, 2, 3, d / 4.0f);
+	//fmat4_set (&VIEWPORT, 2, 2, d / 2.0f);
+	//fmat4_set (&VIEWPORT, 2, 3, 0);
+	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
+	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
 	//print_fmat4 (&VIEWPORT, "viewport matrix");
 }
 
-void set_screen_size (screenxy_t width, screenxy_t height) {
+void set_screen_size (size_t width, size_t height) {
 	SCREEN_WIDTH  = width;
 	SCREEN_HEIGHT = height;
 	SCREEN_DEPTH  = (screenz_t) ~0; // all ones
@@ -115,16 +115,16 @@ void set_screen_size (screenxy_t width, screenxy_t height) {
 	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
 }
 
-screenxy_t get_screen_width (void) {
+size_t get_screen_width (void) {
 	return SCREEN_WIDTH;
 }
 
-screenxy_t get_screen_height (void) {
+size_t get_screen_height (void) {
 	return SCREEN_HEIGHT;
 }
 
-screenz_t get_screen_depth (void) {
-	return SCREEN_DEPTH >> FRACT_BITS; // return integer part of QM.N
+size_t get_screen_depth (void) {
+	return SCREEN_DEPTH;
 }
 
 
@@ -269,6 +269,15 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
+fixpt_t interpolate_z (fixpt_t z0, fixpt_t z1z0, fixpt_t z2z0, FixPt3 *bar) {
+	//fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
+	dfixpt_t mul_1 = z1z0 * bar->as_array[1];
+	dfixpt_t mul_2 = z2z0 * bar->as_array[2];
+	dfixpt_t z0_1  = ((dfixpt_t) z0) << FRACT_BITS;
+	dfixpt_t acc = z0_1 + mul_1 + mul_2;
+	return (fixpt_t) (acc >> FRACT_BITS);
+}
+
 Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 
 	Varying vry_interp;
@@ -406,19 +415,19 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 			if ((bar_fixp.as_array[0] > 0) && (bar_fixp.as_array[1] > 0) && (bar_fixp.as_array[2] > 0)) { // left-top fill rule
 				
 				// Interpolate and normalize Z
-				p.z = fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
+				fixpt_t z = interpolate_z (z_fixp[0], z1z0, z2z0, &bar_fixp); //fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
 						
 				
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				
 				// saturating subtraction:
-				screenz_t z_diff = fixpt_sub(p.z, zbuffer[pix_num]);
-				if ((p.z > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
-				else if ((p.z < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
+				fixpt_t z_diff = fixpt_sub(z, fixpt_from_screenz (zbuffer[pix_num]) );
+				if ((z > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
+				else if ((z < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
 								
 				//if (p.z > zbuffer[pix_num]) {
 				if (z_diff > 0) {
-					zbuffer[pix_num] = p.z;
+					zbuffer[pix_num] = fixpt_to_screenz (z);
 
 					// Interpolation of Varying values:
 					
