@@ -336,9 +336,36 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 	return vry_interp;
 }
 
-/*get_bounding_box () {
+TriBoundBox get_bounding_box (size_t tile_num, fixpt_t x[3], fixpt_t y[3]) {
 	
-}*/
+	TriBoundBox bb;
+	
+	// Compute tile bounding box.
+    screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
+    screenxy_t tile_max_x = tile_min_x + TILE_WIDTH; 
+    screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
+    screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
+    
+    if (GL_DEBUG_1) {
+		printf("\t\ttile bounding box: x %d;%d\ty %d;%d\n", tile_min_x, tile_max_x, tile_min_y, tile_max_y);
+	}
+   
+    // Compute triangle bounding box.
+    screenxy_t tri_min_x = fixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
+    screenxy_t tri_max_x = fixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
+    screenxy_t tri_min_y = fixpt_to_screenxy (min_of_three (y[0], y[1], y[2]));
+    screenxy_t tri_max_y = fixpt_to_screenxy (max_of_three (y[0], y[1], y[2]));
+    if (GL_DEBUG_1) {
+		 printf("\t\ttriangle bounding box: x %d;%d\ty %d;%d\n", tri_min_x, tri_max_x, tri_min_y, tri_max_y);
+    }
+    
+    bb.min.x = max_of_two (tile_min_x, tri_min_x);
+    bb.max.x = min_of_two (tile_max_x, tri_max_x) + BOUNDBOX_PRECISION_HACK;
+    bb.min.y = max_of_two (tile_min_y, tri_min_y);
+    bb.max.y = min_of_two (tile_max_y, tri_max_y) + BOUNDBOX_PRECISION_HACK;
+
+	return bb;
+}
 
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
@@ -352,12 +379,10 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {    
+void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {    
 	if (GL_DEBUG_0) {
 		printf("\tcall draw_triangle()\n");
 	}
-	// fixed point coordinates with subpixel precision:
-	// forum.devmaster.net/t/advanced-rasterization/6145
 	
 	fixpt_t    x_fixp[3];
 	fixpt_t    y_fixp[3];
@@ -374,42 +399,12 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 		w_fixp[i] = tri->screen_coords[i].as_struct.w;
 	}
 	
-    // Compute tile bounding box.
-    screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
-    screenxy_t tile_max_x = tile_min_x + TILE_WIDTH; 
-    screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
-    screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
-    
-    //tile_min_x &= ~(TILE_WIDTH-1);
-    //tile_min_y &= ~(TILE_HEIGHT-1);
-    
-    
-    if (GL_DEBUG_1) {
-		printf("\t\ttile bounding box: x %d;%d\ty %d;%d\n", tile_min_x, tile_max_x, tile_min_y, tile_max_y);
-	}
-   
-    // Compute triangle bounding box.
-    screenxy_t tri_min_x = fixpt_to_screenxy (min_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
-    screenxy_t tri_max_x = fixpt_to_screenxy (max_of_three (x_fixp[0], x_fixp[1], x_fixp[2]));
-    screenxy_t tri_min_y = fixpt_to_screenxy (min_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
-    screenxy_t tri_max_y = fixpt_to_screenxy (max_of_three (y_fixp[0], y_fixp[1], y_fixp[2]));
-    if (GL_DEBUG_1) {
-		 printf("\t\ttriangle bounding box: x %d;%d\ty %d;%d\n", tri_min_x, tri_max_x, tri_min_y, tri_max_y);
-    }
-    
-    screenxy_t min_x = max_of_two (tile_min_x, tri_min_x);
-    screenxy_t max_x = min_of_two (tile_max_x, tri_max_x) + BOUNDBOX_PRECISION_HACK;
-    screenxy_t min_y = max_of_two (tile_min_y, tri_min_y);
-    screenxy_t max_y = min_of_two (tile_max_y, tri_max_y) + BOUNDBOX_PRECISION_HACK;
- 
-    if (GL_DEBUG_1) {
-		printf("\t\tbounding box: x %d;%d\ty %d;%d\n", min_x, max_x, min_y, max_y);
-	}
+	TriBoundBox bb = get_bounding_box (tile_num, x_fixp, y_fixp);
 	
     fixpt_t bar_fixp_row[3];
     FixPt3 bar_fixp;
-	fixpt_t px_fixp = fixpt_from_screenxy (min_x);
-	fixpt_t py_fixp = fixpt_from_screenxy (min_y);
+	fixpt_t px_fixp = fixpt_from_screenxy (bb.min.x);
+	fixpt_t py_fixp = fixpt_from_screenxy (bb.min.y);
 	bar_fixp_row[0] = edge_func_fixpt (x_fixp[1], y_fixp[1], x_fixp[2], y_fixp[2], px_fixp, py_fixp); // not normalized
 	bar_fixp_row[1] = edge_func_fixpt (x_fixp[2], y_fixp[2], x_fixp[0], y_fixp[0], px_fixp, py_fixp); // not normalized
 	bar_fixp_row[2] = edge_func_fixpt (x_fixp[0], y_fixp[0], x_fixp[1], y_fixp[1], px_fixp, py_fixp); // not normalized
@@ -431,13 +426,13 @@ void draw_triangle (TriangleVtxListNode *tri, int tile_num, pixel_shader pshader
 	
 	
 	ScreenPt p;
-    for (p.y = min_y; p.y < max_y; p.y++) {	
+    for (p.y = bb.min.y; p.y < bb.max.y; p.y++) {	
 		
 		for (int i = 0; i < 3; i++) {
 			bar_fixp.as_array[i] = bar_fixp_row[i];
 		}
 		
-		for (p.x = min_x; p.x < max_x; p.x++) {
+		for (p.x = bb.min.x; p.x < bb.max.x; p.x++) {
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar_fixp.as_array[0] > 0) && (bar_fixp.as_array[1] > 0) && (bar_fixp.as_array[2] > 0)) { // left-top fill rule
