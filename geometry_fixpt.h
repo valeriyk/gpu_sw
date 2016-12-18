@@ -110,6 +110,14 @@ static inline fixpt_t fixpt_div (fixpt_t a, fixpt_t b) {
 }
 
 
+static inline FixPt3 FixPt3_FixPt3_add (FixPt3 a, FixPt3 b) {
+	FixPt3 c;
+	for (int i = 0; i < 3; i++) {
+		c.as_array[i] = a.as_array[i] + b.as_array[i];
+	}
+	return c;
+}
+
 static inline fixpt_t fixpt_get_min (void) {
 	return 0x80000000;
 }
