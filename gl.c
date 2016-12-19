@@ -411,14 +411,14 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	fixpt_t    x_fixp[3];
 	fixpt_t    y_fixp[3];
 	fixpt_t    z_fixp[3];
-	fixpt_t    w_fixp[3];
+	//fixpt_t    w_fixp[3];
 	
 	// re-pack X, Y, Z, W coords of the three vertices
 	for (int i = 0; i < 3; i++) {
 		x_fixp[i] = tri->screen_coords[i].as_struct.x;
 		y_fixp[i] = tri->screen_coords[i].as_struct.y;
 		z_fixp[i] = tri->screen_coords[i].as_struct.z;
-		w_fixp[i] = tri->screen_coords[i].as_struct.w;
+		//w_fixp[i] = tri->screen_coords[i].as_struct.w;
 		
 		if (DEBUG_Z) {
 			if (z_fixp[i] < 0) printf ("Fixp Z < 0: %x\n", z_fixp[i]);
@@ -435,7 +435,16 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	bar_initial.as_array[1] = edge_func_fixpt (x_fixp[2], y_fixp[2], x_fixp[0], y_fixp[0], px_fixp, py_fixp); // not normalized
 	bar_initial.as_array[2] = edge_func_fixpt (x_fixp[0], y_fixp[0], x_fixp[1], y_fixp[1], px_fixp, py_fixp); // not normalized
 	
-	fixpt_t sum_of_bars = fixpt_add (bar_initial.as_array[0], fixpt_add (bar_initial.as_array[1], bar_initial.as_array[2]));
+	fixpt_t sum_of_2bars = fixpt_add (bar_initial.as_array[0], bar_initial.as_array[1]);
+	fixpt_t sum_of_bars = fixpt_add (bar_initial.as_array[2], sum_of_2bars);
+	if (sum_of_bars == 0) return;
+	/*if ((bar_initial.as_array[0] > 0) && (bar_initial.as_array[1] > 0))
+		if (sum_of_2bars < 0)
+			printf ("sum_of_2bars: %x + %x = %x\n", bar_initial.as_array[0], bar_initial.as_array[1], sum_of_2bars);
+	if ((bar_initial.as_array[2] > 0) && (sum_of_2bars > 0))
+		if (sum_of_bars < 0)
+			printf ("sum_of_3bars: %x + %x = %x\n", bar_initial.as_array[2], sum_of_2bars, sum_of_bars);
+	*/
 	
 	FixPt3 bar_row_incr;
 	bar_row_incr.as_array[0] = fixpt_sub (x_fixp[2], x_fixp[1]);
@@ -450,8 +459,8 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	
 	fixpt_t z1z0 = fixpt_div (fixpt_sub (z_fixp[1], z_fixp[0]), sum_of_bars);
 	fixpt_t z2z0 = fixpt_div (fixpt_sub (z_fixp[2], z_fixp[0]), sum_of_bars);
-	fixpt_t w1w0 = fixpt_div (fixpt_sub (w_fixp[1], w_fixp[0]), sum_of_bars);
-	fixpt_t w2w0 = fixpt_div (fixpt_sub (w_fixp[2], w_fixp[0]), sum_of_bars);
+	//fixpt_t w1w0 = fixpt_div (fixpt_sub (w_fixp[1], w_fixp[0]), sum_of_bars);
+	//fixpt_t w2w0 = fixpt_div (fixpt_sub (w_fixp[2], w_fixp[0]), sum_of_bars);
 		
 	FixPt3   bar;
 	FixPt3   bar_row = bar_initial;
@@ -489,7 +498,7 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 					vry_interp.num_of_words = tri->varying[0].num_of_words;
 					if (vry_interp.num_of_words > 0) {
 						// Interpolate Z with perspective correction
-						
+						/*
 						fixpt_t w_interp = fixpt_add (fixpt_mul (w_fixp[0], bar.as_array[0]), fixpt_add (fixpt_mul (w_fixp[1], bar.as_array[1]), fixpt_mul (w_fixp[2], bar.as_array[2])));
 						
 						for (int i = 0; i < vry_interp.num_of_words; i++) {
@@ -503,6 +512,23 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 							
 							vry_interp.data.as_fixpt_t[i] = fixpt_add (mpy0, fixpt_add (mpy1, mpy2));
 							vry_interp.data.as_fixpt_t[i] = fixpt_div (vry_interp.data.as_fixpt_t[i], w_interp);
+						}
+						*/
+						float w_interp = 0;
+						for (int i = 0; i < 3; i++) w_interp += tri->w_reciprocal[i] * fixpt_to_float (bar.as_array[i]);
+						
+						//fixpt_t w_interp = fixpt_add (fixpt_mul (w_fixp[0], bar.as_array[0]), fixpt_add (fixpt_mul (w_fixp[1], bar.as_array[1]), fixpt_mul (w_fixp[2], bar.as_array[2])));
+						
+						for (int i = 0; i < vry_interp.num_of_words; i++) {
+							float vtx0_norm = tri->varying[0].data.as_float[i] * tri->w_reciprocal[0];
+							float vtx1_norm = tri->varying[1].data.as_float[i] * tri->w_reciprocal[1];
+							float vtx2_norm = tri->varying[2].data.as_float[i] * tri->w_reciprocal[2];
+							
+							float mpy0 = vtx0_norm * fixpt_to_float (bar.as_array[0]);
+							float mpy1 = vtx1_norm * fixpt_to_float (bar.as_array[1]);
+							float mpy2 = vtx2_norm * fixpt_to_float (bar.as_array[2]);
+							
+							vry_interp.data.as_float[i] = (mpy0 + mpy1 + mpy2) / w_interp;
 						}
 					}					
 					
@@ -558,7 +584,7 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	screenxy_t x[3];
 	screenxy_t y[3];
 	for (int i = 0; i < 3; i++) {
-		Float4 coords = FixPt4_Float4_conv(&(tri_node->screen_coords[i]));
+		Float3 coords = FixPt3_Float3_conv(&(tri_node->screen_coords[i]));
 		//x[i] = (screenxy_t) fix16_to_int (coords.as_struct.x);// * (1 << FIX_PT_PRECISION);
 		//y[i] = (screenxy_t) fix16_to_int (coords.as_struct.y);// * (1 << FIX_PT_PRECISION);
 		x[i] = (screenxy_t) coords.as_struct.x * (1 << FIX_PT_PRECISION);
@@ -728,7 +754,12 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 						// // Replace clip coords with screen coords within the Varying struct
 						// // before passing it on to draw_triangle()
 						// vtx_list[tri_num].varying[j].data.as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
-						vtx_list[tri_num].screen_coords[j] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						
+						//vtx_list[tri_num].screen_coords[j] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						for (int k = 0; k < 3; k++) {
+							vtx_list[tri_num].screen_coords[j].as_array[k] = fixpt_from_float (screen.vtx[j].as_array[k]);
+						}
+						vtx_list[tri_num].w_reciprocal[j] = screen.vtx[j].as_struct.w;
 					}		
 				}
 			}

@@ -4,7 +4,7 @@
 //#include <fixmath.h>
 //#include "fixpt.h"
 
-#define NDEBUG
+//#define NDEBUG
 #include <assert.h>
 
 #include <stdint.h>
@@ -19,7 +19,7 @@ typedef int64_t dfixpt_t;
 
 
 #define FIXPT_BITS (sizeof(fixpt_t) * 8)
-#define FRACT_BITS 12
+#define FRACT_BITS 4
 
 #define FIX_PT_PRECISION	4
 
@@ -62,6 +62,9 @@ typedef union FixPt4 {
 FixPt2 Float2_FixPt2_conv (Float2 *in);
 Float2 FixPt2_Float2_conv (FixPt2 *in);
 
+FixPt3 Float3_FixPt3_conv (Float3 *in);
+Float3 FixPt3_Float3_conv (FixPt3 *in);
+
 FixPt4 Float4_FixPt4_conv (Float4 *in);
 Float4 FixPt4_Float4_conv (FixPt4 *in);
 
@@ -76,15 +79,15 @@ Float4 FixPt4_Float4_cast (FixPt4 *in);
 
 static inline fixpt_t fixpt_add (fixpt_t a, fixpt_t b) {
 	fixpt_t c = a + b;
-	assert ((a > 0) && (b > 0) && (c > 0));
-	assert ((a < 0) && (b < 0) && (c < 0));
+	assert (((a > 0) && (b > 0)) ? (c > 0) : 1);
+	assert (((a < 0) && (b < 0)) ? (c < 0) : 1);
 	return c;
 }
 
 static inline fixpt_t fixpt_sub (fixpt_t a, fixpt_t b) {
 	fixpt_t c = a - b;
-	assert ((a > 0) && (b < 0) && (c > 0));
-	assert ((a < 0) && (b > 0) && (c < 0));
+	assert (((a > 0) && (b < 0)) ? (c > 0) : 1);
+	assert (((a < 0) && (b > 0)) ? (c < 0) : 1);
 	return c;
 }
 

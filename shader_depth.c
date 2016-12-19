@@ -7,6 +7,7 @@
 
 #include <math.h>
 
+#define FLOAT 1
 
 int count_shadows (Varying *vry);
 
@@ -56,7 +57,12 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
 	
 	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
-	vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&transformed);
+	if (FLOAT) {
+		vry->data.as_Float4[0] = transformed;
+	}
+	else {
+		vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&transformed);
+	}
 	vry->num_of_words = 4;
 	
 //printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
@@ -64,10 +70,17 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
-		Float2 text       = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		vry->data.as_FixPt2[2] = Float2_FixPt2_conv (&text);
-		vry->data.as_fixpt_t[6] = 0;
-		vry->data.as_fixpt_t[7] = 0;
+		Float2 text = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		if (FLOAT) {
+			vry->data.as_Float2[2] = text;
+			vry->data.as_float [6] = 0;
+			vry->data.as_float [7] = 0;
+		}
+		else {
+			vry->data.as_FixPt2 [2] = Float2_FixPt2_conv (&text);
+			vry->data.as_fixpt_t[6] = 0;
+			vry->data.as_fixpt_t[7] = 0;
+		}
 		vry->num_of_words += 4;
 	}
 	
@@ -87,7 +100,12 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 		*/
 		
 		Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_vtx4d);
-		vry->data.as_FixPt4[2+i] = Float4_FixPt4_conv (&shadow_screen);
+		if (FLOAT) {
+			vry->data.as_Float4[2+i] = shadow_screen;
+		}
+		else {
+			vry->data.as_FixPt4[2+i] = Float4_FixPt4_conv (&shadow_screen);
+		}
 		vry->num_of_words += 4;
 	}
 		
@@ -100,25 +118,41 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
 	}
 	
-	Float2 text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[2]));
+	Float2 text;
+	if (FLOAT) {
+		text = vry->data.as_Float2[2];
+	}
+	else {
+		text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[2]));
+	}
+	
+	size_t uu = (int) text.as_struct.u;
+	size_t vv = (int) text.as_struct.v;
 	
 	pixel_color_t pix;
 	if (obj->wfobj->texture != NULL) {
-		if ((text.as_struct.u >= obj->wfobj->texture->w) || (text.as_struct.v >= obj->wfobj->texture->h)) {
+		if ((uu >= obj->wfobj->texture->w) || (vv >= obj->wfobj->texture->h)) {
 			printf ("y");
 			return false;
 		}
-		if ((text.as_struct.u < 0) || (text.as_struct.v < 0)) {
+		if ((uu < 0) || (vv < 0)) {
 			printf ("Y");
 			return false;
 		}
-		wfobj_get_rgb_from_texture (obj->wfobj, text.as_struct.u, text.as_struct.v, &pix.r, &pix.g, &pix.b);
+		wfobj_get_rgb_from_texture (obj->wfobj, uu, vv, &pix.r, &pix.g, &pix.b);
 	}
 	else {
 		pix = set_color (128, 128, 128, 0);
 	}
 	
-	Float4 norm4   = FixPt4_Float4_conv (&(vry->data.as_FixPt4[0]));
+	Float4 norm4;
+	if (FLOAT) {
+		norm4 = vry->data.as_Float4[0];
+	}
+	else {
+		norm4 = FixPt4_Float4_conv (&(vry->data.as_FixPt4[0]));
+	}
+	
 	Float3 normal  = Float4_Float3_vect_conv (&norm4);
 	
 	Float3_normalize (&normal);
@@ -135,11 +169,11 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
 		Float3_normalize (&r);
 		
-		int spec_factor = wfobj_get_specularity_from_map (obj->wfobj, text.as_struct.u, text.as_struct.v);
+		int spec_factor = wfobj_get_specularity_from_map (obj->wfobj, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
 	
-	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
+	float shadow_total = 1.0f;//1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
 	
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -151,6 +185,9 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
+	
+	//intensity = 0.8f;
+	//pix = set_color (128, 128, 128, 0);
 	
 	if (DEPTH_PSHADER2_DEBUG) {
 		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
@@ -167,6 +204,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	if (b > 255) b = 255;
 	
 	*color = set_color (r, g, b, 0);
+	//*color = set_color (255, 0, 0, 0);
 	return true;
 }
 
