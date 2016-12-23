@@ -34,10 +34,10 @@ typedef struct ScreenPt {
 	//screenz_t  z;
 } ScreenPt;
 
-typedef struct TriBoundBox {
+typedef struct BoundingBox {
 	ScreenPt min;
 	ScreenPt max;
-} TriBoundBox;
+} BoundingBox;
 
 typedef struct pixel_color_t {
 	uint8_t r, g, b;
@@ -170,8 +170,8 @@ size_t get_screen_depth  (void);
 
 //void  world2screen (float4 &w, ScreenPt &s);
 
-screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
-screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
+//screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
+//screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
