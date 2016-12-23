@@ -19,7 +19,7 @@ typedef int64_t dfixpt_t;
 
 
 #define FIXPT_BITS (sizeof(fixpt_t) * 8)
-#define FRACT_BITS 4
+#define FRACT_BITS 6
 
 #define FIX_PT_PRECISION	4
 
