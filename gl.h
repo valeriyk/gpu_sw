@@ -34,10 +34,10 @@ typedef struct ScreenPt {
 	//screenz_t  z;
 } ScreenPt;
 
-typedef struct BoundingBox {
+typedef struct BoundBox {
 	ScreenPt min;
 	ScreenPt max;
-} BoundingBox;
+} BoundBox;
 
 typedef struct pixel_color_t {
 	uint8_t r, g, b;

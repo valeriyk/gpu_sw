@@ -21,47 +21,11 @@ size_t NUM_OF_TILES;
 fmat4 VIEWPORT;
 
 
-int32_t edge_func      (screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy);
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
 
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
-
-
-int32_t edge_func(screenxy_t ax, screenxy_t ay, screenxy_t bx, screenxy_t by, screenxy_t cx, screenxy_t cy) {
-    int32_t bx_ax = (int32_t) bx - (int32_t) ax;
-    int32_t cy_ay = (int32_t) cy - (int32_t) ay;
-    int32_t by_ay = (int32_t) by - (int32_t) ay;
-    int32_t cx_ax = (int32_t) cx - (int32_t) ax;
-    
-    int32_t res = bx_ax * cy_ay - by_ay * cx_ax;
-    
-    bool downwards  = (by_ay  < 0);
-    bool horizontal = (by_ay == 0);
-    bool leftwards  = (bx_ax  < 0);
-    bool topleft    = downwards || (horizontal && leftwards);
-    
-    return topleft ? ++res : res;
-}
-	
-/*fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
-    
-    fixpt_t bx_ax = fixpt_sub (bx, ax);
-    fixpt_t cy_ay = fixpt_sub (cy, ay);
-    fixpt_t by_ay = fixpt_sub (by, ay);
-    fixpt_t cx_ax = fixpt_sub (cx, ax);
-
-    fixpt_t res = fixpt_sub (fixpt_mul (bx_ax, cy_ay), fixpt_mul (by_ay,cx_ax));
-    
-    // left-top fill rule:
-    bool downwards  = (by_ay  < 0);
-    bool horizontal = (by_ay == 0);
-    bool leftwards  = (bx_ax  < 0);
-    bool topleft    = downwards || (horizontal && leftwards);
-    
-    return topleft ? fixpt_add (res, 1) : res;
-}*/	
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
     
@@ -70,7 +34,6 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
     dfixpt_t by_ay = (dfixpt_t) by - (dfixpt_t) ay;
     dfixpt_t cx_ax = (dfixpt_t) cx - (dfixpt_t) ax;
 
-    //fixpt_t res = fixpt_sub (fixpt_mul (bx_ax, cy_ay), fixpt_mul (by_ay,cx_ax));
     dfixpt_t mul_0 = bx_ax * cy_ay;
     dfixpt_t mul_1 = by_ay * cx_ax;
     dfixpt_t diff  = mul_0 - mul_1;
@@ -83,6 +46,17 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
     bool topleft    = downwards || (horizontal && leftwards);
     
     return topleft ? res + 1 : res;
+}
+
+FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py) {
+    
+    FixPt3 barc;
+    
+    barc.as_array[0] = edge_func_fixpt (x[1], y[1], x[2], y[2], px, py); // not normalized
+	barc.as_array[1] = edge_func_fixpt (x[2], y[2], x[0], y[0], px, py); // not normalized
+	barc.as_array[2] = edge_func_fixpt (x[0], y[0], x[1], y[1], px, py); // not normalized
+	
+	return barc;
 }
 
 static inline int32_t min_of_two (int32_t a, int32_t b) {
@@ -360,9 +334,9 @@ Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
 	return vry_interp;
 }
 
-BoundingBox get_tri_bounding_box (fixpt_t x[3], fixpt_t y[3]) {
+BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
 	
-	BoundingBox bb;
+	BoundBox bb;
     
     bb.min.x = fixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
     bb.max.x = fixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
@@ -372,9 +346,9 @@ BoundingBox get_tri_bounding_box (fixpt_t x[3], fixpt_t y[3]) {
     return bb;
 }
 
-BoundingBox clip_bounding_box_to_screen (BoundingBox in) {
+BoundBox clip_boundbox_to_screen (BoundBox in) {
 	
-	BoundingBox out;
+	BoundBox out;
 	
 	out.min.x = max_of_two (in.min.x, 0);
     out.max.x = min_of_two (in.max.x, SCREEN_WIDTH - 1);
@@ -384,16 +358,16 @@ BoundingBox clip_bounding_box_to_screen (BoundingBox in) {
 	return out;
 }
 
-BoundingBox clip_bounding_box_to_tile (BoundingBox in, size_t tile_num) {
+BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num) {
 	
-	BoundingBox tile;
+	BoundBox tile;
 	
 	tile.min.x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
     tile.min.y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
     tile.max.x = tile.min.x + TILE_WIDTH  - 1; 
     tile.max.y = tile.min.y + TILE_HEIGHT - 1;
     
-    BoundingBox out;
+    BoundBox out;
 	
 	out.min.x = max_of_two (tile.min.x, in.min.x);
     out.max.x = min_of_two (tile.max.x, in.max.x);
@@ -438,26 +412,16 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 		}
 	}
 	
-	BoundingBox bb = clip_bounding_box_to_tile (get_tri_bounding_box (x, y), tile_num);
+	BoundBox bb = clip_boundbox_to_tile (get_tri_boundbox (x, y), tile_num);
 	
 	fixpt_t px = fixpt_from_screenxy (bb.min.x);
 	fixpt_t py = fixpt_from_screenxy (bb.min.y);
 	
-	FixPt3 bar_initial;
-	bar_initial.as_array[0] = edge_func_fixpt (x[1], y[1], x[2], y[2], px, py); // not normalized
-	bar_initial.as_array[1] = edge_func_fixpt (x[2], y[2], x[0], y[0], px, py); // not normalized
-	bar_initial.as_array[2] = edge_func_fixpt (x[0], y[0], x[1], y[1], px, py); // not normalized
+	FixPt3 bar_initial = get_bar_coords (x, y, px, py);
 	
 	fixpt_t sum_of_2bars = fixpt_add (bar_initial.as_array[0], bar_initial.as_array[1]);
 	fixpt_t sum_of_bars = fixpt_add (bar_initial.as_array[2], sum_of_2bars);
 	if (sum_of_bars == 0) return;
-	/*if ((bar_initial.as_array[0] > 0) && (bar_initial.as_array[1] > 0))
-		if (sum_of_2bars < 0)
-			printf ("sum_of_2bars: %x + %x = %x\n", bar_initial.as_array[0], bar_initial.as_array[1], sum_of_2bars);
-	if ((bar_initial.as_array[2] > 0) && (sum_of_2bars > 0))
-		if (sum_of_bars < 0)
-			printf ("sum_of_3bars: %x + %x = %x\n", bar_initial.as_array[2], sum_of_2bars, sum_of_bars);
-	*/
 	
 	FixPt3 bar_row_incr;
 	bar_row_incr.as_array[0] = fixpt_sub (x[2], x[1]);
@@ -588,92 +552,64 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 
 void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	
-	if (GL_DEBUG_0) {
-		printf("\tcall tiler()\n");
-	}
-	
-	fixpt_t    x_fixp[3];
-	fixpt_t    y_fixp[3];
+	fixpt_t x[3];
+	fixpt_t y[3];
 	
 	// re-pack X, Y, Z, W coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x_fixp[i] = tri_node->screen_coords[i].as_struct.x;
-		y_fixp[i] = tri_node->screen_coords[i].as_struct.y;
+		x[i] = tri_node->screen_coords[i].as_struct.x;
+		y[i] = tri_node->screen_coords[i].as_struct.y;
 	}
 	
-	
-	
-	// fixed point coordinates with subpixel precision:
-	// forum.devmaster.net/t/advanced-rasterization/6145
-	screenxy_t x[3];
-	screenxy_t y[3];
-	for (int i = 0; i < 3; i++) {
-		Float3 coords = FixPt3_Float3_conv(&(tri_node->screen_coords[i]));
-		//x[i] = (screenxy_t) fix16_to_int (coords.as_struct.x);// * (1 << FIX_PT_PRECISION);
-		//y[i] = (screenxy_t) fix16_to_int (coords.as_struct.y);// * (1 << FIX_PT_PRECISION);
-		x[i] = (screenxy_t) coords.as_struct.x * (1 << FIX_PT_PRECISION);
-		y[i] = (screenxy_t) coords.as_struct.y * (1 << FIX_PT_PRECISION);
-	}
-	
-	/*
-    // Compute triangle bounding box.
-    screenxy_t min_x = max_of_two (              0, (min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
-    screenxy_t min_y = max_of_two (              0, (min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
-    */
-    
-    BoundingBox bb = clip_bounding_box_to_screen (get_tri_bounding_box (x_fixp, y_fixp));
+	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y));
     bb.min.x &= ~(TILE_WIDTH-1);
     bb.min.y &= ~(TILE_HEIGHT-1);
     
     ScreenPt p;
+    
+    // Evaluate barycentric coords in all the four corners of each tile
     for (p.y = bb.min.y; p.y <= bb.max.y; p.y += TILE_HEIGHT) {	
 		for (p.x = bb.min.x; p.x <= bb.max.x; p.x += TILE_WIDTH) {
-			// Evaluate barycentric coords in the corners of the tile:
+
+			fixpt_t x0 = fixpt_from_screenxy (p.x);
+			fixpt_t x1 = fixpt_from_screenxy (p.x + TILE_WIDTH - 1);
+			fixpt_t y0 = fixpt_from_screenxy (p.y);
+			fixpt_t y1 = fixpt_from_screenxy (p.y + TILE_HEIGHT - 1);
+						
+			FixPt3 c0 = get_bar_coords (x, y, x0, y0);
+			FixPt3 c1 = get_bar_coords (x, y, x0, y1);
+			FixPt3 c2 = get_bar_coords (x, y, x1, y0);
+			FixPt3 c3 = get_bar_coords (x, y, x1, y1);
 			
-			int x0 = p.x << FIX_PT_PRECISION;
-			int x1 = (p.x + TILE_WIDTH - 1) << FIX_PT_PRECISION;
-			int y0 = p.y << FIX_PT_PRECISION;
-			int y1 = (p.y + TILE_HEIGHT - 1) << FIX_PT_PRECISION;
-			
-			//printf ("\tTile %d: x=%d y=%d\n", ((p.y/TILE_HEIGHT)*(SCREEN_WIDTH/TILE_WIDTH)+(p.x/TILE_WIDTH)), p.x/TILE_WIDTH, p.y/TILE_HEIGHT);
-			
-			bool edge0_corner0_outside = (edge_func (x[1], y[1], x[2], y[2], x0, y0) < 0); // not normalized
-			bool edge0_corner1_outside = (edge_func (x[1], y[1], x[2], y[2], x0, y1) < 0); // not normalized
-			bool edge0_corner2_outside = (edge_func (x[1], y[1], x[2], y[2], x1, y0) < 0); // not normalized
-			bool edge0_corner3_outside = (edge_func (x[1], y[1], x[2], y[2], x1, y1) < 0); // not normalized
-			if (edge0_corner0_outside && edge0_corner1_outside && edge0_corner2_outside && edge0_corner3_outside) continue;
-			
-			bool edge1_corner0_outside = (edge_func (x[2], y[2], x[0], y[0], x0, y0) < 0); // not normalized
-			bool edge1_corner1_outside = (edge_func (x[2], y[2], x[0], y[0], x0, y1) < 0); // not normalized
-			bool edge1_corner2_outside = (edge_func (x[2], y[2], x[0], y[0], x1, y0) < 0); // not normalized
-			bool edge1_corner3_outside = (edge_func (x[2], y[2], x[0], y[0], x1, y1) < 0); // not normalized
-			if (edge1_corner0_outside && edge1_corner1_outside && edge1_corner2_outside && edge1_corner3_outside) continue;
-			
-			bool edge2_corner0_outside = (edge_func (x[0], y[0], x[1], y[1], x0, y0) < 0); // not normalized
-			bool edge2_corner1_outside = (edge_func (x[0], y[0], x[1], y[1], x0, y1) < 0); // not normalized
-			bool edge2_corner2_outside = (edge_func (x[0], y[0], x[1], y[1], x1, y0) < 0); // not normalized
-			bool edge2_corner3_outside = (edge_func (x[0], y[0], x[1], y[1], x1, y1) < 0); // not normalized
-			if (edge2_corner0_outside && edge2_corner1_outside && edge2_corner2_outside && edge2_corner3_outside) continue;
-			
-			size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
-			
-			TrianglePtrListNode *node = tri_ptr[tile_num];
-			if (node == NULL) {
-				node = calloc (1, sizeof (TrianglePtrListNode));
-				node->tri  = tri_node;
-				node->next = NULL;	
-				
-				tri_ptr[tile_num] = node;
-			}
-			else {
-				while (node->next != NULL) {
-					node = node->next;
+			bool tri_inside_tile = true; // sticky flag
+			for (int i = 0; i < 3; i++) {
+				// if barycentric coord "i" is negative in all four corners, triangle is outside the tile
+				if ((c0.as_array[i] & c1.as_array[i] & c2.as_array[i] & c3.as_array[i]) < 0) {
+					tri_inside_tile = false;
+					break;
 				}
-				node->next = calloc (1, sizeof (TrianglePtrListNode));
-				node->next->tri  = tri_node;
-				node->next->next = NULL;	
+			}
+			
+			if (tri_inside_tile) {
+				
+				size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
+				
+				TrianglePtrListNode *node = tri_ptr[tile_num];
+				if (node == NULL) {
+					node = calloc (1, sizeof (TrianglePtrListNode));
+					node->tri  = tri_node;
+					node->next = NULL;	
+					
+					tri_ptr[tile_num] = node;
+				}
+				else {
+					while (node->next != NULL) {
+						node = node->next;
+					}
+					node->next = calloc (1, sizeof (TrianglePtrListNode));
+					node->next->tri  = tri_node;
+					node->next->next = NULL;	
+				}
 			}
 		}
 	}
