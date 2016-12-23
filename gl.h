@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define BOUNDBOX_PRECISION_HACK 0 // TBD remove
+#define BOUNDBOX_PRECISION_HACK 2 // TBD remove
 
 
 #define MAX_NUM_OF_LIGHTS	1

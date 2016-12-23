@@ -366,9 +366,9 @@ TriBoundBox get_bounding_box (size_t tile_num, fixpt_t x[3], fixpt_t y[3]) {
 	
 	// Compute tile bounding box.
     screenxy_t tile_min_x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
-    screenxy_t tile_max_x = tile_min_x + TILE_WIDTH; 
+    screenxy_t tile_max_x = tile_min_x + TILE_WIDTH - BOUNDBOX_PRECISION_HACK; 
     screenxy_t tile_min_y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
-    screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT;
+    screenxy_t tile_max_y = tile_min_y + TILE_HEIGHT - BOUNDBOX_PRECISION_HACK;
     
     if (GL_DEBUG_1) {
 		printf("\t\ttile bounding box: x %d;%d\ty %d;%d\n", tile_min_x, tile_max_x, tile_min_y, tile_max_y);
@@ -384,9 +384,9 @@ TriBoundBox get_bounding_box (size_t tile_num, fixpt_t x[3], fixpt_t y[3]) {
     }
     
     bb.min.x = max_of_two (tile_min_x, tri_min_x);
-    bb.max.x = min_of_two (tile_max_x, tri_max_x) + BOUNDBOX_PRECISION_HACK;
+    bb.max.x = min_of_two (tile_max_x, tri_max_x);
     bb.min.y = max_of_two (tile_min_y, tri_min_y);
-    bb.max.y = min_of_two (tile_max_y, tri_max_y) + BOUNDBOX_PRECISION_HACK;
+    bb.max.y = min_of_two (tile_max_y, tri_max_y);
 
 	return bb;
 }
@@ -465,11 +465,11 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	FixPt3   bar;
 	FixPt3   bar_row = bar_initial;
 	ScreenPt p;
-    for (p.y = bb.min.y; p.y < bb.max.y; p.y++) {	
+    for (p.y = bb.min.y; p.y < bb.max.y + BOUNDBOX_PRECISION_HACK; p.y++) {	
 		
 		bar = bar_row;
 		
-		for (p.x = bb.min.x; p.x < bb.max.x; p.x++) {
+		for (p.x = bb.min.x; p.x < bb.max.x + BOUNDBOX_PRECISION_HACK; p.x++) {
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
@@ -593,9 +593,9 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 	
     // Compute triangle bounding box.
     screenxy_t min_x = max_of_two (              0, (min_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION) + BOUNDBOX_PRECISION_HACK);
+    screenxy_t max_x = min_of_two ( SCREEN_WIDTH-1, (max_of_three (x[0], x[1], x[2]) >> FIX_PT_PRECISION));
     screenxy_t min_y = max_of_two (              0, (min_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
-    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION) + BOUNDBOX_PRECISION_HACK);
+    screenxy_t max_y = min_of_two (SCREEN_HEIGHT-1, (max_of_three (y[0], y[1], y[2]) >> FIX_PT_PRECISION));
     
     min_x &= ~(TILE_WIDTH-1);
     min_y &= ~(TILE_HEIGHT-1);
