@@ -9,13 +9,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define BOUNDBOX_PRECISION_HACK 2 // TBD remove
-
 
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
-#define TILE_WIDTH  512//16
-#define TILE_HEIGHT 512//16
+#define TILE_WIDTH  32
+#define TILE_HEIGHT 32
 
 
 
@@ -216,6 +214,10 @@ static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
 }
 
 static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
+	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
+	
+	screenz_t c = a >> FRACT_BITS;
+	return (round_up) ? ++c : c;*/
 	return (screenxy_t) (a >> FRACT_BITS);
 }
 
@@ -227,6 +229,10 @@ static inline fixpt_t fixpt_from_screenz (screenz_t a) {
 }
 
 static inline screenz_t fixpt_to_screenz (fixpt_t a) {
+	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
+	
+	screenz_t c = a >> FRACT_BITS;
+	return (round_up) ? ++c : c;*/
 	return (screenz_t) (a >> FRACT_BITS);
 }
 

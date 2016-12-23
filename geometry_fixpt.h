@@ -7,6 +7,7 @@
 //#define NDEBUG
 #include <assert.h>
 
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -19,17 +20,11 @@ typedef int64_t dfixpt_t;
 
 
 #define FIXPT_BITS (sizeof(fixpt_t) * 8)
-#define FRACT_BITS 6
+#define FRACT_BITS 4
 
 #define FIX_PT_PRECISION	4
 
 
-
-/*#define FMAT4_IDENTITY	{{1.f, 0.f, 0.f, 0.f}, {0.f, 1.f, 0.f, 0.f}, {0.f, 0.f, 1.f, 0.f}, {0.f, 0.f, 0.f, 1.f}}
-
-
-typedef int32_t int3 [3];
-*/
 
 typedef fixpt_t fixpt_t2[2];
 typedef struct FixPtUV {
@@ -130,7 +125,7 @@ static inline fixpt_t fixpt_get_max (void) {
 }
 
 static inline fixpt_t fixpt_from_float (float a) {
-	fixpt_t c = (fixpt_t) (a * (1 << FRACT_BITS));
+	fixpt_t c = (fixpt_t) (roundf (a) * (1 << FRACT_BITS));
 	//assert ();
 	return c;
 }
@@ -149,6 +144,10 @@ static inline fixpt_t fixpt_from_int32 (int32_t a) {
 }
 
 static inline int32_t   fixpt_to_int32 (fixpt_t a) {
+	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
+	
+	int32_t c = a >> FRACT_BITS;
+	return (round_up) ? ++c : c;*/
 	return (a >> FRACT_BITS);
 }
 

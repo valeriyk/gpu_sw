@@ -288,19 +288,7 @@ ObjectNode* init_objects (void) {
 	return head;
 }
 
-/*
-typedef struct color_ycbcr_t {
-	uint8_t y, cb, cr;
-} color_ycbcr_t;
-	
-color_ycbcr_t rgb_to_ycbcr (pixel_color_t rgb) {
-	color_ycbcr_t ycbcr;
-	ycbcr.y  =  16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
-	ycbcr.cb = 128 - rgb.r * 0.148 - rgb.g * 0.291 + rgb.b * 0.439;
-	ycbcr.cr = 128 + rgb.r * 0.439 - rgb.g * 0.368 - rgb.b * 0.071;
-	return ycbcr;
-}
-*/
+
 uint8_t rgb_to_y (pixel_color_t rgb) {
 	return 16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
 }
