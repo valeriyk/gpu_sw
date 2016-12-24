@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-#define FLOAT 1
+
 
 int count_shadows (Varying *vry);
 
@@ -153,7 +153,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	//
 	pixel_color_t pix;
 	if (obj->wfobj->texture == NULL) {
-		pix = set_color (128, 128, 128, 0);
+		pix = set_color (200, 128, 128, 0);
 	}
 	else {
 		

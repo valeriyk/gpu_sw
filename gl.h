@@ -10,6 +10,12 @@
 #include <stdio.h>
 
 
+
+
+#define FLOAT 1
+
+
+
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
 #define TILE_WIDTH  32
@@ -118,7 +124,7 @@ typedef struct ObjectNode {
 */
 typedef struct TriangleVtxListNode {
 	FixPt3  screen_coords[3];
-	float   w_reciprocal[3];
+	nfixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
 	struct TriangleVtxListNode *next;

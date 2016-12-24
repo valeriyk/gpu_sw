@@ -20,10 +20,16 @@ typedef  int64_t dfixpt_t;
 
 typedef uint32_t nfixpt_t;
 
-#define FIXPT_BITS (sizeof(fixpt_t) * 8)
-#define FRACT_BITS 4
+#define  FIXPT_BITS (sizeof( fixpt_t) * 8)
+#define DFIXPT_BITS (sizeof(dfixpt_t) * 8)
+#define NFIXPT_BITS (sizeof(nfixpt_t) * 8)
 
-#define FIX_PT_PRECISION	4
+#define  FRACT_BITS 8
+#define DFRACT_BITS (FRACT_BITS*2)
+#define NFRACT_BITS 30
+
+
+//#define FIX_PT_PRECISION	4
 
 
 
@@ -99,6 +105,21 @@ static inline fixpt_t fixpt_mul (fixpt_t a, fixpt_t b) {
 	return (fixpt_t) (c >> FRACT_BITS);
 }
 
+static inline fixpt_t fixpt_nfixpt_mul (fixpt_t a, nfixpt_t b) {
+	dfixpt_t c = (dfixpt_t) a * (dfixpt_t) b;
+	/*
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	assert ((a > 0) && (b < 0) && (c < 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	assert ((a == 0) && (c == 0));
+	assert ((b == 0) && (c == 0));
+	assert ((c >> (FIXPT_BITS + FRACT_BITS)) == 0 );
+	*/
+	// 28.4 * 2.30 = 30.34 --> 30.4
+	return (fixpt_t) (c >> NFRACT_BITS);
+}
+
 static inline fixpt_t fixpt_div (fixpt_t a, fixpt_t b) {
 	dfixpt_t ad = ((dfixpt_t) a) << FRACT_BITS;
 	assert (b != 0);
@@ -125,6 +146,10 @@ static inline fixpt_t fixpt_get_max (void) {
 	return 0x7FFFFFFF;
 }
 
+static inline fixpt_t fixpt_get_one (void) {
+	return (1 << FRACT_BITS);
+}
+
 static inline fixpt_t fixpt_from_float (float a) {
 	fixpt_t c = (fixpt_t) (roundf (a) * (1 << FRACT_BITS));
 	//assert ();
@@ -133,6 +158,30 @@ static inline fixpt_t fixpt_from_float (float a) {
 
 static inline float fixpt_to_float (fixpt_t a) {
 	return ((float) a) / ((float) (1 << FRACT_BITS));
+}
+
+
+static inline dfixpt_t dfixpt_from_float (float a) {
+	dfixpt_t c = (dfixpt_t) (roundf (a) * (1 << DFRACT_BITS));
+	//assert ();
+	return c;
+}
+
+static inline float dfixpt_to_float (dfixpt_t a) {
+	return ((float) a) / ((float) (1 << DFRACT_BITS));
+}
+
+
+
+static inline nfixpt_t nfixpt_from_float (float a) {
+	assert (a <= 1.0f);
+	fixpt_t c = (fixpt_t) (a * (1 << NFRACT_BITS));
+	//assert ();
+	return c;
+}
+
+static inline float nfixpt_to_float (nfixpt_t a) {
+	return ((float) a) / ((float) (1 << NFRACT_BITS));
 }
 
 
