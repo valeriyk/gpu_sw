@@ -571,20 +571,23 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
     for (p.y = bb.min.y; p.y <= bb.max.y; p.y += TILE_HEIGHT) {	
 		for (p.x = bb.min.x; p.x <= bb.max.x; p.x += TILE_WIDTH) {
 
+			// find corners of the tile:
 			fixpt_t x0 = fixpt_from_screenxy (p.x);
 			fixpt_t x1 = fixpt_from_screenxy (p.x + TILE_WIDTH - 1);
 			fixpt_t y0 = fixpt_from_screenxy (p.y);
 			fixpt_t y1 = fixpt_from_screenxy (p.y + TILE_HEIGHT - 1);
-						
-			FixPt3 c0 = get_bar_coords (x, y, x0, y0);
-			FixPt3 c1 = get_bar_coords (x, y, x0, y1);
-			FixPt3 c2 = get_bar_coords (x, y, x1, y0);
-			FixPt3 c3 = get_bar_coords (x, y, x1, y1);
 			
-			bool tri_inside_tile = true; // sticky flag
+			// get barycentric coords in each corner:
+			FixPt3 b0 = get_bar_coords (x, y, x0, y0);
+			FixPt3 b1 = get_bar_coords (x, y, x0, y1);
+			FixPt3 b2 = get_bar_coords (x, y, x1, y0);
+			FixPt3 b3 = get_bar_coords (x, y, x1, y1);
+			
+			bool tri_inside_tile = true; // sticky bit
 			for (int i = 0; i < 3; i++) {
-				// if barycentric coord "i" is negative in all four corners, triangle is outside the tile
-				if ((c0.as_array[i] & c1.as_array[i] & c2.as_array[i] & c3.as_array[i]) < 0) {
+				// If barycentric coord "i" is negative in all four corners, triangle is outside the tile
+				// See here: http://forum.devmaster.net/t/advanced-rasterization/6145
+				if ((b0.as_array[i] & b1.as_array[i] & b2.as_array[i] & b3.as_array[i]) < 0) {
 					tri_inside_tile = false;
 					break;
 				}
@@ -663,6 +666,14 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 	
 	int tri_num = 0;
 	
+	float max_w = 0;
+	float max_w_recip = 0;
+	
+	float min_w = 10000;
+	float min_w_recip = 10000;
+	
+	bool RECORD_W_RANGE = true;
+	
 	while (obj_list_node != NULL) {
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
 						
@@ -685,6 +696,14 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 					// This division is done once here to avoid three deivisions below
 					// No div by zero because we checked above that it's > 0
 					float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
+					
+					if (RECORD_W_RANGE) {
+						if (clip.vtx[j].as_struct.w > max_w) max_w = clip.vtx[j].as_struct.w;
+						if (reciprocal_w > max_w_recip) max_w_recip = reciprocal_w;
+						
+						if (clip.vtx[j].as_struct.w < min_w) min_w = clip.vtx[j].as_struct.w;
+						if (reciprocal_w < min_w_recip) min_w_recip = reciprocal_w;
+					}
 					
 					// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
 					// If at least one coord belongs to [-1:1] then the vertex is not clipped
@@ -736,6 +755,10 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		obj_list_node = obj_list_node->next;
 	}
 	
+	if (RECORD_W_RANGE) {
+		printf ("max w: %f, max 1/w: %f\t\tmin w: %f, min 1/w: %f\n", max_w, max_w_recip, min_w, min_w_recip);
+	}
+					
 	for (int i = 0; i < NUM_OF_TILES; i++) {
 		TrianglePtrListNode *node = tile_idx_table[i];
 		while (node != NULL) {

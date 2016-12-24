@@ -290,16 +290,28 @@ ObjectNode* init_objects (void) {
 
 
 uint8_t rgb_to_y (pixel_color_t rgb) {
-	return 16 + rgb.r * 0.257 + rgb.g * 0.504 + rgb.b * 0.098;
+	return (uint8_t) (16.f + rgb.r * 0.257f + rgb.g * 0.504f + rgb.b * 0.098f);
 }
 
 uint8_t rgb_to_cb (pixel_color_t rgb) {
-	return 128 - rgb.r * 0.148 - rgb.g * 0.291 + rgb.b * 0.439;
+	return (uint8_t) (128.f - rgb.r * 0.148f - rgb.g * 0.291f + rgb.b * 0.439f);
 }
 
 uint8_t rgb_to_cr (pixel_color_t rgb) {
-	return 128 + rgb.r * 0.439 - rgb.g * 0.368 - rgb.b * 0.071;
+	return (uint8_t) (128.f + rgb.r * 0.439f - rgb.g * 0.368f - rgb.b * 0.071f);
 }
+
+/*uint8_t rgb_to_y (pixel_color_t rgb) {
+	return rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114;
+}
+
+uint8_t rgb_to_cb (pixel_color_t rgb) {
+	return rgb.r * -0.168935 + rgb.g * -0.331665 + rgb.b * 0.50059;
+}
+
+uint8_t rgb_to_cr (pixel_color_t rgb) {
+	return rgb.r * 0.499813 + rgb.g * -0.418531 + rgb.b * -0.081282;
+}*/
 
 int main(int argc, char** argv) {
        

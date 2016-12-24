@@ -15,9 +15,10 @@
 
 
 
-typedef int32_t  fixpt_t;
-typedef int64_t dfixpt_t;
+typedef  int32_t  fixpt_t;
+typedef  int64_t dfixpt_t;
 
+typedef uint32_t nfixpt_t;
 
 #define FIXPT_BITS (sizeof(fixpt_t) * 8)
 #define FRACT_BITS 4

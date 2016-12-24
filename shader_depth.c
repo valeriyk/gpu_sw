@@ -25,8 +25,8 @@ Float4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
-	Float4 vtx4d = fmat4_Float4_mult    (&(obj->mvp), &mc);
-	return vtx4d;
+	Float4 clip  = fmat4_Float4_mult    (&(obj->mvp), &mc);
+	return clip;
 }
 
 

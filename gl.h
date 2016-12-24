@@ -13,7 +13,7 @@
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
 #define TILE_WIDTH  32
-#define TILE_HEIGHT 32
+#define TILE_HEIGHT 16
 
 
 

@@ -11,7 +11,7 @@ const int depth  = 1000000;//16000000;//30000;//65536;
 
 //#define NUM_OF_OBJECTS	4
 #define NUM_OF_FRAMES 60
-#define PRINTSCREEN_FRAME 56
+#define PRINTSCREEN_FRAME 100
 #define NUM_OF_FRAMEBUFFERS	NUM_OF_FRAMES // must be 2 for now
 
 #define ROTATION_INIT 1
