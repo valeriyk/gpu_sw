@@ -22,89 +22,68 @@ int count_shadows (Varying *vry);
 // SHADERS - 1st PASS: fill shadow buffer
 
 Float4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
-	
-	if (DEPTH_VSHADER1_DEBUG) {
-		printf ("\tcall depth_vertex_shader()\n");
-	}
-	
 	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-	Float4 mc    = Float3_Float4_conv   (&vtx3d, 1);
-	Float4 clip  = fmat4_Float4_mult    (&(obj->mvp), &mc);
+	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
+	Float4 model4d = Float3_Float4_conv   (&model, 1);
+	Float4 clip    = fmat4_Float4_mult    (&(obj->mvp), &model4d); // model -> world -> eye -> clip
 	return clip;
 }
-
-
 
 bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
 	return false;
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SHADERS - 2nd PASS: fill frame buffer
 
 // Layout of Varying words for this pass:
 //     
-//     0    1    2    3
-// 0   xn   yn   zn   wn  - coords of the normal
-// 1   u    v    0    0   - texture coords
-// 2   xs0  ys0  zs0  ws0 - coords of the shadow 0
-// 3   xs1  ys1  zs1  ws1 - coords of the shadow 1
-// 4   xs2  ys2  zs2  ws2 - coords of the shadow 2
-// 5   xs3  ys3  zs3  ws3 - coords of the shadow 3
-// 6   -    -    -    -   - not used 
-// 7   -    -    -    -   - ...
+// 0   normal.x
+// 1   normal.y
+// 2   normal.z
+// 3   texture.u
+// 4   texture.v
+// 5   shadow0.x
+// 6   shadow0.y
+// 7   shadow0.z
+// 8   shadow1.x
+// ....
 
 Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
-	if (DEPTH_VSHADER2_DEBUG) {
-		printf ("\tcall depth_vertex_shader()\n");
-	}
-	
-	
-	
 	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 vtx3d = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-	Float4 mc    = Float3_Float4_conv (&vtx3d, 1);
-	Float4 clip  = fmat4_Float4_mult (&(obj->mvp), &mc); // this is the return value
+	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
+	Float4 model4d = Float3_Float4_conv (&model, 1);
+	Float4 clip    = fmat4_Float4_mult (&(obj->mvp), &model4d); // model -> world -> eye -> clip
 	
 	// transform the normal vector to the vertex
-	Float3 norm3d = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
-	Float4 norm4d = Float3_Float4_conv  (&norm3d, 0);
+	Float3 norm       = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
+	Float4 norm4d     = Float3_Float4_conv  (&norm, 0);
+	Float4 norm4d_eye = fmat4_Float4_mult (&(obj->mvit), &norm4d);
+	Float3 norm_eye   = Float4_Float3_vect_conv (&norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
 	
-	
-	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
-	Float3 transformed3 = Float4_Float3_vect_conv (&transformed);
-	varying_fifo_push_Float3 (vry, &transformed3);
-	
-//printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
-//printf ("                      \tMIT*norm4d x=%f y=%f z=%f w=%f\n\n", vry->as_Float4[1].as_struct.x, vry->as_Float4[1].as_struct.y, vry->as_Float4[1].as_struct.z, vry->as_Float4[1].as_struct.w);
+	varying_fifo_push_Float3 (vry, &norm_eye);
 	
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
-		Float2 text = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		varying_fifo_push_Float2 (vry, &text);
+		Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		varying_fifo_push_Float2 (vry, &texture);
 	}
-	
-	
+		
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (LIGHTS[i].enabled) {
-			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
+			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &model4d); // model -> world -> eye -> clip
 			
 			//Perspective divide is only needed when perspective projection is used for shadows
 			// By default I use orthographic projection, so commenting out the section below
-			/*	
-			// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
-			// If at least one coord belongs to [-1:1] then the vertex is not clipped
-			for (int k = 0; k < 4; k++) {
-				//TBD: danger, no check for div by zero yet implemented
-				shadow_vtx4d.as_array[k] = shadow_vtx4d.as_array[k] / shadow_vtx4d.as_struct.w; // normalize
-			}
-			*/
+			// // Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
+			// // If at least one coord belongs to [-1:1] then the vertex is not clipped
+			// for (int k = 0; k < 4; k++) {
+			// 	// TBD: danger, no check for div by zero yet implemented
+			// 	shadow_clip.as_array[k] = shadow_clip.as_array[k] / shadow_clip.as_struct.w;
+			// }			
 			
 			Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_clip);
 			Float3 shadow_screen3 = Float4_Float3_vect_conv (&shadow_screen); // don't need W for ortho projection
@@ -122,17 +101,17 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	}
 	
 	Float3 normal = varying_fifo_pop_Float3 (vry);
-	Float2 text   = varying_fifo_pop_Float2 (vry);
+	Float3_normalize (&normal);
 	
+	Float2 text   = varying_fifo_pop_Float2 (vry);
 	size_t uu = (int) text.as_struct.u;
 	size_t vv = (int) text.as_struct.v;
-	
 	//
 	// If texture is not provided, use gray color
 	//
 	pixel_color_t pix;
 	if (obj->wfobj->texture == NULL) {
-		pix = set_color (200, 128, 128, 0);
+		pix = set_color (128, 128, 128, 0);
 	}
 	else {
 		
@@ -144,8 +123,6 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		wfobj_get_rgb_from_texture (obj->wfobj, uu, vv, &pix.r, &pix.g, &pix.b);
 	}
 	
-	//Float3 normal  = Float4_Float3_vect_conv (&norm4);
-	Float3_normalize (&normal);
 	
 	
 	
@@ -171,15 +148,9 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	}
 	
 	
+	float shadow_factor = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
 	
-	
-	float shadow_total = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS;
-	
-	
-	
-	
-	
-	float intensity = shadow_total * (1.f * diff_int_total + 0.6f * spec_intensity);
 	
 	float intensity_treshold = 0.3;
 	if (intensity < intensity_treshold) {

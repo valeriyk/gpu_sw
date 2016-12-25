@@ -67,7 +67,7 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 		fmat4 modelview;
 		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
 		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
-		fmat4_inv_transp (&modelview, &(node->obj->mit));
+		fmat4_inv_transp (&modelview, &(node->obj->mvit));
 		/*print_fmat4 (&(node->obj->mit), "modelview invert transpose (mit) BEFORE");
 		float min = 0;
 		float max = 0;

@@ -57,9 +57,9 @@ typedef struct Triangle {
 
 
 typedef float  varying_float  [NUM_OF_VARYING_WORDS];
-typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
+//typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
 //typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
+//typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
 /*
 typedef union VaryingFloat {
 	varying_float  as_float;
@@ -68,17 +68,17 @@ typedef union VaryingFloat {
 } VaryingFloat;
 */
 typedef fixpt_t varying_fixpt_t [NUM_OF_VARYING_WORDS];
-typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
+//typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
 //typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
+//typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
 
 typedef union VaryingData {
 	varying_fixpt_t  as_fixpt_t;
-	varying_FixPt2   as_FixPt2;
-	varying_FixPt4   as_FixPt4;
+//	varying_FixPt2   as_FixPt2;
+//	varying_FixPt4   as_FixPt4;
 	varying_float    as_float;
-	varying_Float2   as_Float2;
-	varying_Float4   as_Float4;
+//	varying_Float2   as_Float2;
+//	varying_Float4   as_Float4;
 } VaryingData;
 
 typedef struct Varying {
@@ -86,30 +86,15 @@ typedef struct Varying {
 	VaryingData data;
 } Varying;
 
-/*void varying_push1 (Varying *vry, fix16_t value) {
-	vry->data.as_fix16_t[vry->num_of_words] = value;
-	vry->num_of_words++;
-}
-
-fix16_t varying_pop1 (Varying *vry) {
-	if (vry->num_of_words < 0) {
-		return 0;
-	}
-	else {
-		return vry->data.as_fix16_t[vry->num_of_words--];
-	}
-}*/
-
 typedef struct Object {
 	WFobj *wfobj;
 	float3 scale;
 	float3 rotate;
 	float3 tran;
 	fmat4  model;
-	fmat4  mvp; // pre-multiplied ModelViewProjection matrix
-	fmat4  mit;
+	fmat4  mvp;  // pre-calculated ModelViewProjection matrix
+	fmat4  mvit; // inverted and transposed ModelView matrix
 	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
-	//Varying *varying;
 } Object;
 
 typedef struct ObjectNode {
@@ -117,11 +102,6 @@ typedef struct ObjectNode {
 	struct ObjectNode *next;
 } ObjectNode;
 
-/*typedef struct TriangleVtx {
-	Varying varying[3];
-	Object *obj;
-} TriangleVtx;
-*/
 typedef struct TriangleVtxListNode {
 	FixPt3  screen_coords[3];
 	nfixpt_t w_reciprocal[3];
@@ -131,7 +111,6 @@ typedef struct TriangleVtxListNode {
 } TriangleVtxListNode;
 
 typedef struct TrianglePtrListNode {
-	//intptr_t ptr[15];
 	struct TriangleVtxListNode *tri;
 	struct TrianglePtrListNode *next;
 } TrianglePtrListNode;
