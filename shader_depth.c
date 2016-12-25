@@ -9,6 +9,11 @@
 
 
 
+#define FLOAT_NORM   1
+#define FLOAT_TEXT   1
+#define FLOAT_SHADOW 1
+
+
 int count_shadows (Varying *vry);
 
 
@@ -71,13 +76,8 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	
 	
 	Float4 transformed = fmat4_Float4_mult (&(obj->mit), &norm4d);
-	if (FLOAT) {
-		vry->data.as_Float4[0] = transformed;
-	}
-	else {
-		vry->data.as_FixPt4[0] = Float4_FixPt4_conv (&transformed);
-	}
-	vry->num_of_words = 4;
+	Float3 transformed3 = Float4_Float3_vect_conv (&transformed);
+	varying_fifo_push_Float3 (vry, &transformed3);
 	
 //printf ("vshader face %d vtx %d\t    norm4d x=%f y=%f z=%f w=%f\n", face_idx, vtx_idx, norm4d.as_struct.x, norm4d.as_struct.y, norm4d.as_struct.z, norm4d.as_struct.w);
 //printf ("                      \tMIT*norm4d x=%f y=%f z=%f w=%f\n\n", vry->as_Float4[1].as_struct.x, vry->as_Float4[1].as_struct.y, vry->as_Float4[1].as_struct.z, vry->as_Float4[1].as_struct.w);
@@ -86,24 +86,13 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	// extract the texture UV coordinates of the vertex
 	if (obj->wfobj->texture != NULL) {
 		Float2 text = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
-		if (FLOAT) {
-			vry->data.as_Float2[2] = text;
-			vry->data.as_float [6] = 0;
-			vry->data.as_float [7] = 0;
-		}
-		else {
-			vry->data.as_FixPt2 [2] = Float2_FixPt2_conv (&text);
-			vry->data.as_fixpt_t[6] = 0;
-			vry->data.as_fixpt_t[7] = 0;
-		}
-		vry->num_of_words += 4;
+		varying_fifo_push_Float2 (vry, &text);
 	}
 	
 	
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		if (LIGHTS[i].enabled) {
-			//Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
 			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &mc); // clip
 			
 			//Perspective divide is only needed when perspective projection is used for shadows
@@ -118,13 +107,8 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 			*/
 			
 			Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_clip);
-			if (FLOAT) {
-				vry->data.as_Float4[2+i] = shadow_screen;
-			}
-			else {
-				vry->data.as_FixPt4[2+i] = Float4_FixPt4_conv (&shadow_screen);
-			}
-			vry->num_of_words += 4;
+			Float3 shadow_screen3 = Float4_Float3_vect_conv (&shadow_screen); // don't need W for ortho projection
+			varying_fifo_push_Float3 (vry, &shadow_screen3);
 		}
 	}
 		
@@ -137,13 +121,8 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		printf ("\t\tcall depth_pshader_pass2()\n");
 	}
 	
-	Float2 text;
-	if (FLOAT) {
-		text = vry->data.as_Float2[2];
-	}
-	else {
-		text = FixPt2_Float2_conv (&(vry->data.as_FixPt2[2]));
-	}
+	Float3 normal = varying_fifo_pop_Float3 (vry);
+	Float2 text   = varying_fifo_pop_Float2 (vry);
 	
 	size_t uu = (int) text.as_struct.u;
 	size_t vv = (int) text.as_struct.v;
@@ -165,15 +144,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		wfobj_get_rgb_from_texture (obj->wfobj, uu, vv, &pix.r, &pix.g, &pix.b);
 	}
 	
-	
-	Float4 norm4;
-	if (FLOAT) {
-		norm4 = vry->data.as_Float4[0];
-	}
-	else {
-		norm4 = FixPt4_Float4_conv (&(vry->data.as_FixPt4[0]));
-	}
-	Float3 normal  = Float4_Float3_vect_conv (&norm4);
+	//Float3 normal  = Float4_Float3_vect_conv (&norm4);
 	Float3_normalize (&normal);
 	
 	
@@ -251,22 +222,22 @@ int count_shadows (Varying *vry) {
 		screenxy_t y;
 		screenz_t  z;
 		
-		if (FLOAT) {
-			Float4 screen4 = vry->data.as_Float4[2+i];
+		
+		Float3 screen = varying_fifo_pop_Float3 (vry);
 			
-			assert (screen.as_struct.x >= 0);
-			assert (screen.as_struct.x < get_screen_width ());
-			x = (screenxy_t) screen4.as_struct.x;
-			
-			assert (screen.as_struct.y >= 0);
-			assert (screen.as_struct.y < get_screen_height());	
-			y = (screenxy_t) screen4.as_struct.y;
-			
-			assert (screen.as_struct.z >= 0);
-			assert (screen.as_struct.z < (1 << 16)); // TBD
-			z = (screenz_t) screen4.as_struct.z;
-		}
-		else {
+		assert (screen.as_struct.x >= 0);
+		assert (screen.as_struct.x < get_screen_width ());
+		x = (screenxy_t) screen.as_struct.x;
+		
+		assert (screen.as_struct.y >= 0);
+		assert (screen.as_struct.y < get_screen_height());	
+		y = (screenxy_t) screen.as_struct.y;
+		
+		assert (screen.as_struct.z >= 0);
+		assert (screen.as_struct.z < (1 << 16)); // TBD
+		z = (screenz_t) screen.as_struct.z;
+		/*
+		{
 			FixPt4 screen4 = vry->data.as_FixPt4[2+i];
 			
 			assert (screen.as_struct.x >= 0);
@@ -281,7 +252,7 @@ int count_shadows (Varying *vry) {
 			assert (screen.as_struct.z < (1 << (16 + FRACT_BITS))); // TBD
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
-		
+		*/
 		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y * get_screen_width()];
 		
 		if (shadow_buf_z > z + z_fighting) {

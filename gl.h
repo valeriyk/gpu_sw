@@ -206,10 +206,21 @@ void draw_frame          (ObjectNode *obj_list, vertex_shader vshader, pixel_sha
 
 
 
+void varying_fifo_push_float  (Varying *vry, float   data);
+void varying_fifo_push_Float2 (Varying *vry, Float2 *data);
+void varying_fifo_push_Float3 (Varying *vry, Float3 *data);
+void varying_fifo_push_Float4 (Varying *vry, Float4 *data);
 
+/*fixpt_t varying_pop_fixpt  (Varying *vry);
+FixPt2  varying_pop_FixPt2 (Varying *vry);
+FixPt3  varying_pop_FixPt3 (Varying *vry);
+FixPt4  varying_pop_FixPt4 (Varying *vry);
+*/
 
-
-
+float   varying_fifo_pop_float  (Varying *vry);
+Float2  varying_fifo_pop_Float2 (Varying *vry);
+Float3  varying_fifo_pop_Float3 (Varying *vry);
+Float4  varying_fifo_pop_Float4 (Varying *vry);
 
 
 

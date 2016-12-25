@@ -4,7 +4,7 @@
 //#include <fixmath.h>
 //#include "fixpt.h"
 
-//#define NDEBUG
+#define NDEBUG
 #include <assert.h>
 
 #include <math.h>
@@ -105,6 +105,18 @@ static inline fixpt_t fixpt_mul (fixpt_t a, fixpt_t b) {
 	return (fixpt_t) (c >> FRACT_BITS);
 }
 
+static inline dfixpt_t fixpt_dfixpt_mul (fixpt_t a, dfixpt_t b) {
+	dfixpt_t c = (dfixpt_t) a * b;
+	assert ((a > 0) && (b > 0) && (c > 0));
+	assert ((a < 0) && (b < 0) && (c < 0));
+	assert ((a > 0) && (b < 0) && (c < 0));
+	assert ((a < 0) && (b > 0) && (c < 0));
+	assert ((a == 0) && (c == 0));
+	assert ((b == 0) && (c == 0));
+	//assert ((c >> (FIXPT_BITS + FRACT_BITS)) == 0 );
+	return c;
+}
+
 static inline fixpt_t fixpt_nfixpt_mul (fixpt_t a, nfixpt_t b) {
 	dfixpt_t c = (dfixpt_t) a * (dfixpt_t) b;
 	/*
@@ -150,6 +162,9 @@ static inline fixpt_t fixpt_get_one (void) {
 	return (1 << FRACT_BITS);
 }
 
+
+
+
 static inline fixpt_t fixpt_from_float (float a) {
 	fixpt_t c = (fixpt_t) (roundf (a) * (1 << FRACT_BITS));
 	//assert ();
@@ -170,7 +185,6 @@ static inline dfixpt_t dfixpt_from_float (float a) {
 static inline float dfixpt_to_float (dfixpt_t a) {
 	return ((float) a) / ((float) (1 << DFRACT_BITS));
 }
-
 
 
 static inline nfixpt_t nfixpt_from_float (float a) {
@@ -200,5 +214,16 @@ static inline int32_t   fixpt_to_int32 (fixpt_t a) {
 	return (round_up) ? ++c : c;*/
 	return (a >> FRACT_BITS);
 }
+
+
+
+static inline fixpt_t fixpt_from_dfixpt (dfixpt_t a) {
+	return (fixpt_t) (a >> FRACT_BITS);
+}
+
+static inline dfixpt_t fixpt_to_dfixpt (fixpt_t a) {
+	return (a << FRACT_BITS);
+}
+
 
 
