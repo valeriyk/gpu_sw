@@ -171,13 +171,13 @@ int read_obj_file (const char *filename, WFobj *obj) {
     	char c = (char) ch;
 		
 		// for any line that is a comment we check only for end of line:
-		if (COMMENT == line_type) {
+		if (line_type == COMMENT) {
 			if (c == '\n') line_type = EMPTY;
 		}
 		else {
 			// First detect line type
-			if (LINE_TYPE == line_field) {
-				if (V_DATA != line_type) {
+			if (line_field == LINE_TYPE) {
+				if (line_type != V_DATA) {
 					switch (c) {
 						case '\n':
 						case '\r':
@@ -197,7 +197,7 @@ int read_obj_file (const char *filename, WFobj *obj) {
 					// because it may turn into VT_DATA, VN_DATA or VP_DATA,
 					// but we can know this only after looking at the
 					// next character
-					if (F_DATA == line_type) line_field = VALUE1; 
+					if (line_type == F_DATA) line_field = VALUE1; 
 				}
 				else {
 					// here we finally can find out if our line type
@@ -228,19 +228,19 @@ int read_obj_file (const char *filename, WFobj *obj) {
 					else {
 						DynArrayItem data;
 						// convert string to number and save it
-						if ((V_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+						if ((line_type == V_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
 							data.f = (float) atof (alpha_num);
 							dyn_array_push (obj->priv->vtx, &data);
 						}
-						else if ((F_DATA == line_type) && ((VERTEX_IDX == face_elem) || (TEXTURE_IDX == face_elem) || (NORMAL_IDX))) {
+						else if ((line_type == F_DATA) && ((face_elem == VERTEX_IDX) || (face_elem == TEXTURE_IDX) || (face_elem == NORMAL_IDX))) {
 							data.i = atoi (alpha_num) - 1; // decrement all indices because in OBJ they start at 1
 							dyn_array_push (obj->priv->face, &data);
 						}
-						else if ((VT_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2))) {
+						else if ((line_type == VT_DATA) && ((line_field == VALUE1) || (line_field == VALUE2))) {
 							data.f = (float) atof (alpha_num);
 							dyn_array_push (obj->priv->text, &data);
 						}
-						else if ((VN_DATA == line_type) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+						else if ((line_type == VN_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
 							data.f = (float) atof (alpha_num);
 							dyn_array_push (obj->priv->norm, &data);
 						}

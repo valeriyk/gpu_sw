@@ -180,9 +180,8 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 }
 
 int count_shadows (Varying *vry) {
-	Float3 screen;
 	int    shadows = 0;
-	float  z_fighting = 123; // arbitrary value
+	float  z_fighting = 123; // [almost] arbitrary value
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
@@ -224,11 +223,9 @@ int count_shadows (Varying *vry) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[x + y * get_screen_width()];
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[y * get_screen_width() + x];
 		
-		if (shadow_buf_z > z + z_fighting) {
-			shadows++;
-		}
+		if (shadow_buf_z > z + z_fighting) shadows++;
 	}
 	return shadows;
 }

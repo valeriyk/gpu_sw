@@ -389,10 +389,10 @@ int main(int argc, char** argv) {
 			active_fbuffer[i].r = 0;
 			active_fbuffer[i].g = 0;
 			active_fbuffer[i].b = 0;
-			zbuffer[i] = 0;//fixpt_get_min();
+			zbuffer[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled) {
-					LIGHTS[j].shadow_buf[i] = 0;//fixpt_get_min();
+					LIGHTS[j].shadow_buf[i] = 0;
 				}
 			}
 		}
