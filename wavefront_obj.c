@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 
 
@@ -15,9 +16,9 @@ typedef struct WFobjPrivate {
 	int vtx_offset;
 } WFobjPrivate;
 
-typedef enum {V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
-typedef enum {LINE_TYPE, VALUE1, VALUE2, VALUE3, VALUE4} obj_line_field;  
-typedef enum {VERTEX_IDX, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
+typedef enum {VX_DATA = 0, V_DATA, VT_DATA, VN_DATA, VP_DATA, F_DATA, COMMENT, EMPTY} obj_line_type;
+typedef enum {TYPE = 0, DELIMETER01, VALUE1, DELIMETER12, VALUE2, DELIMETER23, VALUE3, DELIMETER34, VALUE4} obj_line_field;  
+typedef enum {VERTEX_IDX = 0, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
 
 
 
@@ -145,23 +146,43 @@ int  wfobj_get_specularity_from_map (const WFobj *obj, const int u, const int v)
 	return wfobj_get_bitmap_int (obj->specularmap, u, v);
 }
 
+void push_data (WFobj *obj, obj_line_type line_type, obj_line_field line_field, obj_face_elem face_elem, char *alpha_num) {
+	DynArrayItem data;
+	// convert string to number and save it
+	if ((line_type == V_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+		data.f = (float) atof (alpha_num);
+		dyn_array_push (obj->priv->vtx, &data);
+	}
+	else if ((line_type == F_DATA) && ((face_elem == VERTEX_IDX) || (face_elem == TEXTURE_IDX) || (face_elem == NORMAL_IDX))) {
+		data.i = atoi (alpha_num) - 1; // decrement all indices because in OBJ they start at 1
+		dyn_array_push (obj->priv->face, &data);
+	}
+	else if ((line_type == VT_DATA) && ((line_field == VALUE1) || (line_field == VALUE2))) {
+		data.f = (float) atof (alpha_num);
+		dyn_array_push (obj->priv->text, &data);
+	}
+	else if ((line_type == VN_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
+		data.f = (float) atof (alpha_num);
+		dyn_array_push (obj->priv->norm, &data);
+	}
+}
+
 // Parse Wavefront OBJ format
 int read_obj_file (const char *filename, WFobj *obj) {
 
     const int ALPHA_SIZE = 16;
-    
-    int  vtx_idx = 0;
-    int text_idx = 0;
-    int face_idx = 0;
-    int norm_idx = 0;
     
     char alpha_num [ALPHA_SIZE];
     for (int i = 0; i < ALPHA_SIZE; i++) alpha_num[i] = '\0';
     int  alpha_idx = 0;
     
     obj_line_type     line_type  = EMPTY;
-    obj_line_field    line_field = LINE_TYPE;
+    obj_line_field    line_field = TYPE;
     obj_face_elem     face_elem  = VERTEX_IDX;
+    
+    obj_line_type     next_line_type = line_type;
+    obj_line_field    next_line_field = line_field;
+    obj_face_elem     next_face_elem = face_elem;
     
     FILE *fp = fopen (filename, "r");
     if (!fp) return 1;
@@ -170,121 +191,134 @@ int read_obj_file (const char *filename, WFobj *obj) {
     while ((ch = fgetc(fp)) != EOF) {
     	char c = (char) ch;
 		
-		// for any line that is a comment we check only for end of line:
-		if (line_type == COMMENT) {
-			if (c == '\n') line_type = EMPTY;
+		putchar (c);
+		
+		switch (line_type) {
+			case EMPTY:
+				switch (c) {
+					case '\n':
+					case '\r':
+					case '\t':
+					case ' ':     next_line_type =   EMPTY; break;
+					case 'g':
+					case 's':
+					case 'm':
+					case '#':     next_line_type = COMMENT; break;
+					case 'f':     next_line_type =  F_DATA; break;
+					case 'v':     next_line_type = VX_DATA; break;
+					default:      printf ("EMPTY: Unknown line type\n"); return 2;
+				}
+				break;
+			case VX_DATA:
+				switch (c) {
+					case '\t':    
+					case ' ':     line_type      =  V_DATA;
+					              next_line_type =  V_DATA;
+					              break;
+					case 't':     next_line_type = VT_DATA; break;
+					case 'n':     next_line_type = VN_DATA; break;
+					case 'p':     next_line_type = VP_DATA; break;
+					default:      printf ("VX_DATA: Unknown line type\n");return 2;
+				}
+				break;
+			case V_DATA:
+			case VT_DATA:
+			case VN_DATA:
+			case VP_DATA:
+			case F_DATA:
+			case COMMENT:
+			default:
+				if ((c == '\n') || (c == '\r')) {
+					next_line_type = EMPTY;
+				}
+				break;
 		}
-		else {
-			// First detect line type
-			if (line_field == LINE_TYPE) {
-				if (line_type != V_DATA) {
-					switch (c) {
-						case '\n':
-						case '\r':
-						case '\t':
-						case ' ':     line_type =   EMPTY; break;
-						case 'g':
-						case 's':
-						case '#':     line_type = COMMENT; break;
-						case 'f':     line_type =  F_DATA; break;
-						case 'v':     line_type =  V_DATA; break;
-						default:      return 2;
-					}
-					// Assuming that the line is not a comment,
-					// we keep parsing the line type until we detect that:
-					// - line is F_DATA
-					// Detecting V_DATA is not sufficient to stop parsing
-					// because it may turn into VT_DATA, VN_DATA or VP_DATA,
-					// but we can know this only after looking at the
-					// next character
-					if (line_type == F_DATA) line_field = VALUE1; 
+		
+		switch (line_field) {
+			case TYPE:
+				if ((line_type == V_DATA) || (line_type == VT_DATA) || (line_type == VN_DATA) || (line_type == F_DATA)) {
+					if      ((c == ' ')  || (c == '\t')) { next_line_field = DELIMETER01; }
+					else if ((c == '\n') || (c == '\r')) { next_line_field = TYPE; }
 				}
-				else {
-					// here we finally can find out if our line type
-					// was V_DATA, or it is VT_DATA/VN_DATA/VP_DATA
-					switch (c) {
-						case '\t':    line_type =  V_DATA; break;
-						case ' ':     line_type =  V_DATA; break;
-						case 't':     line_type = VT_DATA; break;
-						case 'n':     line_type = VN_DATA; break;
-						case 'p':     line_type = VP_DATA; break;
-						default:      return 2;
-					}
-					// No need to further parse the line type, move
-					// to parsing first value
-					line_field = VALUE1;
+				break;
+			case DELIMETER01:
+				if      ((c == '\n') || (c == '\r')) { next_line_field = TYPE; }
+				else if ((c != ' ')  && (c != '\t')) next_line_field = VALUE1;
+				break;
+			case VALUE1:
+				if      ((c == ' ')  || (c == '\t')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = DELIMETER12; }
+				else if ((c == '\n') || (c == '\r')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = TYPE; }
+				break;
+			case DELIMETER12:
+				if      ((c == '\n') || (c == '\r')) { next_line_field = TYPE; }
+				else if ((c != ' ')  && (c != '\t')) next_line_field = VALUE2;
+				break;
+			case VALUE2:
+				if      ((c == ' ')  || (c == '\t')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = DELIMETER23; }
+				else if ((c == '\n') || (c == '\r')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = TYPE; }
+				break;
+			case DELIMETER23:
+				if      ((c == '\n') || (c == '\r')) { next_line_field = TYPE; }
+				else if ((c != ' ')  && (c != '\t')) next_line_field = VALUE3;
+				break;
+			case VALUE3:
+				if      ((c == ' ')  || (c == '\t')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = DELIMETER34;  }
+				else if ((c == '\n') || (c == '\r')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = TYPE;  }
+				break;
+			case DELIMETER34:
+				if      ((c == '\n') || (c == '\r')) { next_line_field = TYPE;  }
+				else if ((c != ' ')  && (c != '\t')) next_line_field = VALUE4;
+				break;
+			case VALUE4:
+				if      ((c == '\n') || (c == '\r')) { push_data (obj, line_type, line_field, face_elem, alpha_num); next_line_field = TYPE; }
+				break;
+			default:
+				return 2;
+		}
+		
+		switch (face_elem) {
+			case VERTEX_IDX:
+				if (c == '/') { 
+					push_data (obj, line_type, line_field, face_elem, alpha_num);
+					next_face_elem = TEXTURE_IDX;
 				}
+				break;
+			case TEXTURE_IDX:
+				if (c == '/') {
+					push_data (obj, line_type, line_field, face_elem, alpha_num);
+					next_face_elem = NORMAL_IDX;
+				}
+				else if ((c == ' ')  || (c == '\t') || (c == '\n') || (c == '\r')) {
+					next_face_elem = VERTEX_IDX;
+				}
+				break;
+			case NORMAL_IDX:			
+				if ((c == ' ')  || (c == '\t') || (c == '\n') || (c == '\r')) {
+					next_face_elem = VERTEX_IDX;
+				}
+		}
+		
+		if ((line_type != COMMENT) && (line_field != TYPE)) {
+			
+			// number can be represented as -0.1e2, check for all the characters:
+			if (((c >= '0') && (c <= '9')) || (c == '.') || (c == '-') || (c == 'e')) {			
+				assert (alpha_idx < ALPHA_SIZE);
+				alpha_num[alpha_idx++] = c;	
 			}
-			// After line type detected, read values VALUE1...VALUE4 accordingly
+			else if ((c == ' ') || (c == '\t') || (c == '\n') || (c == '/') || (c == '\r')) {
+				// cleanup before moving on to the next value
+				for (int i = 0; i < ALPHA_SIZE; i++) alpha_num[i] = '\0';
+				alpha_idx = 0;
+			}	
 			else {
-				if (((c >= '0') && (c <= '9')) || (c == '.') || (c == '-') || (c == 'e')) {
-					alpha_num[alpha_idx++] = c;	
-				}
-				else if ((c == ' ') || (c == '\t') || (c == '\n') || (c == '/') || (c == '\r')) {
-					if (alpha_num[0] == '\0') {
-						 // skip heading white spaces, if unexpected delimeter is found then fail
-						 if ((c != ' ') && (c != '\t')) return 2;
-					}
-					else {
-						DynArrayItem data;
-						// convert string to number and save it
-						if ((line_type == V_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
-							data.f = (float) atof (alpha_num);
-							dyn_array_push (obj->priv->vtx, &data);
-						}
-						else if ((line_type == F_DATA) && ((face_elem == VERTEX_IDX) || (face_elem == TEXTURE_IDX) || (face_elem == NORMAL_IDX))) {
-							data.i = atoi (alpha_num) - 1; // decrement all indices because in OBJ they start at 1
-							dyn_array_push (obj->priv->face, &data);
-						}
-						else if ((line_type == VT_DATA) && ((line_field == VALUE1) || (line_field == VALUE2))) {
-							data.f = (float) atof (alpha_num);
-							dyn_array_push (obj->priv->text, &data);
-						}
-						else if ((line_type == VN_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
-							data.f = (float) atof (alpha_num);
-							dyn_array_push (obj->priv->norm, &data);
-						}
-						
-						if (c == '/') {
-							switch (face_elem) {
-								case VERTEX_IDX:  face_elem = TEXTURE_IDX; break;
-								case TEXTURE_IDX: face_elem =  NORMAL_IDX; break;
-								case NORMAL_IDX:  return 2;
-							}
-						}
-						else {
-							switch (line_field) {
-								case VALUE1:    line_field = VALUE2; break;
-								case VALUE2:    line_field = VALUE3; break;
-								case VALUE3:    line_field = VALUE4; break;
-								case VALUE4:    break;
-								case LINE_TYPE: return 2;
-							}
-							// reset face elem before moving to the next value
-							face_elem = VERTEX_IDX;
-						}
-											
-						// cleanup before moving on to the next value
-						for (int i = 0; i < ALPHA_SIZE; i++) {
-							alpha_num[i] = '\0';
-						}
-						alpha_idx = 0;
-						
-						if (c == '\n') {
-							
-							if      ( V_DATA == line_type)  vtx_idx++;
-							else if (VT_DATA == line_type) text_idx++;
-							else if (VN_DATA == line_type) norm_idx++;
-							else if ( F_DATA == line_type) face_idx++;
-							
-							line_type  = EMPTY;
-							line_field = LINE_TYPE;	
-						}
-					}
-				}
-				else return 2;
+				printf ("Line parsing error, line_type=%d, line_field=%d, character=%x\n", line_type, line_field, c);
+				return 2;
 			}
 		}
+		
+		line_type  = next_line_type;
+		line_field = next_line_field;
+		face_elem  = next_face_elem;
     }
     
     fclose (fp);
