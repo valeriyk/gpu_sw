@@ -25,10 +25,11 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
+/*
 pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v);
-void get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z);
-int  get_bitmap_int (const Bitmap *bmp, const int u, const int v);
-
+Float3        get_bitmap_xyz (const Bitmap *bmp, const int u, const int v);
+int           get_bitmap_int (const Bitmap *bmp, const int u, const int v);
+*/
 
 
 
@@ -943,7 +944,7 @@ Float4  varying_fifo_pop_Float4 (Varying *vry) {
 
 
 
-pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v) {
+pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 	pixel_color_t pix;
 	if (bmp->data != NULL) {
 		size_t offset = (u + bmp->w * v) * (bmp->bytespp);
@@ -959,7 +960,7 @@ pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v) {
 	return pix;
 }
 
-Float3 get_bitmap_xyz (const Bitmap *bmp, const int u, const int v) {
+Float3 get_norm_Float3_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 	Float3 val;
 	if (bmp->data != NULL) {
 		size_t offset = (u + bmp->w * v) * bmp->bytespp;
@@ -975,16 +976,17 @@ Float3 get_bitmap_xyz (const Bitmap *bmp, const int u, const int v) {
 	return val;
 }
 
-int get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
+int32_t get_int32_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 	if (bmp->data != NULL) {
 		size_t offset = (u + bmp->w * v) * bmp->bytespp;
-		return (int) *(bmp->data + offset);
+		return (int32_t) *(bmp->data + offset);
 	}
 	else {
 		return 0;
 	}
 }
 
+/*
 pixel_color_t get_rgb_from_texture (const Object *obj, const int u, const int v) {
 	return get_bitmap_rgb (obj->texture, u, v);
 }
@@ -996,3 +998,4 @@ Float3 get_normal_from_map     (const Object *obj, const int u, const int v) {
 int  get_specularity_from_map (const Object *obj, const int u, const int v) {
 	return get_bitmap_int (obj->specularmap, u, v);
 }
+*/

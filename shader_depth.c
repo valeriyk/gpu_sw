@@ -122,7 +122,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		assert (uu >= 0);
 		assert (vv >= 0);
 		
-		pix = get_rgb_from_texture (obj, uu, vv);
+		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 	
 	
@@ -145,7 +145,7 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
 		Float3_normalize (&r);
 		
-		int spec_factor = get_specularity_from_map (obj, uu, vv);
+		int32_t spec_factor = get_int32_from_bitmap (obj->specularmap, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
 	

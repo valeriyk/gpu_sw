@@ -1,17 +1,17 @@
 #pragma once 
 
-#define WIDTH  512//1280
-#define HEIGHT 512//720
+#define WIDTH  1280
+#define HEIGHT 720
 
-#define NUM_OF_FRAMES 1
-#define PRINTSCREEN_FRAME NUM_OF_FRAMES-1
+#define NUM_OF_FRAMES 30
+#define PRINTSCREEN_FRAME NUM_OF_FRAMES-2
 #define NUM_OF_FRAMEBUFFERS	NUM_OF_FRAMES
 
 #define ROTATION_INIT 1
 #define ROTATION_INCR 2 * 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 
 #define ENABLE_PERF 1
-#define RECORD_VIDEO 0
+#define RECORD_VIDEO 1
 #define DEBUG_0 1
 
 #define GL_DEBUG_0 0
