@@ -1,9 +1,9 @@
-#include "shader_normalmap.h"
+/*#include "shader_normalmap.h"
 #include "gl.h"
 
 #include <math.h>
 
-/*
+
 
 // declare the following here instead of the header to make these variables local:
 Float3 NM_VARYING_U;

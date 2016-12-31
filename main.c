@@ -166,7 +166,7 @@ ObjectNode* init_objects (void) {
     
     if (draw_planes) {
 		Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
-		WFobj *my_floor = wfobj_new ("obj/floor.obj");
+		WaveFrontObj *my_floor = wfobj_new ("obj/floor.obj");
 	
 		node = calloc (1, sizeof (ObjectNode));
 		head = node;
@@ -192,7 +192,7 @@ ObjectNode* init_objects (void) {
 		Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
 		Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
 		Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-		WFobj  *african_head = wfobj_new ("obj/african_head.obj");
+		WaveFrontObj  *african_head = wfobj_new ("obj/african_head.obj");
 
 	
 		node = calloc (1, sizeof (ObjectNode));
@@ -218,7 +218,7 @@ ObjectNode* init_objects (void) {
 	else {
 		Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 		Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-		WFobj  *my_cube = wfobj_new ("obj/cube.obj");
+		WaveFrontObj  *my_cube = wfobj_new ("obj/cube.obj");
 
 
 		// Central cube

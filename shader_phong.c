@@ -1,10 +1,10 @@
-#include "shader_phong.h"
+/*#include "shader_phong.h"
 #include "gl.h"
 
 #include <math.h>
 
 
-/*
+
 
 // declare the following here instead of the header to make these variables local:
 Float3 PHONG_VARYING_U;

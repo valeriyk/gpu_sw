@@ -221,7 +221,7 @@ void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis a) {
 	fmat4_fmat4_mult (in, &r, out);
 }
 
-Object* obj_new (WFobj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
+Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
 	Object *obj = (Object*) malloc (sizeof(Object));
 	obj->wfobj = wfobj;
 	for (int i = 0; i < 3; i++) {

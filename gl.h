@@ -87,7 +87,7 @@ typedef struct Varying {
 } Varying;
 
 typedef struct Object {
-	WFobj *wfobj;
+	WaveFrontObj *wfobj;
 	Bitmap *texture;
 	Bitmap *normalmap;
 	Bitmap *specularmap;
@@ -177,7 +177,7 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 
 
-Object* obj_new (WFobj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap);
+Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap);
 void obj_set_scale       (Object *obj, float x,     float y,     float z);
 void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);
