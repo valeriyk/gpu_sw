@@ -1,7 +1,6 @@
 #include "gl.h"
 //#include "geometry.h"
 //#include "geometry_fixpt.h"
-#include "shader.h"
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
@@ -740,7 +739,7 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	if (GL_DEBUG_0)
 	{
@@ -753,7 +752,7 @@ void draw_frame (ObjectNode *obj_list_head, vertex_shader vshader, pixel_shader 
 		tile_idx_table[i] = NULL;
 	}
 			
-	ObjectNode *obj_list_node;
+	ObjectListNode *obj_list_node;
 	
 	obj_list_node = obj_list_head;		
 	int num_of_faces = 0;

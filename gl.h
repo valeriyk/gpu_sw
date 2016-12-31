@@ -100,10 +100,10 @@ typedef struct Object {
 	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
 } Object;
 
-typedef struct ObjectNode {
+typedef struct ObjectListNode {
 	Object *obj;
-	struct ObjectNode *next;
-} ObjectNode;
+	struct ObjectListNode *next;
+} ObjectListNode;
 
 typedef struct TriangleVtxListNode {
 	FixPt3  screen_coords[3];
@@ -129,9 +129,8 @@ typedef struct Light {
 
 
 extern fmat4 VIEWPORT;
-
 extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
-
+//extern Bitmap TEXTURES[MAX_NUM_OF_TEXTURES];
 
 
 typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
@@ -183,7 +182,7 @@ void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);
 void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
-void draw_frame          (ObjectNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_frame          (ObjectListNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 
 

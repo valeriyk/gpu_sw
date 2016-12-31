@@ -58,9 +58,9 @@ void print_fmat3 (fmat3 *m, char *header) {
 // Setup object transformation, aka world transformation function.  
 // Computes matrices that will be used to transform model's vertices and normals
 // from the object space to the world space
-void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) {
+void setup_transformation (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view) {
 	
-	ObjectNode *node = obj_list_head;
+	ObjectListNode *node = obj_list_head;
 	
 	while (node != NULL) {
 
@@ -103,9 +103,9 @@ void setup_transformation (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view) 
 	}
 }
 
-void setup_light_transform (ObjectNode *obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
+void setup_light_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
 	
-	ObjectNode *node = obj_list_head;
+	ObjectListNode *node = obj_list_head;
 	
 	while (node != NULL) {
 		
@@ -135,10 +135,10 @@ void light_transform (fmat4 *view) {
 	}
 }
 
-ObjectNode* init_objects (void) {
+ObjectListNode* init_objects (void) {
 	
-    ObjectNode *head;
-    ObjectNode *node;
+    ObjectListNode *head;
+    ObjectListNode *node;
     
     int draw_planes = 0;
     int draw_head = 1;
@@ -149,7 +149,7 @@ ObjectNode* init_objects (void) {
 		Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
 		WaveFrontObj *my_floor = wfobj_new ("obj/floor.obj");
 	
-		node = calloc (1, sizeof (ObjectNode));
+		node = calloc (1, sizeof (ObjectListNode));
 		head = node;
 		node->obj = obj_new (my_floor, floor_diff, NULL, NULL);
 		node->next = NULL;
@@ -158,7 +158,7 @@ ObjectNode* init_objects (void) {
 		obj_set_scale       (node->obj, 5, 5, 5);
 		obj_init_model      (node->obj);
 
-		node->next = calloc (1, sizeof (ObjectNode));
+		node->next = calloc (1, sizeof (ObjectListNode));
 		node       = node->next;
 		node->obj  = obj_new (my_floor, floor_diff, NULL, NULL);
 		node->next = NULL;
@@ -176,7 +176,7 @@ ObjectNode* init_objects (void) {
 		WaveFrontObj  *african_head = wfobj_new ("obj/african_head.obj");
 
 	
-		node = calloc (1, sizeof (ObjectNode));
+		node = calloc (1, sizeof (ObjectListNode));
 		head = node;
 		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 		node->next = NULL;
@@ -186,7 +186,7 @@ ObjectNode* init_objects (void) {
 		obj_init_model      (node->obj);
 
 		if (draw_second_head) {
-			node->next = calloc (1, sizeof (ObjectNode));
+			node->next = calloc (1, sizeof (ObjectListNode));
 			node       = node->next;
 			node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 			node->next = NULL;
@@ -203,7 +203,7 @@ ObjectNode* init_objects (void) {
 
 
 		// Central cube
-		node = calloc (1, sizeof (ObjectNode));
+		node = calloc (1, sizeof (ObjectListNode));
 		
 		head = node;
 		
@@ -217,7 +217,7 @@ ObjectNode* init_objects (void) {
 	
 		if (draw_all_cubes) {
 			/*// Bottom Plane
-			node->next = calloc (1, sizeof (ObjectNode));
+			node->next = calloc (1, sizeof (ObjectListNode));
 			node       = node->next;
 			node->obj  = obj_new (my_floor);
 			node->next = NULL;
@@ -226,7 +226,7 @@ ObjectNode* init_objects (void) {
 			obj_set_scale       (node->obj, 6, 4, 4);
 			obj_init_model      (node->obj);
 			
-			node->next = calloc (1, sizeof (ObjectNode));
+			node->next = calloc (1, sizeof (ObjectListNode));
 			node       = node->next;
 			node->obj  = obj_new (my_floor);
 			node->next = NULL;
@@ -237,7 +237,7 @@ ObjectNode* init_objects (void) {
 			*/
 			
 			// Cube
-			node->next = calloc (1, sizeof (ObjectNode));
+			node->next = calloc (1, sizeof (ObjectListNode));
 			node = node->next;
 			node->obj = obj_new (my_cube, cube_diff, cube_nmap, NULL);
 			node->next = NULL;
@@ -247,7 +247,7 @@ ObjectNode* init_objects (void) {
 			obj_init_model      (node->obj);
 			
 			// Cube
-			node->next = calloc (1, sizeof (ObjectNode));
+			node->next = calloc (1, sizeof (ObjectListNode));
 			node = node->next;
 			node->obj = obj_new (my_cube, cube_diff, cube_nmap, NULL);
 			node->next = NULL;
@@ -302,7 +302,7 @@ int main(int argc, char** argv) {
     	
     pixel_color_t *active_fbuffer = NULL;
     		
-	ObjectNode *obj_list_head = init_objects ();
+	ObjectListNode *obj_list_head = init_objects ();
 	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
@@ -384,7 +384,7 @@ int main(int argc, char** argv) {
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
 		eye_angle += ROTATION_INCR;
 		
-		ObjectNode *scene_obj = obj_list_head;
+		ObjectListNode *scene_obj = obj_list_head;
 		while (scene_obj != NULL) {	
 			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
 			obj_init_model   (scene_obj->obj);			
@@ -458,14 +458,6 @@ int main(int argc, char** argv) {
 		fclose (fp);
 	}
 	
-	
-    
-	
-	
-	
-	
-	//wfobj_free(african_head);
-	//wfobj_free(my_floor);
 	
 	free(zbuffer);
 	for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {
