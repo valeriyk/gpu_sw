@@ -116,14 +116,13 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	if (obj->texture == NULL) {
 		pix = set_color (128, 128, 128, 0);
 	}
-	else {
-		
+	else {	
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
 		assert (uu >= 0);
 		assert (vv >= 0);
 		
-		get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
+		pix = get_rgb_from_texture (obj, uu, vv);
 	}
 	
 	

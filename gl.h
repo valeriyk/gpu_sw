@@ -47,8 +47,6 @@ typedef struct BoundBox {
 
 typedef struct pixel_color_t {
 	uint8_t r, g, b;
-	//uint8_t r, g, b, a;
-	//uint8_t b, g, r, a;
 } pixel_color_t;
 
 typedef struct Triangle {
@@ -235,6 +233,6 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 }
 
 
-void get_rgb_from_texture       (const Object *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
-Float3 get_normal_from_map      (const Object *obj, const int u, const int v);
-int  get_specularity_from_map   (const Object *obj, const int u, const int v);
+pixel_color_t get_rgb_from_texture       (const Object *obj, const int u, const int v);
+Float3        get_normal_from_map        (const Object *obj, const int u, const int v);
+int           get_specularity_from_map   (const Object *obj, const int u, const int v);

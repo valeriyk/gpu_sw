@@ -25,7 +25,7 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
-void get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
+pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v);
 void get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z);
 int  get_bitmap_int (const Bitmap *bmp, const int u, const int v);
 
@@ -355,7 +355,7 @@ fixpt_t interpolate_varying (Varying vry0, Varying vry1, Varying vry2, nfixpt_t 
 	
 	if (0) {
 		float mul_0f = fixpt_to_float (bar->as_array[0]) * nfixpt_to_float (w_reciprocal[0]) * fixpt_to_float (vry0.data.as_fixpt_t[vry_idx]);
-		printf ("idx %d:: mul_0: %f*%f*%f = ", vry_idx, fixpt_to_float (bar->as_array[0]), nfixpt_to_float (w_reciprocal[0]), fixpt_to_float (vry0.data.as_fixpt_t[vry_idx]));
+		printf ("idx %zu:: mul_0: %f*%f*%f = ", vry_idx, fixpt_to_float (bar->as_array[0]), nfixpt_to_float (w_reciprocal[0]), fixpt_to_float (vry0.data.as_fixpt_t[vry_idx]));
 		printf ("%f/%f\t", mul_0f, ((float) mul_0) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS))));
 		float mul_1f = fixpt_to_float (bar->as_array[1]) * nfixpt_to_float (w_reciprocal[1]) * fixpt_to_float (vry1.data.as_fixpt_t[vry_idx]);
 		printf ("mul_1 %f/%f\t", mul_1f, ((float) mul_1) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS))));
@@ -828,22 +828,11 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 						// because we have it for free here
 						screen.vtx[j].as_struct.w = reciprocal_w;
 
-						/*
-						if (GL_DEBUG_0) {
-							printf ("\t\tNDC coord:    %f, %f, %f\n",    ndc.vtx[j].as_struct.x,    ndc.vtx[j].as_struct.y,    ndc.vtx[j].as_struct.z);
-							printf ("\t\tscreen coord: %f, %f, %f\n", screen.vtx[j].as_struct.x, screen.vtx[j].as_struct.y, screen.vtx[j].as_struct.z);
-						}
-						*/
-						
-						// // Replace clip coords with screen coords within the Varying struct
-						// // before passing it on to draw_triangle()
-						// vtx_list[tri_num].varying[j].data.as_FixPt4[0] = Float4_FixPt4_conv(&(screen.vtx[j]));
-						
-						//vtx_list[tri_num].screen_coords[j] = Float4_FixPt4_conv(&(screen.vtx[j]));
+						// Replace clip coords with screen coords within the Varying struct
+						// before passing it on to draw_triangle()
 						for (int k = 0; k < 3; k++) {
 							vtx_list[tri_num].screen_coords[j].as_array[k] = fixpt_from_float (screen.vtx[j].as_array[k]);
 						}
-						//vtx_list[tri_num].w_reciprocal[j] = screen.vtx[j].as_struct.w;
 						vtx_list[tri_num].w_reciprocal[j] = nfixpt_from_float(screen.vtx[j].as_struct.w);
 					}		
 				}
@@ -954,43 +943,54 @@ Float4  varying_fifo_pop_Float4 (Varying *vry) {
 
 
 
-void get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
+pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v) {
+	pixel_color_t pix;
 	if (bmp->data != NULL) {
-		*r = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0);
-		*g = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1);
-		*b = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2);
+		size_t offset = (u + bmp->w * v) * (bmp->bytespp);
+		pix.r = *(bmp->data + offset + 0);
+		pix.g = *(bmp->data + offset + 1);
+		pix.b = *(bmp->data + offset + 2);
 	}
 	else {
-		*r = *g = *b = 0;
+		pix.r = 0;
+		pix.g = 0;
+		pix.b = 0;
 	}
+	return pix;
 }
 
-void get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z) {
+Float3 get_bitmap_xyz (const Bitmap *bmp, const int u, const int v) {
+	Float3 val;
 	if (bmp->data != NULL) {
-		*x = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0) / 255.f * 2.f - 1.f;
-		*y = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1) / 255.f * 2.f - 1.f;
-		*z = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2) / 255.f * 2.f - 1.f;
+		size_t offset = (u + bmp->w * v) * bmp->bytespp;
+		val.as_struct.x = *(bmp->data + offset + 0) / 255.f * 2.f - 1.f; // map [0:255] to [-1:1]
+		val.as_struct.y = *(bmp->data + offset + 1) / 255.f * 2.f - 1.f; // map [0:255] to [-1:1]
+		val.as_struct.z = *(bmp->data + offset + 2) / 255.f * 2.f - 1.f; // map [0:255] to [-1:1]
 	}
 	else {
-		*x = *y = *z = 0.f;
+		val.as_struct.x = 0.f;
+		val.as_struct.y = 0.f;
+		val.as_struct.z = 0.f;
 	}
+	return val;
 }
 
 int get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
-	if (bmp->data != NULL)
-		return (int) *(bmp->data + (u + bmp->w * v) * (bmp->bytespp));
-	else
+	if (bmp->data != NULL) {
+		size_t offset = (u + bmp->w * v) * bmp->bytespp;
+		return (int) *(bmp->data + offset);
+	}
+	else {
 		return 0;
+	}
 }
 
-void get_rgb_from_texture     (const Object *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
-	get_bitmap_rgb (obj->texture, u, v, r, g, b);
+pixel_color_t get_rgb_from_texture (const Object *obj, const int u, const int v) {
+	return get_bitmap_rgb (obj->texture, u, v);
 }
 
 Float3 get_normal_from_map     (const Object *obj, const int u, const int v) {
-	Float3 n;
-	get_bitmap_xyz (obj->normalmap, u, v, &n.as_struct.x, &n.as_struct.y, &n.as_struct.z);
-	return n;
+	return get_bitmap_xyz (obj->normalmap, u, v);
 }
 
 int  get_specularity_from_map (const Object *obj, const int u, const int v) {
