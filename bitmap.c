@@ -9,6 +9,6 @@ Bitmap * bitmap_new () {
 }
 
 void bitmap_free (Bitmap *bmp) {
-	free (bmp->data);
-	free (bmp);
+	if (bmp->data != NULL) free (bmp->data);
+	if (bmp       != NULL) free (bmp);
 }

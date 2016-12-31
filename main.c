@@ -137,25 +137,6 @@ void light_transform (fmat4 *view) {
 
 ObjectNode* init_objects (void) {
 	
-    /*Object *head1  = obj_new (african_head);
-    obj_set_translation (head1, -1.f, 0.f, -0.f);
-    //obj_set_scale       (head1, 3, 3, 3);
-    obj_set_rotation    (head1, 0.f, 20.f, 0.f);
-    obj_init_model      (head1);
-    
-    Object *head2  = obj_new (african_head);
-    obj_set_translation (head2, 1.f, 0.f, -0.0f);
-    obj_set_rotation    (head2, 0.f, 20.f, 0.f);
-    obj_init_model      (head2);
-    
-    
-    Object *diablo1  = obj_new (diablo);
-    obj_set_translation (diablo1, 0.f, 0.f, -3.f);
-    //obj_set_scale       (diablo1, 3, 3, 3);
-    //obj_set_rotation    (diablo1, 0.f, 20.f, 0.f);
-    obj_init_model      (diablo1);
-    */
-    
     ObjectNode *head;
     ObjectNode *node;
     

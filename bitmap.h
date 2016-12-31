@@ -4,9 +4,9 @@
 
 typedef struct Bitmap {
 	uint8_t *data;
-	int w;
-	int h;
-	int bytespp;
+	uint32_t w;
+	uint32_t h;
+	uint32_t bytespp;
 } Bitmap;
 
 Bitmap * bitmap_new  ();

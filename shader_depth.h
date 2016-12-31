@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "shader.h"
 #include "gl.h"
 
 #define DEPTH_VSHADER1_DEBUG 0
