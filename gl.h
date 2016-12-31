@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include "bitmap.h"
 #include "geometry.h"
 #include "geometry_fixpt.h"
 #include "wavefront_obj.h"
@@ -88,6 +88,9 @@ typedef struct Varying {
 
 typedef struct Object {
 	WFobj *wfobj;
+	Bitmap *texture;
+	Bitmap *normalmap;
+	Bitmap *specularmap;
 	float3 scale;
 	float3 rotate;
 	float3 tran;
@@ -174,7 +177,7 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 
 
-Object* obj_new (WFobj *wfobj);
+Object* obj_new (WFobj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap);
 void obj_set_scale       (Object *obj, float x,     float y,     float z);
 void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);
@@ -233,3 +236,6 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 }
 
 
+void get_rgb_from_texture       (const Object *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
+Float3 get_normal_from_map      (const Object *obj, const int u, const int v);
+int  get_specularity_from_map   (const Object *obj, const int u, const int v);

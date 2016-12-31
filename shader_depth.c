@@ -66,8 +66,11 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	
 	
 	// extract the texture UV coordinates of the vertex
-	if (obj->wfobj->texture != NULL) {
+	if (obj->texture != NULL) {
 		Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		texture.as_struct.u *= (float) obj->texture->w;
+		texture.as_struct.v *= (float) obj->texture->h;
+	
 		varying_fifo_push_Float2 (vry, &texture);
 	}
 		
@@ -110,17 +113,17 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	// If texture is not provided, use gray color
 	//
 	pixel_color_t pix;
-	if (obj->wfobj->texture == NULL) {
+	if (obj->texture == NULL) {
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {
 		
-		assert (uu < obj->wfobj->texture->w);
-		assert (vv < obj->wfobj->texture->h);
+		assert (uu < obj->texture->w);
+		assert (vv < obj->texture->h);
 		assert (uu >= 0);
 		assert (vv >= 0);
 		
-		wfobj_get_rgb_from_texture (obj->wfobj, uu, vv, &pix.r, &pix.g, &pix.b);
+		get_rgb_from_texture (obj, uu, vv, &pix.r, &pix.g, &pix.b);
 	}
 	
 	
@@ -137,13 +140,13 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	
 	
 	float spec_intensity = 0;	
-	if (obj->wfobj->specularmap != NULL) {
+	if (obj->specularmap != NULL) {
 		float nl = diff_intensity[0]; //TBD, this is computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
 		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
 		Float3_normalize (&r);
 		
-		int spec_factor = wfobj_get_specularity_from_map (obj->wfobj, uu, vv);
+		int spec_factor = get_specularity_from_map (obj, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
 	

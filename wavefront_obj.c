@@ -24,12 +24,8 @@ typedef enum {VERTEX_IDX = 0, TEXTURE_IDX, NORMAL_IDX} obj_face_elem;
 
 int  read_obj_file (const char *filename, WFobj *obj);
 
-void wfobj_get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
-void wfobj_get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z);
-int  wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v);
 
-
-WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
+WFobj * wfobj_new (const char *obj_file) {
 	
 	WFobj *obj = (WFobj*) malloc (sizeof(WFobj));
 	if (obj == NULL) return NULL;
@@ -44,11 +40,7 @@ WFobj * wfobj_new (const char *obj_file, Bitmap *texture, Bitmap *normalmap, Bit
     obj->priv->vtx_offset  = 0;
     
 	read_obj_file (obj_file, obj);	        
-    
-	obj->texture     = texture;
-	obj->normalmap   = normalmap;
-	obj->specularmap = specularmap;
-	
+
     return obj;
 }
 
@@ -59,9 +51,6 @@ void wfobj_free (WFobj *obj) {
 	dyn_array_destroy (obj->priv->face);
 	
 	free (obj->priv);
-	free (obj->texture);
-	free (obj->normalmap);
-	free (obj->specularmap);
 	free (obj);
 }
 
@@ -72,6 +61,11 @@ void wfobj_free (WFobj *obj) {
 void wfobj_set_vtx_idx    (const WFobj *obj, const int vtx_idx) {
 	obj->vtx_offset = obj->face_offset + vtx_idx*3;
 }*/
+
+
+int wfobj_get_num_of_faces (const WFobj *obj) {
+	return obj->priv->face->end / 9;
+}
 
 Float3 wfobj_get_vtx_coords  (const WFobj *obj, const int face_idx,  const int vtx_idx) {
 	Float3 c;
@@ -85,8 +79,10 @@ Float3 wfobj_get_vtx_coords  (const WFobj *obj, const int face_idx,  const int v
 Float2 wfobj_get_texture_coords (const WFobj *obj, const int face_idx, const int vtx_idx) {
 	Float2 c;
 	int text_coords_offset = *((int*) dyn_array_get (obj->priv->face, face_idx*9 + vtx_idx*3 + 1));
-	c.as_struct.u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0)) * (float) obj->texture->w;
-	c.as_struct.v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1)) * (float) obj->texture->h;
+	//c.as_struct.u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0)) * (float) obj->texture->w;
+	//c.as_struct.v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1)) * (float) obj->texture->h;
+	c.as_struct.u = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 0));
+	c.as_struct.v = *((float*) dyn_array_get (obj->priv->text, text_coords_offset*2 + 1));
 	return c;
 }
 
@@ -97,53 +93,6 @@ Float3 wfobj_get_norm_coords (const WFobj *obj, const int face_idx, const int vt
 	c.as_struct.y = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 1));
 	c.as_struct.z = *((float*) dyn_array_get (obj->priv->norm, norm_coords_offset*3 + 2));
 	return c;
-}
-
-int wfobj_get_num_of_faces (const WFobj *obj) {
-	return obj->priv->face->end / 9;
-}
-
-void wfobj_get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
-	if (bmp->data != NULL) {
-		*r = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0);
-		*g = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1);
-		*b = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2);
-	}
-	else {
-		*r = *g = *b = 0;
-	}
-}
-
-void wfobj_get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z) {
-	if (bmp->data != NULL) {
-		*x = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0) / 255.f * 2.f - 1.f;
-		*y = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1) / 255.f * 2.f - 1.f;
-		*z = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2) / 255.f * 2.f - 1.f;
-	}
-	else {
-		*x = *y = *z = 0.f;
-	}
-}
-
-int wfobj_get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
-	if (bmp->data != NULL)
-		return (int) *(bmp->data + (u + bmp->w * v) * (bmp->bytespp));
-	else
-		return 0;
-}
-
-void wfobj_get_rgb_from_texture     (const WFobj *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
-	wfobj_get_bitmap_rgb (obj->texture, u, v, r, g, b);
-}
-
-Float3 wfobj_get_normal_from_map     (const WFobj *obj, const int u, const int v) {
-	Float3 n;
-	wfobj_get_bitmap_xyz (obj->normalmap, u, v, &n.as_struct.x, &n.as_struct.y, &n.as_struct.z);
-	return n;
-}
-
-int  wfobj_get_specularity_from_map (const WFobj *obj, const int u, const int v) {
-	return wfobj_get_bitmap_int (obj->specularmap, u, v);
 }
 
 void push_data (WFobj *obj, obj_line_type line_type, obj_line_field line_field, obj_face_elem face_elem, char *alpha_num) {

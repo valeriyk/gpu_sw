@@ -26,6 +26,15 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
+void get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b);
+void get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z);
+int  get_bitmap_int (const Bitmap *bmp, const int u, const int v);
+
+
+
+
+
+
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
     
@@ -212,7 +221,7 @@ void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis a) {
 	fmat4_fmat4_mult (in, &r, out);
 }
 
-Object* obj_new (WFobj *wfobj) {
+Object* obj_new (WFobj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
 	Object *obj = (Object*) malloc (sizeof(Object));
 	obj->wfobj = wfobj;
 	for (int i = 0; i < 3; i++) {
@@ -224,8 +233,21 @@ Object* obj_new (WFobj *wfobj) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		fmat4_identity (&(obj->shadow_mvp[i]));
 	}
+	
+	obj->texture     = texture;
+	obj->normalmap   = normalmap;
+	obj->specularmap = specularmap;
+	
 	return obj;
 }
+
+void obj_free (Object *obj) {
+	free (obj->texture);
+	free (obj->normalmap);
+	free (obj->specularmap);
+	free (obj);
+}
+
 
 void obj_set_scale (Object *obj, float x, float y, float z) {
 	obj->scale[0] = x;
@@ -929,4 +951,49 @@ Float4  varying_fifo_pop_Float4 (Varying *vry) {
 		data.as_array[i] = varying_fifo_pop_float (vry);
 	}
 	return data;
+}
+
+
+
+void get_bitmap_rgb (const Bitmap *bmp, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
+	if (bmp->data != NULL) {
+		*r = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0);
+		*g = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1);
+		*b = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2);
+	}
+	else {
+		*r = *g = *b = 0;
+	}
+}
+
+void get_bitmap_xyz (const Bitmap *bmp, const int u, const int v, float *x, float *y, float *z) {
+	if (bmp->data != NULL) {
+		*x = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 0) / 255.f * 2.f - 1.f;
+		*y = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 1) / 255.f * 2.f - 1.f;
+		*z = *(bmp->data + (u + bmp->w * v) * (bmp->bytespp) + 2) / 255.f * 2.f - 1.f;
+	}
+	else {
+		*x = *y = *z = 0.f;
+	}
+}
+
+int get_bitmap_int (const Bitmap *bmp, const int u, const int v) {
+	if (bmp->data != NULL)
+		return (int) *(bmp->data + (u + bmp->w * v) * (bmp->bytespp));
+	else
+		return 0;
+}
+
+void get_rgb_from_texture     (const Object *obj, const int u, const int v, uint8_t *r, uint8_t *g, uint8_t *b) {
+	get_bitmap_rgb (obj->texture, u, v, r, g, b);
+}
+
+Float3 get_normal_from_map     (const Object *obj, const int u, const int v) {
+	Float3 n;
+	get_bitmap_xyz (obj->normalmap, u, v, &n.as_struct.x, &n.as_struct.y, &n.as_struct.z);
+	return n;
+}
+
+int  get_specularity_from_map (const Object *obj, const int u, const int v) {
+	return get_bitmap_int (obj->specularmap, u, v);
 }

@@ -166,11 +166,11 @@ ObjectNode* init_objects (void) {
     
     if (draw_planes) {
 		Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
-		WFobj *my_floor = wfobj_new ("obj/floor.obj", floor_diff, NULL, NULL);
+		WFobj *my_floor = wfobj_new ("obj/floor.obj");
 	
 		node = calloc (1, sizeof (ObjectNode));
 		head = node;
-		node->obj = obj_new (my_floor);
+		node->obj = obj_new (my_floor, floor_diff, NULL, NULL);
 		node->next = NULL;
 		obj_set_rotation    (node->obj, 45.f, 0.f, 0.f);
 		obj_set_translation (node->obj, 0.f, 2.f, -4.6f);
@@ -179,7 +179,7 @@ ObjectNode* init_objects (void) {
 
 		node->next = calloc (1, sizeof (ObjectNode));
 		node       = node->next;
-		node->obj  = obj_new (my_floor);
+		node->obj  = obj_new (my_floor, floor_diff, NULL, NULL);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 5, 5, 5);
 		obj_set_rotation    (node->obj, 90, 0, 0);
@@ -192,12 +192,12 @@ ObjectNode* init_objects (void) {
 		Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
 		Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
 		Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-		WFobj  *african_head = wfobj_new ("obj/african_head.obj", african_head_diff, african_head_nmap, african_head_spec);
+		WFobj  *african_head = wfobj_new ("obj/african_head.obj");
 
 	
 		node = calloc (1, sizeof (ObjectNode));
 		head = node;
-		node->obj = obj_new (african_head);
+		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
@@ -207,7 +207,7 @@ ObjectNode* init_objects (void) {
 		if (draw_second_head) {
 			node->next = calloc (1, sizeof (ObjectNode));
 			node       = node->next;
-			node->obj  = obj_new (african_head);
+			node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 			node->next = NULL;
 			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
 			obj_set_translation (node->obj, 1.f, 0.f, -10.0f);
@@ -218,7 +218,7 @@ ObjectNode* init_objects (void) {
 	else {
 		Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
 		Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-		WFobj  *my_cube = wfobj_new ("obj/cube.obj", cube_diff, cube_nmap, NULL);
+		WFobj  *my_cube = wfobj_new ("obj/cube.obj");
 
 
 		// Central cube
@@ -226,7 +226,7 @@ ObjectNode* init_objects (void) {
 		
 		head = node;
 		
-		node->obj  = obj_new (my_cube);
+		node->obj  = obj_new (my_cube, cube_diff, cube_nmap, NULL);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 5, 5, 5);
 		//obj_set_scale       (node->obj, 2, 2, 2);
@@ -258,7 +258,7 @@ ObjectNode* init_objects (void) {
 			// Cube
 			node->next = calloc (1, sizeof (ObjectNode));
 			node = node->next;
-			node->obj = obj_new (my_cube);
+			node->obj = obj_new (my_cube, cube_diff, cube_nmap, NULL);
 			node->next = NULL;
 			obj_set_scale       (node->obj, 2, 2, 2);
 			obj_set_rotation    (node->obj, 45, 45, 0);
@@ -268,7 +268,7 @@ ObjectNode* init_objects (void) {
 			// Cube
 			node->next = calloc (1, sizeof (ObjectNode));
 			node = node->next;
-			node->obj = obj_new (my_cube);
+			node->obj = obj_new (my_cube, cube_diff, cube_nmap, NULL);
 			node->next = NULL;
 			obj_set_scale       (node->obj, 2, 2, 2);
 			obj_set_rotation    (node->obj, 45, 45, 0);
