@@ -202,7 +202,9 @@ int count_shadows (Varying *vry) {
 		x = (screenxy_t) screen.as_struct.x;
 		
 		assert (screen.as_struct.y >= 0);
+		//if (screen.as_struct.y >= get_screen_height()) printf ("screen.as_struct.y=%f, get_screen_height()=%zu\n", screen.as_struct.y, get_screen_height());	
 		assert (screen.as_struct.y < get_screen_height());	
+		//if (screen.as_struct.y >= get_screen_height()) screen.as_struct.y = get_screen_height() - 1; // TBD
 		y = (screenxy_t) screen.as_struct.y;
 		
 		assert (screen.as_struct.z >= 0);

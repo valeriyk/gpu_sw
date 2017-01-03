@@ -105,7 +105,7 @@ typedef struct ObjectListNode {
 
 typedef struct TriangleVtxListNode {
 	FixPt3  screen_coords[3];
-	nfixpt_t w_reciprocal[3];
+	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
 	struct TriangleVtxListNode *next;

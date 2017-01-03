@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
 	fmat4 ortho_proj;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
 	
-	float f = 15.0;
+	float f = 18.5;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
