@@ -28,7 +28,12 @@ typedef uint32_t nfixpt_t;
 #define DFRACT_BITS (FRACT_BITS*2)
 #define NFRACT_BITS 30
 
-#define Z_FRACT_BITS 4
+
+#define XY_FRACT_BITS 8
+#define  Z_FRACT_BITS 4
+#define  W_FRACT_BITS 29
+
+#define BARC_FRACT_BITS (XY_FRACT_BITS*2)
 
 //#define FIX_PT_PRECISION	4
 
@@ -118,20 +123,13 @@ static inline dfixpt_t fixpt_dfixpt_mul (fixpt_t a, dfixpt_t b) {
 	return c;
 }
 
+
 static inline fixpt_t fixpt_nfixpt_mul (fixpt_t a, nfixpt_t b) {
 	dfixpt_t c = (dfixpt_t) a * (dfixpt_t) b;
-	/*
-	assert ((a > 0) && (b > 0) && (c > 0));
-	assert ((a < 0) && (b < 0) && (c < 0));
-	assert ((a > 0) && (b < 0) && (c < 0));
-	assert ((a < 0) && (b > 0) && (c < 0));
-	assert ((a == 0) && (c == 0));
-	assert ((b == 0) && (c == 0));
-	assert ((c >> (FIXPT_BITS + FRACT_BITS)) == 0 );
-	*/
 	// 28.4 * 2.30 = 30.34 --> 30.4
 	return (fixpt_t) (c >> NFRACT_BITS);
 }
+
 
 static inline fixpt_t fixpt_div (fixpt_t a, fixpt_t b) {
 	dfixpt_t ad = ((dfixpt_t) a) << FRACT_BITS;
@@ -195,6 +193,7 @@ static inline dfixpt_t dfixpt_from_float (float a) {
 static inline float dfixpt_to_float (dfixpt_t a) {
 	return ((float) a) / ((float) (1 << DFRACT_BITS));
 }
+
 
 
 static inline nfixpt_t nfixpt_from_float (float a) {

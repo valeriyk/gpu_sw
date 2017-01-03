@@ -205,7 +205,7 @@ Float4  varying_fifo_pop_Float4 (Varying *vry);
 
 
 static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
-	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	fixpt_t c = ((fixpt_t) a) << XY_FRACT_BITS;
 	return c;
 }
 
@@ -214,22 +214,21 @@ static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
 	
 	screenz_t c = a >> FRACT_BITS;
 	return (round_up) ? ++c : c;*/
-	return (screenxy_t) (a >> FRACT_BITS);
+	return (screenxy_t) (a >> XY_FRACT_BITS);
 }
 
 
-
 static inline fixpt_t fixpt_from_screenz (screenz_t a) {
-	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	fixpt_t c = ((fixpt_t) a) << Z_FRACT_BITS;
 	return c;
 }
 
 static inline screenz_t fixpt_to_screenz (fixpt_t a) {
-	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
+	//bool round_up = (a >> (FRACT_BITS-1)) & 1;
 	
-	screenz_t c = a >> FRACT_BITS;
-	return (round_up) ? ++c : c;*/
-	return (screenz_t) (a >> FRACT_BITS);
+	//screenz_t c = a >> FRACT_BITS;
+	//return (round_up) ? ++c : c;
+	return (screenz_t) (a >> Z_FRACT_BITS);
 }
 
 /*
