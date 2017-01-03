@@ -32,9 +32,6 @@ int32_t max_of_three (int32_t a, int32_t b, int32_t c);
 
 
 
-
-
-
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
     
     dfixpt_t bx_ax = (dfixpt_t) bx - (dfixpt_t) ax;
@@ -106,7 +103,6 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
 	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
 	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
-	//print_fmat4 (&VIEWPORT, "viewport matrix");
 }
 
 void set_screen_size (size_t width, size_t height) {
@@ -143,7 +139,6 @@ void free_light (int light_num) {
 }
 
 void init_scene (void) {
-	//Scene.num_of_lights = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		LIGHTS[i].enabled = false;
 		LIGHTS[i].shadow_buf = NULL;
@@ -647,12 +642,12 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 	int tri_num = 0;
 	
 	
+	// This is for DEBUG_FIXPT_W
 	float max_w = 0;
 	float max_w_recip = 0;
 	float min_w = 10000;
 	float min_w_recip = 10000;
-	bool RECORD_W_RANGE = false;
-
+	
 	
 	while (obj_list_node != NULL) {
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
@@ -678,7 +673,7 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 					// No div by zero because we checked above that it's > 0
 					float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
 					
-					if (RECORD_W_RANGE) {
+					if (DEBUG_FIXPT_W) {
 						if (clip.vtx[j].as_struct.w > max_w) max_w = clip.vtx[j].as_struct.w;
 						if (reciprocal_w > max_w_recip) max_w_recip = reciprocal_w;
 						
@@ -697,12 +692,7 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 
 					if (!is_clipped) {
 						screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
-						
-						if (DEBUG_Z) {
-							if (screen.vtx[j].as_struct.z < 0) printf ("Z < 0: %f\n", screen.vtx[j].as_struct.z);
-							if (screen.vtx[j].as_struct.z > get_screen_depth()) printf ("Z > depth: %f\n", screen.vtx[j].as_struct.z);
-						}
-
+					
 						// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
 						// because we have it for free here
 						screen.vtx[j].as_struct.w = reciprocal_w;
@@ -726,7 +716,7 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 		obj_list_node = obj_list_node->next;
 	}
 	
-	if (RECORD_W_RANGE) {
+	if (DEBUG_FIXPT_W) {
 		printf ("max w: %f, max 1/w: %f\t\tmin w: %f, min 1/w: %f\n", max_w, max_w_recip, min_w, min_w_recip);
 	}
 					
@@ -779,8 +769,6 @@ static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	assert (num_of_words > 0);
 	
 	static size_t idx = 0;
-	
-	//if (num_of_words == 0) return NULL;
 	
 	VaryingWord data;
 	if (type == VARYING_FIXPT) {

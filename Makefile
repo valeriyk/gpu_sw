@@ -1,7 +1,7 @@
 TCF          = ../hw/em5d_x2_1/build/tool_config/core0_arc.tcf
 OPT = -O3
 #SYSCONF_LINK_x86 = gcc -ggdb -g3 -pg -O0 -I.
-SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -Ilibtga-1.0.1/src -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 $(OPT)
+SYSCONF_LINK_x86 = gcc -g -pg -std=c99 -Ilibtga-1.0.1/src -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT)
 
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF)
 #SYSCONF_LINK_ARC = ccac -g -tcf=$(TCF) ../../hw/em5d_x2_1/build/tool_config/core0_link_cmd.txt -I.

@@ -1,18 +1,11 @@
 #pragma once
 
 #include "geometry.h"
-//#include <fixmath.h>
-//#include "fixpt.h"
 
-#define NDEBUG
 #include <assert.h>
-
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-
-
 
 
 typedef  int32_t  fixpt_t;
