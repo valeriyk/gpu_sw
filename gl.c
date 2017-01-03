@@ -11,6 +11,10 @@
 #include <stdint.h>
 
 
+// POSITIVE Z TOWARDS ME
+
+
+
 size_t SCREEN_WIDTH;
 size_t SCREEN_HEIGHT;
 size_t SCREEN_DEPTH;
@@ -25,11 +29,6 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
-/*
-pixel_color_t get_bitmap_rgb (const Bitmap *bmp, const int u, const int v);
-Float3        get_bitmap_xyz (const Bitmap *bmp, const int u, const int v);
-int           get_bitmap_int (const Bitmap *bmp, const int u, const int v);
-*/
 
 
 
@@ -46,7 +45,7 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
     dfixpt_t mul_0 = bx_ax * cy_ay;
     dfixpt_t mul_1 = by_ay * cx_ax;
     dfixpt_t diff  = mul_0 - mul_1;
-    fixpt_t res = (fixpt_t) (diff >> FRACT_BITS);
+    fixpt_t res = (fixpt_t) (diff >> (2*XY_FRACT_BITS - BARC_FRACT_BITS));
     
     // left-top fill rule:
     bool downwards  = (by_ay  < 0);
@@ -105,8 +104,6 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 0, 3, x + w / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 1, h / 2.0f);
 	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
-	//fmat4_set (&VIEWPORT, 2, 2, d / 2.0f);
-	//fmat4_set (&VIEWPORT, 2, 3, 0);
 	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
 	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
 	//print_fmat4 (&VIEWPORT, "viewport matrix");
@@ -289,124 +286,99 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-fixpt_t interpolate_z (fixpt_t z0, fixpt_t z1z0, fixpt_t z2z0, FixPt3 *bar) {
-	//fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
-	dfixpt_t mul_1 = z1z0 * bar->as_array[1]; // 28.4 * 28.4 = 56.8
-	dfixpt_t mul_2 = z2z0 * bar->as_array[2]; // 28.4 * 28.4 = 56.8
-	dfixpt_t z0_1  = ((dfixpt_t) z0) << FRACT_BITS; // 28.4 << 4 = 32.8
-	dfixpt_t acc = z0_1 + mul_1 + mul_2; // 32.8 + 56.8 + 56.8
-	return (fixpt_t) (acc >> FRACT_BITS); // 28.4
+screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
+	
+	dfixpt_t mul_0 = (int64_t) z[0] * (int64_t) bar->as_array[0]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_1 = (int64_t) z[1] * (int64_t) bar->as_array[1]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_2 = (int64_t) z[2] * (int64_t) bar->as_array[2]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t acc = mul_0 + mul_1 + mul_2; // (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) = (ZM+BM+1).(ZF+BF)
+	dfixpt_t sum_of_bars = bar->as_array[0] + bar->as_array[1] + bar->as_array[2]; // BM.BF + BM.BF + BM.BF = (BM+1).BF
+	dfixpt_t res = acc / sum_of_bars; // (ZM+BM+1).(ZF+BF) / (BM+1).BF = ZM.ZF
+	
+	return fixpt_to_screenz ((fixpt_t) res); // ZM
 }
 
+dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
+    	
+	dfixpt_t mul_0 = (dfixpt_t) bar->as_array[0] * (dfixpt_t) w_reciprocal[0]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t mul_1 = (dfixpt_t) bar->as_array[1] * (dfixpt_t) w_reciprocal[1]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t mul_2 = (dfixpt_t) bar->as_array[2] * (dfixpt_t) w_reciprocal[2]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t acc   = mul_0 + mul_1 + mul_2; // (BM+WM).(BF+WF) + (BM+WM).(BF+WF) + (BM+WM).(BF+WF) = (BM+WM+1).(BF+WF)
+	assert (acc != 0);
+	dfixpt_t one = (1L << (OOWI_FRACT_BITS + BARC_FRACT_BITS + W_RECIPR_FRACT_BITS)); // 1.(WI+BF+WF)
+	dfixpt_t res = one / acc; // 1.(WI+BF+WF) / (BM+WM+1).(BF+WF) = (64-WI).WI
 
-dfixpt_t interpolate_w (nfixpt_t w_reciprocal[3], FixPt3 *bar) {
-    // wi = bar[0] * w_rcp[0] + bar[0] * w_rcp[0] + bar[0] * w_rcp[0]
-	//       28.4  *   2.30   +  28.4  *   2.30   +  28.4  *   2.30
-	//           30.34        +      30.34        +      30.34
-	//                               30.34
-	//
-	// one_over_wi = 1 / wi
-	// 54.8        = 22.42 / 30.34
-	
-	int64_t mul_0  = (int64_t) bar->as_array[0] * (int64_t) w_reciprocal[0]; //  28.4 * 2.30 = 30.34
-	int64_t mul_1 = (int64_t) bar->as_array[1] * (int64_t) w_reciprocal[1]; //  28.4 * 2.30 = 30.34
-	int64_t mul_2 = (int64_t) bar->as_array[2] * (int64_t) w_reciprocal[2]; //  28.4 * 2.30 = 30.34
-	int64_t acc   = mul_0 + mul_1 + mul_2; // 30.34
-	int64_t one = (1L << (3*FRACT_BITS + NFRACT_BITS)); // 22.42
-	int64_t res = one / acc;
-	
-	if (0) {
-		float   mul_0f = fixpt_to_float (bar->as_array[0]) * nfixpt_to_float (w_reciprocal[0]);
-		printf ("mul_0 %f/%f\t", mul_0f, ((float) mul_0) / ((float) (1L << (FRACT_BITS + NFRACT_BITS))));
-		float   mul_1f = fixpt_to_float (bar->as_array[1]) * nfixpt_to_float (w_reciprocal[1]);
-		printf ("mul_1 %f/%f\t", mul_1f, ((float) mul_1) / ((float) (1L << (FRACT_BITS + NFRACT_BITS))));
-		float   mul_2f = fixpt_to_float (bar->as_array[2]) * nfixpt_to_float (w_reciprocal[2]);
-		printf ("mul_2 %f/%f\t", mul_2f, ((float) mul_2) / ((float) (1L << (FRACT_BITS + NFRACT_BITS))));
+	if (DEBUG_FIXPT_W) {
+		float   mul_0f = fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
+		float   mul_1f = fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
+		float   mul_2f = fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
 		float   accf  = mul_0f + mul_1f + mul_2f;
-		printf ("acc %f/%f\t", accf, ((float) acc) / ((float) (1L << (FRACT_BITS + NFRACT_BITS))));
 		float   resf = 1.0f / accf;
-		printf ("res %f/%f\n", resf, ((float) res) / ((float) (1L << (DFRACT_BITS))));
+		
+		printf ("mul_0 %f/%f\t", mul_0f, dfixpt_to_float (mul_0, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("mul_1 %f/%f\t", mul_1f, dfixpt_to_float (mul_1, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("mul_2 %f/%f\t", mul_2f, dfixpt_to_float (mul_2, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("acc %f/%f\t", accf, dfixpt_to_float (acc, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("res %f/%f\n", resf, dfixpt_to_float (res, OOWI_FRACT_BITS));
 	}
+	
 	return (dfixpt_t) res;		
 }
 
-fixpt_t interpolate_varying (Varying vry0, Varying vry1, Varying vry2, nfixpt_t w_reciprocal[3], FixPt3 *bar, dfixpt_t one_over_wi, size_t vry_idx) {
 
-	/*fixpt_t vtx0_norm = fixpt_nfixpt_mul (tri->varying[0].data.as_fixpt_t[i], tri->w_reciprocal[0]);
-	fixpt_t vtx1_norm = fixpt_nfixpt_mul (tri->varying[1].data.as_fixpt_t[i], tri->w_reciprocal[1]);
-	fixpt_t vtx2_norm = fixpt_nfixpt_mul (tri->varying[2].data.as_fixpt_t[i], tri->w_reciprocal[2]);
-	
-	fixpt_t mpy0 = fixpt_mul (vtx0_norm, bar.as_array[0]);
-	fixpt_t mpy1 = fixpt_mul (vtx1_norm, bar.as_array[1]);
-	fixpt_t mpy2 = fixpt_mul (vtx2_norm, bar.as_array[2]);
-	
-	vry_interp.data.as_fixpt_t[i] = fixpt_add (mpy0, fixpt_add (mpy1, mpy2));
-	vry_interp.data.as_fixpt_t[i] = fixpt_from_dfixpt (fixpt_dfixpt_mul (vry_interp.data.as_fixpt_t[i], one_over_wi));*/
+Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar) {
 
-	//  vtx_norm : 24.8 * 2.30 = 26.38
-	//  mpy      : 26.38 * 24.8 = 18.46
-	//  acc      : 18.46
-	//  res      : 18.46 * 48.16 = 2.62
-	int64_t mul_0 = (int64_t) bar->as_array[0] * (int64_t) w_reciprocal[0] * (int64_t) vry0.data.as_fixpt_t[vry_idx]; // 18.46
-	int64_t mul_1 = (int64_t) bar->as_array[1] * (int64_t) w_reciprocal[1] * (int64_t) vry1.data.as_fixpt_t[vry_idx];
-	int64_t mul_2 = (int64_t) bar->as_array[2] * (int64_t) w_reciprocal[2] * (int64_t) vry2.data.as_fixpt_t[vry_idx];
-	int64_t acc   = (mul_0 + mul_1 + mul_2) >> 30; // 18.46 >> 30 = 18.16
-	int64_t res   = acc * one_over_wi; // 18.16 * 48.16 = 32.32
-	int32_t res32 = (fixpt_t) (res >> 24); // 24.8
-	
-	if (0) {
-		float mul_0f = fixpt_to_float (bar->as_array[0]) * nfixpt_to_float (w_reciprocal[0]) * fixpt_to_float (vry0.data.as_fixpt_t[vry_idx]);
-		printf ("idx %zu:: mul_0: %f*%f*%f = ", vry_idx, fixpt_to_float (bar->as_array[0]), nfixpt_to_float (w_reciprocal[0]), fixpt_to_float (vry0.data.as_fixpt_t[vry_idx]));
-		printf ("%f/%f\t", mul_0f, ((float) mul_0) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS))));
-		float mul_1f = fixpt_to_float (bar->as_array[1]) * nfixpt_to_float (w_reciprocal[1]) * fixpt_to_float (vry1.data.as_fixpt_t[vry_idx]);
-		printf ("mul_1 %f/%f\t", mul_1f, ((float) mul_1) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS))));
-		float mul_2f = fixpt_to_float (bar->as_array[2]) * nfixpt_to_float (w_reciprocal[2]) * fixpt_to_float (vry2.data.as_fixpt_t[vry_idx]);
-		printf ("mul_2 %f/%f\t", mul_2f, ((float) mul_2) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS))));
-		float   accf  = mul_0f + mul_1f + mul_2f;
-		printf ("acc %f/%f\t", accf, ((float) acc) / ((float) (1L << (FRACT_BITS*2 + NFRACT_BITS - 30))));
-		float   resf = accf * dfixpt_to_float (one_over_wi);
-		printf ("res %f/%f\t", resf, ((float) res) / ((float) (1L << (DFRACT_BITS*2))));
-		printf ("res32 %f\t", ((float) res32) / ((float) (1L << (FRACT_BITS))));
-		printf ("\n");
-	}
-	return res32; 
-}
-/*
-Varying interpolate_varying (Varying *vry, FixPt3 *bar, FixPt3 *one_over_w) {
-
-	Varying vry_interp;
-	
+	assert (vry[0].num_of_words == vry[1].num_of_words);
+	assert (vry[0].num_of_words == vry[2].num_of_words);
+					
+	Varying vry_interp;					
 	vry_interp.num_of_words = vry[0].num_of_words;
-
+	
 	if (vry_interp.num_of_words > 0) {
-		// Interpolate Z with perspective correction
-		fixpt_t sum_of_bars = 0;
-		FixPt3 bar_clip;
-		for (int i = 0; i < 3; i++) {
-			bar_clip.as_array[i] = fixpt_mul (bar->as_array[i], one_over_w->as_array[i]); // multiply by 1/W instead of dividing by W
-			sum_of_bars = fixpt_add (sum_of_bars, bar_clip.as_array[i]);
-		}
 		
-		// Normalize Z
-		for (int i = 0; i < 3; i++) {
-			bar_clip.as_array[i] = (sum_of_bars == 0) ? 0 : fixpt_div (bar_clip.as_array[i], sum_of_bars);
-		}
+		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar);
 		
 		for (int i = 0; i < vry_interp.num_of_words; i++) {
-			fixpt_t vtx0_norm = vry[0].data.as_fixpt_t[i];
-			fixpt_t vtx1_norm = vry[1].data.as_fixpt_t[i];
-			fixpt_t vtx2_norm = vry[2].data.as_fixpt_t[i];
 			
-			fixpt_t mpy0 = fixpt_mul (vtx0_norm, bar_clip.as_array[0]);
-			fixpt_t mpy1 = fixpt_mul (vtx1_norm, bar_clip.as_array[1]);
-			fixpt_t mpy2 = fixpt_mul (vtx2_norm, bar_clip.as_array[2]);
+			#define NNN 20
+						
+			dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // 18.14 * 3.29 = 21.43
+			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // 
+			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // 
+
+			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // (21.43>>16) * 24.8 = 21.27 * 24.8 = 29.35
+			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // 
+			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // 
+
+			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 29.35
+
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * (dfixpt_t) one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (29.35 * 16.16 = 13.51)>>43 = 56.8
 			
-			vry_interp.data.as_fixpt_t[i] = fixpt_add (mpy0, fixpt_add (mpy1, mpy2));
+			if (DEBUG_FIXPT_VARYING) {
+				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
+				float vtx1_norm = vry[1].data[i].as_float * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
+				float vtx2_norm = vry[2].data[i].as_float * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
+				float mpy0 = vtx0_norm * fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS);
+				float mpy1 = vtx1_norm * fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS);
+				float mpy2 = vtx2_norm * fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS);
+				float acc = mpy0 + mpy1 + mpy2;
+				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
+				
+				printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+			}
 		}
 	}
-	return vry_interp;
+	
+	return vry_interp;					
 }
-*/
+
 BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
 	
 	BoundBox bb;
@@ -471,18 +443,14 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	fixpt_t    x[3];
 	fixpt_t    y[3];
 	fixpt_t    z[3];
-	//fixpt_t    w[3];
-	
-	// re-pack X, Y, Z, W coords of the three vertices
+		
+	// re-pack X, Y, Z coords of the three vertices
 	for (int i = 0; i < 3; i++) {
 		x[i] = tri->screen_coords[i].as_struct.x;
 		y[i] = tri->screen_coords[i].as_struct.y;
 		z[i] = tri->screen_coords[i].as_struct.z;
-		//w[i] = tri->screen_coords[i].as_struct.w;
 		
-		if (DEBUG_Z) {
-			if (z[i] < 0) printf ("Fixp Z < 0: %x\n", z[i]);
-		}
+		assert (z[i] >= 0);
 	}
 	
 	BoundBox bb = clip_boundbox_to_tile (get_tri_boundbox (x, y), tile_num);
@@ -497,21 +465,16 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	if (sum_of_bars == 0) return;
 	
 	FixPt3 bar_row_incr;
-	bar_row_incr.as_array[0] = fixpt_sub (x[2], x[1]);
-	bar_row_incr.as_array[1] = fixpt_sub (x[0], x[2]);
-	bar_row_incr.as_array[2] = fixpt_sub (x[1], x[0]);
+	bar_row_incr.as_array[0] = fixpt_sub (x[2], x[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[1] = fixpt_sub (x[0], x[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[2] = fixpt_sub (x[1], x[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	FixPt3 bar_col_incr;
-    bar_col_incr.as_array[0] = fixpt_sub (y[1], y[2]);
-	bar_col_incr.as_array[1] = fixpt_sub (y[2], y[0]);
-	bar_col_incr.as_array[2] = fixpt_sub (y[0], y[1]);
+    bar_col_incr.as_array[0] = fixpt_sub (y[1], y[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[1] = fixpt_sub (y[2], y[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[2] = fixpt_sub (y[0], y[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	
-	fixpt_t z1z0 = fixpt_div (fixpt_sub (z[1], z[0]), sum_of_bars);
-	fixpt_t z2z0 = fixpt_div (fixpt_sub (z[2], z[0]), sum_of_bars);
-	//fixpt_t w1w0 = fixpt_div (fixpt_sub (w_fixp[1], w_fixp[0]), sum_of_bars);
-	//fixpt_t w2w0 = fixpt_div (fixpt_sub (w_fixp[2], w_fixp[0]), sum_of_bars);
-		
 	FixPt3   bar;
 	FixPt3   bar_row = bar_initial;
 	ScreenPt p;
@@ -524,96 +487,14 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
-				// Interpolate and normalize Z
-				//fixpt_t z = fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
-				fixpt_t zi = interpolate_z (z[0], z1z0, z2z0, &bar);
-				//screenz_t z = interpolate2_z (z_fixp, &bar_fixp);
-				
+				screenz_t zi = interpolate_z (z, &bar);
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				
-				// saturating subtraction:
-				//int32_t z_diff = z - zbuffer[pix_num];
-				fixpt_t z_diff = fixpt_sub (zi, fixpt_from_screenz(zbuffer[pix_num]));
-				if ((zi > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
-				else if ((zi < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
-								
-				//if (p.z > zbuffer[pix_num]) {
-				if (z_diff > 0) {
-					//zbuffer[pix_num] = z;
-					zbuffer[pix_num] = fixpt_to_screenz (zi);
+				if (zi > zbuffer[pix_num]) {
+					zbuffer[pix_num] = zi;
 
-					// Interpolation of Varying values:
-
+					Varying vry_interp = interpolate_varying (tri->varying, tri->w_reciprocal, &bar);
 					
-					assert (tri->varying[0].num_of_words == tri->varying[1].num_of_words);
-					assert (tri->varying[0].num_of_words == tri->varying[2].num_of_words);
-					
-					Varying vry_interp;					
-					vry_interp.num_of_words = tri->varying[0].num_of_words;
-					if (vry_interp.num_of_words > 0) {
-						// Interpolate Z with perspective correction
-						
-						
-						dfixpt_t one_over_wi = interpolate_w (tri->w_reciprocal, &bar);
-						/*
-						for (int i = 0; i < vry_interp.num_of_words; i++) {
-							//fixpt_t vtx0_norm = fixpt_mul (tri->varying[0].data.as_fixpt_t[i], tri->w_reciprocal[0]);
-							//fixpt_t vtx1_norm = fixpt_mul (tri->varying[1].data.as_fixpt_t[i], tri->w_reciprocal[1]);
-							//fixpt_t vtx2_norm = fixpt_mul (tri->varying[2].data.as_fixpt_t[i], tri->w_reciprocal[2]);
-							fixpt_t vtx0_norm = fixpt_nfixpt_mul (tri->varying[0].data.as_fixpt_t[i], tri->w_reciprocal[0]);
-							fixpt_t vtx1_norm = fixpt_nfixpt_mul (tri->varying[1].data.as_fixpt_t[i], tri->w_reciprocal[1]);
-							fixpt_t vtx2_norm = fixpt_nfixpt_mul (tri->varying[2].data.as_fixpt_t[i], tri->w_reciprocal[2]);
-							
-							fixpt_t mpy0 = fixpt_mul (vtx0_norm, bar.as_array[0]);
-							fixpt_t mpy1 = fixpt_mul (vtx1_norm, bar.as_array[1]);
-							fixpt_t mpy2 = fixpt_mul (vtx2_norm, bar.as_array[2]);
-							
-							vry_interp.data.as_fixpt_t[i] = fixpt_add (mpy0, fixpt_add (mpy1, mpy2));
-							vry_interp.data.as_fixpt_t[i] = fixpt_div (vry_interp.data.as_fixpt_t[i], wi);
-							
-							vry_interp.data.as_fixpt_t[i] = tri->varying[0].data.as_fixpt_t[i]; // TBD remove
-						}
-						*/
-						
-						int MMM = 0;
-						int NNN = 0;
-						
-						for (int i = 0; i < MMM; i++) {
-							float vtx0_norm = tri->varying[0].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[0]);
-							float vtx1_norm = tri->varying[1].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[1]);
-							float vtx2_norm = tri->varying[2].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[2]);
-							
-							float mpy0 = vtx0_norm * fixpt_to_float (bar.as_array[0]);
-							float mpy1 = vtx1_norm * fixpt_to_float (bar.as_array[1]);
-							float mpy2 = vtx2_norm * fixpt_to_float (bar.as_array[2]);
-							
-							vry_interp.data.as_float[i] = (mpy0 + mpy1 + mpy2) * dfixpt_to_float (one_over_wi);
-						}
-						
-						for (int i = MMM; i < NNN; i++) {
-							//vry_interp.data.as_float[i] = (mpy0 + mpy1 + mpy2) * dfixpt_to_float (one_over_wi);
-							
-							vry_interp.data.as_fixpt_t[i] = interpolate_varying (tri->varying[0], tri->varying[1], tri->varying[2], tri->w_reciprocal, &bar, one_over_wi, i);
-							
-							//printf ("norm %d: float=%f, fixpt=%f\n", i, vry_interp.data.as_float[i], fixpt_to_float (tmp));
-						}
-						
-						for (int i = NNN; i < vry_interp.num_of_words; i++) {
-							float vtx0_norm = tri->varying[0].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[0]);
-							float vtx1_norm = tri->varying[1].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[1]);
-							float vtx2_norm = tri->varying[2].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[2]);
-							
-							float mpy0 = vtx0_norm * fixpt_to_float (bar.as_array[0]);
-							float mpy1 = vtx1_norm * fixpt_to_float (bar.as_array[1]);
-							float mpy2 = vtx2_norm * fixpt_to_float (bar.as_array[2]);
-							
-							vry_interp.data.as_float[i] = (mpy0 + mpy1 + mpy2) * dfixpt_to_float (one_over_wi);
-						}
-					}					
-					
-					if (GL_DEBUG_0) {
-						printf("\t\tcall pshader()\n");
-					}
 					pixel_color_t color;
 					if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
 						fbuffer[p.x + (SCREEN_HEIGHT-p.y-1) * SCREEN_WIDTH] = color;
@@ -748,17 +629,14 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 	}
 			
 	TrianglePtrListNode *tile_idx_table [NUM_OF_TILES];
-	for (int i = 0; i < NUM_OF_TILES; i++)
-	{
+	for (int i = 0; i < NUM_OF_TILES; i++) {
 		tile_idx_table[i] = NULL;
 	}
 			
 	ObjectListNode *obj_list_node;
-	
 	obj_list_node = obj_list_head;		
 	int num_of_faces = 0;
-	while (obj_list_node != NULL)
-	{
+	while (obj_list_node != NULL) {
 		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
 		obj_list_node = obj_list_node->next;
 	}
@@ -768,13 +646,13 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 	
 	int tri_num = 0;
 	
+	
 	float max_w = 0;
 	float max_w_recip = 0;
-	
 	float min_w = 10000;
 	float min_w_recip = 10000;
-	
 	bool RECORD_W_RANGE = false;
+
 	
 	while (obj_list_node != NULL) {
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
@@ -831,10 +709,10 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						for (int k = 0; k < 3; k++) {
-							vtx_list[tri_num].screen_coords[j].as_array[k] = fixpt_from_float (screen.vtx[j].as_array[k]);
-						}
-						vtx_list[tri_num].w_reciprocal[j] = nfixpt_from_float(screen.vtx[j].as_struct.w);
+						vtx_list[tri_num].screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x, XY_FRACT_BITS);
+						vtx_list[tri_num].screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y, XY_FRACT_BITS);
+						vtx_list[tri_num].screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z, Z_FRACT_BITS);
+						vtx_list[tri_num].w_reciprocal[j]              =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
 					}		
 				}
 			}
@@ -865,13 +743,13 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 
 void varying_fifo_push_float  (Varying *vry, float data) {
 	size_t idx = vry->num_of_words;
-	if (FLOAT) {
-		vry->data.as_float[idx] = data;
+
+	vry->data[idx].as_fixpt_t = fixpt_from_float_no_rnd (data, VARYING_FRACT_BITS);
+	if (DEBUG_FIXPT_VARYING) {
+		vry->data[idx].as_float = data;
 	}
-	else {
-		
-		vry->data.as_fixpt_t[idx] = fixpt_from_float (data);
-	}
+
+
 	vry->num_of_words++;
 }
 
@@ -893,35 +771,39 @@ void varying_fifo_push_Float4 (Varying *vry, Float4 *data) {
 	}
 }
 
-/*
-fixpt_t varying_pop_fixpt  (Varying *vry);
-FixPt2  varying_pop_FixPt2 (Varying *vry);
-FixPt3  varying_pop_FixPt3 (Varying *vry);
-FixPt4  varying_pop_FixPt4 (Varying *vry);
-*/
-
-float varying_fifo_pop_float  (Varying *vry) {
-	static size_t idx = 0;
+static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	
 	size_t num_of_words = vry->num_of_words;
-	if (num_of_words == 0) return 0;
 	
-	float data;
-	if (FLOAT) {
-		data = vry->data.as_float[idx];
+	assert ((type == VARYING_FIXPT) || (type == VARYING_FLOAT));
+	assert (num_of_words > 0);
+	
+	static size_t idx = 0;
+	
+	//if (num_of_words == 0) return NULL;
+	
+	VaryingWord data;
+	if (type == VARYING_FIXPT) {
+		data.as_fixpt_t = vry->data[idx].as_fixpt_t;
 	}
-	else {
-		data = fixpt_to_float (vry->data.as_fixpt_t[idx]);
+	else if (type == VARYING_FLOAT) {
+		data.as_float = fixpt_to_float (vry->data[idx].as_fixpt_t, VARYING_FRACT_BITS);
 	}
 	idx++;
 	if (idx == num_of_words) idx = 0;
 	return data;
 }
 
+float  varying_fifo_pop_float (Varying *vry) {
+	VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
+	return v.as_float;
+}
+
 Float2  varying_fifo_pop_Float2 (Varying *vry) {
 	Float2 data;
 	for (int i = 0; i < 2; i++) {
-		data.as_array[i] = varying_fifo_pop_float (vry);
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
+		data.as_array[i] = v.as_float;
 	}
 	return data;
 }
@@ -929,7 +811,8 @@ Float2  varying_fifo_pop_Float2 (Varying *vry) {
 Float3  varying_fifo_pop_Float3 (Varying *vry) {
 	Float3 data;
 	for (int i = 0; i < 3; i++) {
-		data.as_array[i] = varying_fifo_pop_float (vry);
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
+		data.as_array[i] = v.as_float;
 	}
 	return data;
 }
@@ -937,11 +820,44 @@ Float3  varying_fifo_pop_Float3 (Varying *vry) {
 Float4  varying_fifo_pop_Float4 (Varying *vry) {
 	Float4 data;
 	for (int i = 0; i < 4; i++) {
-		data.as_array[i] = varying_fifo_pop_float (vry);
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
+		data.as_array[i] = v.as_float;
 	}
 	return data;
 }
 
+
+fixpt_t  varying_fifo_pop_fixpt (Varying *vry) {
+	VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
+	return v.as_fixpt_t;
+}
+
+FixPt2  varying_fifo_pop_FixPt2 (Varying *vry) {
+	FixPt2 data;
+	for (int i = 0; i < 2; i++) {
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
+		data.as_array[i] = v.as_fixpt_t;
+	}
+	return data;
+}
+
+FixPt3  varying_fifo_pop_FixPt3 (Varying *vry) {
+	FixPt3 data;
+	for (int i = 0; i < 3; i++) {
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
+		data.as_array[i] = v.as_fixpt_t;
+	}
+	return data;
+}
+
+FixPt4  varying_fifo_pop_FixPt4 (Varying *vry) {
+	FixPt4 data;
+	for (int i = 0; i < 4; i++) {
+		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
+		data.as_array[i] = v.as_fixpt_t;
+	}
+	return data;
+}
 
 
 pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const int v) {
@@ -985,17 +901,3 @@ int32_t get_int32_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 		return 0;
 	}
 }
-
-/*
-pixel_color_t get_rgb_from_texture (const Object *obj, const int u, const int v) {
-	return get_bitmap_rgb (obj->texture, u, v);
-}
-
-Float3 get_normal_from_map     (const Object *obj, const int u, const int v) {
-	return get_bitmap_xyz (obj->normalmap, u, v);
-}
-
-int  get_specularity_from_map (const Object *obj, const int u, const int v) {
-	return get_bitmap_int (obj->specularmap, u, v);
-}
-*/

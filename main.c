@@ -19,10 +19,6 @@
 
 // POSITIVE Z TOWARDS ME
 
-// these are global:
-//fmat4  UNIFORM_M;
-//fmat4  UNIFORM_MIT;
-
 Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
@@ -68,36 +64,6 @@ void setup_transformation (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *vi
 		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
 		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
 		fmat4_inv_transp (&modelview, &(node->obj->mvit));
-		/*print_fmat4 (&(node->obj->mit), "modelview invert transpose (mit) BEFORE");
-		float min = 0;
-		float max = 0;
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				float tmp = node->obj->mit[i][j];
-				if (tmp > max) max = tmp;
-				if (tmp < min) min = tmp;
-			}
-		}
-		float div = 0;
-		if (fabsf(max) > fabsf(min)) div = max;
-		else div = min;
-		
-		if (div != 0) {
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
-					fmat4_set (&(node->obj->mit), i, j, node->obj->mit[i][j] / div);
-				}
-			}
-		}
-		print_fmat4 (&(node->obj->mit), "modelview invert transpose (mit) AFTER");*/
-		
-		//fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
-		/*print_fmat4 (&(obj->model), "model matrix");
-		print_fmat4 (view, "view matrix");
-		print_fmat4 (proj, "projection matrix");
-		print_fmat4 (&UNIFORM_M, "UNIFORM_M");
-		print_fmat4 (&UNIFORM_MIT, "UNIFORM_MIT");
-		*/
 		
 		node = node->next;
 	}
@@ -275,17 +241,6 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 	return (uint8_t) (128.f + rgb.r * 0.439f - rgb.g * 0.368f - rgb.b * 0.071f);
 }
 
-/*uint8_t rgb_to_y (pixel_color_t rgb) {
-	return rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114;
-}
-
-uint8_t rgb_to_cb (pixel_color_t rgb) {
-	return rgb.r * -0.168935 + rgb.g * -0.331665 + rgb.b * 0.50059;
-}
-
-uint8_t rgb_to_cr (pixel_color_t rgb) {
-	return rgb.r * 0.499813 + rgb.g * -0.418531 + rgb.b * -0.081282;
-}*/
 
 int main(int argc, char** argv) {
        
@@ -317,7 +272,7 @@ int main(int argc, char** argv) {
 	fmat4 ortho_proj;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
 	
-	float f = 15.0;
+	float f = 18.5;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords

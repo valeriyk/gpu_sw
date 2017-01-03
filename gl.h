@@ -12,7 +12,10 @@
 
 
 
-#define FLOAT 1
+#define DEBUG_FIXPT_VARYING 0
+#define DEBUG_FIXPT_W       0
+
+#define FLOAT 0
 
 
 
@@ -24,6 +27,7 @@
 
 
 typedef enum {X = 0, Y, Z, W} axis;
+typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
 
 
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
@@ -54,30 +58,17 @@ typedef struct Triangle {
 } Triangle;
 
 
-typedef float  varying_float  [NUM_OF_VARYING_WORDS];
-//typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
-//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-//typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
-/*
-typedef union VaryingFloat {
-	varying_float  as_float;
-	varying_Float2 as_Float2;
-	varying_Float4 as_Float4;
-} VaryingFloat;
-*/
-typedef fixpt_t varying_fixpt_t [NUM_OF_VARYING_WORDS];
-//typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
-//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-//typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
+#ifdef DEBUG_FIXPT_VARYING
+typedef struct VaryingWord {
+	float    as_float;
+#else
+typedef union VaryingWord {
+#endif
+	fixpt_t  as_fixpt_t;
+} VaryingWord;
 
-typedef union VaryingData {
-	varying_fixpt_t  as_fixpt_t;
-//	varying_FixPt2   as_FixPt2;
-//	varying_FixPt4   as_FixPt4;
-	varying_float    as_float;
-//	varying_Float2   as_Float2;
-//	varying_Float4   as_Float4;
-} VaryingData;
+
+typedef VaryingWord VaryingData [NUM_OF_VARYING_WORDS];
 
 typedef struct Varying {
 	int32_t num_of_words;
@@ -105,7 +96,7 @@ typedef struct ObjectListNode {
 
 typedef struct TriangleVtxListNode {
 	FixPt3  screen_coords[3];
-	nfixpt_t w_reciprocal[3];
+	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
 	struct TriangleVtxListNode *next;
@@ -190,11 +181,10 @@ void varying_fifo_push_Float2 (Varying *vry, Float2 *data);
 void varying_fifo_push_Float3 (Varying *vry, Float3 *data);
 void varying_fifo_push_Float4 (Varying *vry, Float4 *data);
 
-/*fixpt_t varying_pop_fixpt  (Varying *vry);
-FixPt2  varying_pop_FixPt2 (Varying *vry);
-FixPt3  varying_pop_FixPt3 (Varying *vry);
-FixPt4  varying_pop_FixPt4 (Varying *vry);
-*/
+fixpt_t varying_fifo_pop_fixpt  (Varying *vry);
+FixPt2  varying_fifo_pop_FixPt2 (Varying *vry);
+FixPt3  varying_fifo_pop_FixPt3 (Varying *vry);
+FixPt4  varying_fifo_pop_FixPt4 (Varying *vry);
 
 float   varying_fifo_pop_float  (Varying *vry);
 Float2  varying_fifo_pop_Float2 (Varying *vry);
@@ -205,7 +195,7 @@ Float4  varying_fifo_pop_Float4 (Varying *vry);
 
 
 static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
-	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	fixpt_t c = ((fixpt_t) a) << XY_FRACT_BITS;
 	return c;
 }
 
@@ -214,22 +204,21 @@ static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
 	
 	screenz_t c = a >> FRACT_BITS;
 	return (round_up) ? ++c : c;*/
-	return (screenxy_t) (a >> FRACT_BITS);
+	return (screenxy_t) (a >> XY_FRACT_BITS);
 }
 
 
-
 static inline fixpt_t fixpt_from_screenz (screenz_t a) {
-	fixpt_t c = ((fixpt_t) a) << FRACT_BITS;
+	fixpt_t c = ((fixpt_t) a) << Z_FRACT_BITS;
 	return c;
 }
 
 static inline screenz_t fixpt_to_screenz (fixpt_t a) {
-	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
+	//bool round_up = (a >> (FRACT_BITS-1)) & 1;
 	
-	screenz_t c = a >> FRACT_BITS;
-	return (round_up) ? ++c : c;*/
-	return (screenz_t) (a >> FRACT_BITS);
+	//screenz_t c = a >> FRACT_BITS;
+	//return (round_up) ? ++c : c;
+	return (screenz_t) (a >> Z_FRACT_BITS);
 }
 
 /*
