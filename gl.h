@@ -12,7 +12,7 @@
 
 
 
-#define FLOAT 1
+#define FLOAT 0
 
 
 
@@ -54,29 +54,11 @@ typedef struct Triangle {
 } Triangle;
 
 
-typedef float  varying_float  [NUM_OF_VARYING_WORDS];
-//typedef Float2 varying_Float2 [NUM_OF_VARYING_WORDS/2];
-//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-//typedef Float4 varying_Float4 [NUM_OF_VARYING_WORDS/4];
-/*
-typedef union VaryingFloat {
-	varying_float  as_float;
-	varying_Float2 as_Float2;
-	varying_Float4 as_Float4;
-} VaryingFloat;
-*/
-typedef fixpt_t varying_fixpt_t [NUM_OF_VARYING_WORDS];
-//typedef FixPt2  varying_FixPt2  [NUM_OF_VARYING_WORDS/2];
-//typedef Float3 varying_Float3 [NUM_OF_VARYING_WORDS/4];
-//typedef FixPt4  varying_FixPt4  [NUM_OF_VARYING_WORDS/4];
-
-typedef union VaryingData {
-	varying_fixpt_t  as_fixpt_t;
-//	varying_FixPt2   as_FixPt2;
-//	varying_FixPt4   as_FixPt4;
-	varying_float    as_float;
-//	varying_Float2   as_Float2;
-//	varying_Float4   as_Float4;
+typedef struct VaryingData { // TBD union
+	fixpt_t  as_fixpt_t [NUM_OF_VARYING_WORDS];
+	float    as_float   [NUM_OF_VARYING_WORDS];
+	//bool    is_unisgned      [NUM_OF_VARYING_WORDS];
+	//bool    is_persp_correct [NUM_OF_VARYING_WORDS];
 } VaryingData;
 
 typedef struct Varying {

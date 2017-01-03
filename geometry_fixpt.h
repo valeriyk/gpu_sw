@@ -29,12 +29,12 @@ typedef  int64_t dfixpt_t;
 //#define NFRACT_BITS 30
 
 
-#define XY_FRACT_BITS 8
+#define XY_FRACT_BITS 4
 #define  Z_FRACT_BITS 4
 #define BARC_FRACT_BITS (XY_FRACT_BITS*2)
 #define W_RECIPR_FRACT_BITS 29
 #define WI_FRACT_BITS 16
-#define VARYING_FRACT_BITS 8
+#define VARYING_FRACT_BITS 14
 
 //#define FIX_PT_PRECISION	4
 
