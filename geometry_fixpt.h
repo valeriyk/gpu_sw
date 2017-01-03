@@ -28,6 +28,7 @@ typedef uint32_t nfixpt_t;
 #define DFRACT_BITS (FRACT_BITS*2)
 #define NFRACT_BITS 30
 
+#define Z_FRACT_BITS 4
 
 //#define FIX_PT_PRECISION	4
 
@@ -173,6 +174,15 @@ static inline fixpt_t fixpt_from_float (float a) {
 
 static inline float fixpt_to_float (fixpt_t a) {
 	return ((float) a) / ((float) (1 << FRACT_BITS));
+}
+
+static inline fixpt_t fixpt_fract_from_float (float a, uint8_t fract_bits) {
+	fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits));
+	return c;
+}
+
+static inline float fixpt_fract_to_float (fixpt_t a, uint8_t fract_bits) {
+	return ((float) a) / ((float) (1 << fract_bits));
 }
 
 

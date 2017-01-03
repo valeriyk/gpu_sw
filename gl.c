@@ -289,14 +289,26 @@ void obj_init_model (Object *obj) {
 	fmat4_fmat4_mult (&rot_xyz, &s, &(obj->model));
 }
 
-fixpt_t interpolate_z (fixpt_t z0, fixpt_t z1z0, fixpt_t z2z0, FixPt3 *bar) {
+/*fixpt_t interpolate_z (fixpt_t z0, fixpt_t z1z0, fixpt_t z2z0, FixPt3 *bar) {
 	//fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
 	dfixpt_t mul_1 = z1z0 * bar->as_array[1]; // 28.4 * 28.4 = 56.8
 	dfixpt_t mul_2 = z2z0 * bar->as_array[2]; // 28.4 * 28.4 = 56.8
 	dfixpt_t z0_1  = ((dfixpt_t) z0) << FRACT_BITS; // 28.4 << 4 = 32.8
 	dfixpt_t acc = z0_1 + mul_1 + mul_2; // 32.8 + 56.8 + 56.8
 	return (fixpt_t) (acc >> FRACT_BITS); // 28.4
+}*/
+screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
+	
+	dfixpt_t mul_0 = (int64_t) z[0] * (int64_t) bar->as_array[0]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_1 = (int64_t) z[1] * (int64_t) bar->as_array[1]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_2 = (int64_t) z[2] * (int64_t) bar->as_array[2]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t acc = mul_0 + mul_1 + mul_2; // (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) = (ZM+BM+1).(ZF+BF)
+	dfixpt_t sum_of_bars = bar->as_array[0] + bar->as_array[1] + bar->as_array[2]; // BM.BF + BM.BF + BM.BF = (BM+1).BF
+	dfixpt_t res = acc / sum_of_bars; // (ZM+BM+1).(ZF+BF) / (BM+1).BF = ZM.ZF
+	
+	return fixpt_to_screenz ((fixpt_t) res); // ZM
 }
+
 
 
 dfixpt_t interpolate_w (nfixpt_t w_reciprocal[3], FixPt3 *bar) {
@@ -480,9 +492,7 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 		z[i] = tri->screen_coords[i].as_struct.z;
 		//w[i] = tri->screen_coords[i].as_struct.w;
 		
-		if (DEBUG_Z) {
-			if (z[i] < 0) printf ("Fixp Z < 0: %x\n", z[i]);
-		}
+		assert (z[i] >= 0);
 	}
 	
 	BoundBox bb = clip_boundbox_to_tile (get_tri_boundbox (x, y), tile_num);
@@ -507,11 +517,6 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 	bar_col_incr.as_array[2] = fixpt_sub (y[0], y[1]);
 	
 	
-	fixpt_t z1z0 = fixpt_div (fixpt_sub (z[1], z[0]), sum_of_bars);
-	fixpt_t z2z0 = fixpt_div (fixpt_sub (z[2], z[0]), sum_of_bars);
-	//fixpt_t w1w0 = fixpt_div (fixpt_sub (w_fixp[1], w_fixp[0]), sum_of_bars);
-	//fixpt_t w2w0 = fixpt_div (fixpt_sub (w_fixp[2], w_fixp[0]), sum_of_bars);
-		
 	FixPt3   bar;
 	FixPt3   bar_row = bar_initial;
 	ScreenPt p;
@@ -524,26 +529,13 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
-				// Interpolate and normalize Z
-				//fixpt_t z = fixpt_add (z_fixp[0], fixpt_add (fixpt_mul (z1z0, bar_fixp.as_array[1]), fixpt_mul (z2z0, bar_fixp.as_array[2])));
-				fixpt_t zi = interpolate_z (z[0], z1z0, z2z0, &bar);
-				//screenz_t z = interpolate2_z (z_fixp, &bar_fixp);
-				
+				screenz_t zi = interpolate_z (z, &bar);
 				size_t pix_num = p.x + p.y * SCREEN_WIDTH;
 				
-				// saturating subtraction:
-				//int32_t z_diff = z - zbuffer[pix_num];
-				fixpt_t z_diff = fixpt_sub (zi, fixpt_from_screenz(zbuffer[pix_num]));
-				if ((zi > 0) && (zbuffer[pix_num] < 0) && (z_diff < 0)) z_diff = fixpt_get_max();
-				else if ((zi < 0) && (zbuffer[pix_num] > 0) && (z_diff > 0)) z_diff = fixpt_get_min();
-								
-				//if (p.z > zbuffer[pix_num]) {
-				if (z_diff > 0) {
-					//zbuffer[pix_num] = z;
-					zbuffer[pix_num] = fixpt_to_screenz (zi);
+				if (zi > zbuffer[pix_num]) {
+					zbuffer[pix_num] = zi;
 
 					// Interpolation of Varying values:
-
 					
 					assert (tri->varying[0].num_of_words == tri->varying[1].num_of_words);
 					assert (tri->varying[0].num_of_words == tri->varying[2].num_of_words);
@@ -578,7 +570,7 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 						int MMM = 0;
 						int NNN = 0;
 						
-						for (int i = 0; i < MMM; i++) {
+						/*for (int i = 0; i < MMM; i++) {
 							float vtx0_norm = tri->varying[0].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[0]);
 							float vtx1_norm = tri->varying[1].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[1]);
 							float vtx2_norm = tri->varying[2].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[2]);
@@ -597,7 +589,7 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader psha
 							
 							//printf ("norm %d: float=%f, fixpt=%f\n", i, vry_interp.data.as_float[i], fixpt_to_float (tmp));
 						}
-						
+						*/
 						for (int i = NNN; i < vry_interp.num_of_words; i++) {
 							float vtx0_norm = tri->varying[0].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[0]);
 							float vtx1_norm = tri->varying[1].data.as_float[i] * nfixpt_to_float (tri->w_reciprocal[1]);
@@ -831,10 +823,13 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						for (int k = 0; k < 3; k++) {
+						/*for (int k = 0; k < 3; k++) {
 							vtx_list[tri_num].screen_coords[j].as_array[k] = fixpt_from_float (screen.vtx[j].as_array[k]);
-						}
-						vtx_list[tri_num].w_reciprocal[j] = nfixpt_from_float(screen.vtx[j].as_struct.w);
+						}*/
+						vtx_list[tri_num].screen_coords[j].as_struct.x =  fixpt_from_float (screen.vtx[j].as_struct.x);
+						vtx_list[tri_num].screen_coords[j].as_struct.y =  fixpt_from_float (screen.vtx[j].as_struct.y);
+						vtx_list[tri_num].screen_coords[j].as_struct.z =  fixpt_fract_from_float (screen.vtx[j].as_struct.z, Z_FRACT_BITS);
+						vtx_list[tri_num].w_reciprocal[j]              = nfixpt_from_float (screen.vtx[j].as_struct.w);
 					}		
 				}
 			}
