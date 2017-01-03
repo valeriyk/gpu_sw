@@ -12,6 +12,9 @@
 
 
 
+#define DEBUG_FIXPT_VARYING 0
+#define DEBUG_FIXPT_W       0
+
 #define FLOAT 0
 
 
@@ -24,6 +27,7 @@
 
 
 typedef enum {X = 0, Y, Z, W} axis;
+typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
 
 
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
@@ -54,12 +58,17 @@ typedef struct Triangle {
 } Triangle;
 
 
-typedef struct VaryingData { // TBD union
-	fixpt_t  as_fixpt_t [NUM_OF_VARYING_WORDS];
-	float    as_float   [NUM_OF_VARYING_WORDS];
-	//bool    is_unisgned      [NUM_OF_VARYING_WORDS];
-	//bool    is_persp_correct [NUM_OF_VARYING_WORDS];
-} VaryingData;
+#ifdef DEBUG_FIXPT_VARYING
+typedef struct VaryingWord {
+	float    as_float;
+#else
+typedef union VaryingWord {
+#endif
+	fixpt_t  as_fixpt_t;
+} VaryingWord;
+
+
+typedef VaryingWord VaryingData [NUM_OF_VARYING_WORDS];
 
 typedef struct Varying {
 	int32_t num_of_words;
@@ -172,11 +181,10 @@ void varying_fifo_push_Float2 (Varying *vry, Float2 *data);
 void varying_fifo_push_Float3 (Varying *vry, Float3 *data);
 void varying_fifo_push_Float4 (Varying *vry, Float4 *data);
 
-/*fixpt_t varying_pop_fixpt  (Varying *vry);
-FixPt2  varying_pop_FixPt2 (Varying *vry);
-FixPt3  varying_pop_FixPt3 (Varying *vry);
-FixPt4  varying_pop_FixPt4 (Varying *vry);
-*/
+fixpt_t varying_fifo_pop_fixpt  (Varying *vry);
+FixPt2  varying_fifo_pop_FixPt2 (Varying *vry);
+FixPt3  varying_fifo_pop_FixPt3 (Varying *vry);
+FixPt4  varying_fifo_pop_FixPt4 (Varying *vry);
 
 float   varying_fifo_pop_float  (Varying *vry);
 Float2  varying_fifo_pop_Float2 (Varying *vry);

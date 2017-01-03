@@ -1,4 +1,4 @@
-#include "geometry_fixpt.h"
+/*#include "geometry_fixpt.h"
 
 
 
@@ -53,3 +53,5 @@ Float4 FixPt4_Float4_conv (FixPt4 *in) {
 	}
 	return f;
 }
+*/
+

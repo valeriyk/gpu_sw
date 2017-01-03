@@ -195,6 +195,14 @@ int count_shadows (Varying *vry) {
 		screenz_t  z;
 		
 		
+		/*
+		FixPt3 screen = varying_fifo_pop_FixPt3 (vry);
+		
+		x = fixpt_to_screenxy (screen.as_struct.x);
+		y = fixpt_to_screenxy (screen.as_struct.y);
+		z = fixpt_to_screenz  (screen.as_struct.z);
+		*/
+		
 		Float3 screen = varying_fifo_pop_Float3 (vry);
 			
 		assert (screen.as_struct.x >= 0);
@@ -210,6 +218,7 @@ int count_shadows (Varying *vry) {
 		assert (screen.as_struct.z >= 0);
 		assert (screen.as_struct.z < (1 << 16)); // TBD
 		z = (screenz_t) screen.as_struct.z;
+		
 		/*
 		{
 			FixPt4 screen4 = vry->data.as_FixPt4[2+i];
