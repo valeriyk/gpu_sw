@@ -113,6 +113,7 @@ typedef struct Light {
 	Float3		dir;
 	Float3		src;
 	Float3		eye;
+	bool		has_shadow_buf;
 	screenz_t	*shadow_buf;
 } Light;
 
@@ -126,28 +127,14 @@ typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, V
 typedef bool (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
 
 
-
-void new_light  (int light_num, Float3 dir);
+void init_lights (void);
+void new_light (int light_num, Float3 dir, bool add_shadow_buf);
 void free_light (int light_num);
-void init_scene (void);
-
-
-//Light light[MAX_NUM_OF_LIGHTS];
-
-
-void create_light (Float3 dir, screenz_t *shadow_buf, int light_num);
 
 void   set_screen_size   (size_t width, size_t height);
 size_t get_screen_width  (void);
 size_t get_screen_height (void);
 size_t get_screen_depth  (void);
-
-//int   orient2d (ScreenPt *a, ScreenPt *b, ScreenPt *c);
-
-//void  world2screen (float4 &w, ScreenPt &s);
-
-//screenxy_t tri_min_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
-//screenxy_t tri_max_bound (screenxy_t a, screenxy_t b, screenxy_t c, screenxy_t cutoff);
 
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
@@ -160,12 +147,8 @@ void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader shad
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-//void write_fbuffer (pixel_color_t *fbuffer, int x, int y, pixel_color_t *val);
-//void write_zbuffer (screenz_t     *zbuffer, int x, int y, screenz_t     *val);
-
-
-
 Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap);
+void obj_free            (Object *obj);
 void obj_set_scale       (Object *obj, float x,     float y,     float z);
 void obj_set_rotation    (Object *obj, float x_deg, float y_deg, float z_deg);
 void obj_set_translation (Object *obj, float x,     float y,     float z);

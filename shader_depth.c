@@ -14,27 +14,16 @@
 #define FLOAT_SHADOW 1
 
 
+
+
+////////////////////////////////////////////////////////////////////////
+// This shader illustrates usage of dynamic shadows.
+// Shadow buffer must already be generated for this frame.
+////////////////////////////////////////////////////////////////////////
+
+
 int count_shadows (Varying *vry);
 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// SHADERS - 1st PASS: fill shadow buffer
-
-Float4 depth_vshader_pass1 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
-	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-	Float4 model4d = Float3_Float4_conv   (&model, 1);
-	Float4 clip    = fmat4_Float4_mult    (&(obj->mvp), &model4d); // model -> world -> eye -> clip
-	return clip;
-}
-
-bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// SHADERS - 2nd PASS: fill frame buffer
 
 // Layout of Varying words for this pass:
 //     
@@ -49,7 +38,7 @@ bool depth_pshader_pass1 (Object *obj, Varying *vry, pixel_color_t *color) {
 // 8   shadow1.x
 // ....
 
-Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
@@ -97,11 +86,7 @@ Float4 depth_vshader_pass2 (Object *obj, size_t face_idx, size_t vtx_idx, Varyin
 	return clip;		
 }
 
-bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
-	
-	if (DEPTH_PSHADER2_DEBUG) {
-		printf ("\t\tcall depth_pshader_pass2()\n");
-	}
+bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	
 	Float3 normal = varying_fifo_pop_Float3 (vry);
 	Float3_normalize (&normal);
@@ -161,12 +146,6 @@ bool depth_pshader_pass2 (Object *obj, Varying *vry, pixel_color_t *color) {
 	
 	//intensity = 0.8f;
 	//pix = set_color (128, 128, 128, 0);
-	
-	if (DEPTH_PSHADER2_DEBUG) {
-		printf ("n=(%f;%f;%f) ", normal.as_struct.x, normal.as_struct.y, normal.as_struct.z);
-		printf ("light=(%f;%f;%f) ", LIGHTS[0].eye.as_struct.x, LIGHTS[0].eye.as_struct.y, LIGHTS[0].eye.as_struct.z);
-		//printf ("diff_int=%f ", diff_intensity);
-	}
 		
 	int r = pix.r * intensity + 5;
 	int g = pix.g * intensity + 5;

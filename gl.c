@@ -126,25 +126,33 @@ size_t get_screen_depth (void) {
 }
 
 
-void new_light (int light_num, Float3 dir) { //TBD add light_src,
-	LIGHTS[light_num].enabled = true;
-	LIGHTS[light_num].dir = dir;
-	LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
-	LIGHTS[light_num].shadow_buf = (screenz_t*) calloc (SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(screenz_t));
-}
-
-void free_light (int light_num) {
-	LIGHTS[light_num].enabled = false;
-    free (LIGHTS[light_num].shadow_buf);
-}
-
-void init_scene (void) {
+void init_lights (void) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		LIGHTS[i].enabled = false;
-		LIGHTS[i].shadow_buf = NULL;
+		LIGHTS[i].enabled        = false;
+		LIGHTS[i].has_shadow_buf = false;
+		LIGHTS[i].shadow_buf     = NULL;
 	}
 }
 
+void new_light (int light_num, Float3 dir, bool add_shadow_buf) { //TBD add light_src,
+	LIGHTS[light_num].enabled = true;
+	LIGHTS[light_num].dir = dir;
+	LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
+	
+	if (add_shadow_buf) {
+		LIGHTS[light_num].has_shadow_buf = true;
+		LIGHTS[light_num].shadow_buf = (screenz_t*) calloc (SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(screenz_t));
+	}
+}
+
+void free_light (int light_num) {
+	LIGHTS[light_num].enabled        = false;
+	LIGHTS[light_num].has_shadow_buf = false;
+	
+    if (LIGHTS[light_num].shadow_buf != NULL) {
+		free (LIGHTS[light_num].shadow_buf);
+	}
+}
 
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far) {
 	fmat4_identity (m);
@@ -234,9 +242,6 @@ Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap
 }
 
 void obj_free (Object *obj) {
-	free (obj->texture);
-	free (obj->normalmap);
-	free (obj->specularmap);
 	free (obj);
 }
 
@@ -662,7 +667,6 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 			for (size_t j = 0; j < 3; j++) {
 				
 				// // First four floats of Varying contain XYZW of a vertex in clip space
-				// clip.vtx[j] = FixPt4_Float4_conv (&(vtx_list[tri_num].varying[j].data.as_FixPt4[0]));
 				vtx_list[tri_num].varying[j].num_of_words = 0;
 				clip.vtx[j] = vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j]) ); // CALL VERTEX SHADER
 				
@@ -728,6 +732,17 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 			node = node->next;
 		}		
 	}
+	
+	for (int i = 0; i < NUM_OF_TILES; i++) {
+		TrianglePtrListNode *node = tile_idx_table[i];
+		TrianglePtrListNode *tmp;
+		while (node != NULL) {
+			tmp = node->next;
+			free (node);
+			node = tmp;
+		}		
+	}	
+	free (vtx_list);
 }
 
 

@@ -16,7 +16,7 @@
 // 2   texture.v
 // ....
 
-Float4 gouraud_vshader (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
@@ -47,11 +47,7 @@ Float4 gouraud_vshader (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	return clip;		
 }
 
-bool gouraud_pshader (Object *obj, Varying *vry, pixel_color_t *color) {
-	
-	if (DEPTH_PSHADER2_DEBUG) {
-		printf ("\t\tcall depth_pshader_pass2()\n");
-	}
+bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 	
 	float intensity = varying_fifo_pop_float (vry);
 		

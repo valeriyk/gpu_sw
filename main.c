@@ -5,6 +5,8 @@
 //#include "shader_normalmap.h"
 //#include "shader_phong.h"
 #include "shader_gouraud.h"
+#include "shader_depth.h"
+#include "shader_fill_shadow_buf.h"
 #include "bitmap.h"
 #include "tga_addon.h"
 
@@ -78,8 +80,7 @@ void setup_light_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *v
 		fmat4 modelview;
 		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
 		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
-		//fmat4_inv_transp (&UNIFORM_M, &UNIFORM_MIT);
-
+		
 		fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
 		
 		node = node->next;
@@ -101,6 +102,17 @@ void light_transform (fmat4 *view) {
 	}
 }
 
+Bitmap *floor_diff        = NULL;
+Bitmap *african_head_diff = NULL;
+Bitmap *african_head_nmap = NULL;
+Bitmap *african_head_spec = NULL;
+Bitmap *cube_diff         = NULL;
+Bitmap *cube_nmap         = NULL;
+
+WaveFrontObj *my_floor     = NULL;
+WaveFrontObj *african_head = NULL;
+WaveFrontObj *my_cube      = NULL;
+
 ObjectListNode* init_objects (void) {
 	
     ObjectListNode *head;
@@ -109,11 +121,11 @@ ObjectListNode* init_objects (void) {
     int draw_planes = 0;
     int draw_head = 1;
     int draw_second_head = 1;
-    int draw_all_cubes = 0;
+    int draw_all_cubes = 1;
     
     if (draw_planes) {
-		Bitmap *floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
-		WaveFrontObj *my_floor = wfobj_new ("obj/floor.obj");
+		floor_diff = new_bitmap_from_tga("obj/floor_diffuse.tga");
+		my_floor = wfobj_new ("obj/floor.obj");
 	
 		node = calloc (1, sizeof (ObjectListNode));
 		head = node;
@@ -136,15 +148,17 @@ ObjectListNode* init_objects (void) {
 	}
 	else if (draw_head) {
 	
-		Bitmap *african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
-		Bitmap *african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
-		Bitmap *african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
-		WaveFrontObj  *african_head = wfobj_new ("obj/african_head.obj");
+		african_head_diff = new_bitmap_from_tga ("obj/african_head_diffuse.tga");
+		african_head_nmap = new_bitmap_from_tga ("obj/african_head_nm.tga");
+		african_head_spec = new_bitmap_from_tga ("obj/african_head_spec.tga");
+		african_head = wfobj_new ("obj/african_head.obj");
 
 	
 		node = calloc (1, sizeof (ObjectListNode));
 		head = node;
 		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+		//node->obj = obj_new (african_head, african_head_diff, NULL, NULL);
+		//node->obj = obj_new (african_head, NULL, NULL, NULL);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
@@ -163,9 +177,9 @@ ObjectListNode* init_objects (void) {
 		}
 	}
 	else {
-		Bitmap *cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
-		Bitmap *cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
-		WaveFrontObj  *my_cube = wfobj_new ("obj/cube.obj");
+		cube_diff = new_bitmap_from_tga ("obj/floor_diffuse.tga");
+		cube_nmap = new_bitmap_from_tga ("obj/floor_nm_tangent.tga");
+		my_cube = wfobj_new ("obj/cube.obj");
 
 
 		// Central cube
@@ -182,26 +196,6 @@ ObjectListNode* init_objects (void) {
 		obj_init_model      (node->obj);		
 	
 		if (draw_all_cubes) {
-			/*// Bottom Plane
-			node->next = calloc (1, sizeof (ObjectListNode));
-			node       = node->next;
-			node->obj  = obj_new (my_floor);
-			node->next = NULL;
-			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
-			obj_set_translation (node->obj, 0.f, 0.f, 5.0f);
-			obj_set_scale       (node->obj, 6, 4, 4);
-			obj_init_model      (node->obj);
-			
-			node->next = calloc (1, sizeof (ObjectListNode));
-			node       = node->next;
-			node->obj  = obj_new (my_floor);
-			node->next = NULL;
-			obj_set_rotation    (node->obj, 0.f, 0.f, 180.f);
-			obj_set_translation (node->obj, 0.f, -6.01f, 5.0f);
-			obj_set_scale       (node->obj, 6, 4, 4);
-			obj_init_model      (node->obj);
-			*/
-			
 			// Cube
 			node->next = calloc (1, sizeof (ObjectListNode));
 			node = node->next;
@@ -228,6 +222,30 @@ ObjectListNode* init_objects (void) {
 	return head;
 }
 
+void free_objects (ObjectListNode *obj_list_head) {
+	
+    ObjectListNode *node = obj_list_head;
+    ObjectListNode *tmp;
+    
+    while (node != NULL) {
+		if (node->obj != NULL) obj_free (node->obj);
+		tmp = node->next;
+		free (node);
+		node = tmp;
+	}
+	
+	if (floor_diff        != NULL) bitmap_free (floor_diff);
+	if (african_head_diff != NULL) bitmap_free (african_head_diff);
+	if (african_head_nmap != NULL) bitmap_free (african_head_nmap);
+	if (african_head_spec != NULL) bitmap_free (african_head_spec);
+	if (cube_diff         != NULL) bitmap_free (cube_diff);
+	if (cube_nmap         != NULL) bitmap_free (cube_nmap);
+	
+	if (my_floor     != NULL) wfobj_free (my_floor);
+	if (african_head != NULL) wfobj_free (african_head);
+	if (my_cube      != NULL) wfobj_free (my_cube);
+}
+
 
 uint8_t rgb_to_y (pixel_color_t rgb) {
 	return (uint8_t) (16.f + rgb.r * 0.257f + rgb.g * 0.504f + rgb.b * 0.098f);
@@ -244,8 +262,6 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 
 int main(int argc, char** argv) {
        
-    init_scene();
-    
     size_t screen_size = WIDTH * HEIGHT;
     
     screenz_t *zbuffer = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
@@ -276,7 +292,6 @@ int main(int argc, char** argv) {
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
-	//fmat4 viewport = FMAT4_IDENTITY;
 	set_screen_size ((size_t) WIDTH, (size_t) HEIGHT);
     init_viewport (0, 0, get_screen_width(), get_screen_height(), get_screen_depth());
 	
@@ -289,8 +304,8 @@ int main(int argc, char** argv) {
 	fmat4 view;	
 	//init_view (&view, &eye, &center, &up);
     
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f));					
-    
+    init_lights();
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
     
     
     float eye_x = 0;
@@ -311,27 +326,26 @@ int main(int argc, char** argv) {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
-		active_fbuffer = fbuffer[m];
+		active_fbuffer = fbuffer[m % NUM_OF_FRAMEBUFFERS];
 		
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
-			active_fbuffer[i].r = 0;
-			active_fbuffer[i].g = 0;
-			active_fbuffer[i].b = 0;
+			active_fbuffer[i] = set_color (0, 0, 0, 0);
 			zbuffer[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
-				if (LIGHTS[j].enabled) {
+				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
 					LIGHTS[j].shadow_buf[i] = 0;
 				}
 			}
 		}
 		
-		/*for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-			if (!LIGHTS[i].enabled) continue;
-			init_view             (&view, &(LIGHTS[i].src), &center, &up);
-			setup_light_transform (obj_list_head, &ortho_proj, &view, i);
-			draw_frame            (obj_list_head, depth_vshader_pass1, depth_pshader_pass1, LIGHTS[i].shadow_buf, NULL);	
-		}*/			
+		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
+				init_view             (&view, &(LIGHTS[i].src), &center, &up);
+				setup_light_transform (obj_list_head, &ortho_proj, &view, i);
+				draw_frame            (obj_list_head, vshader_depth, pshader_depth, LIGHTS[i].shadow_buf, NULL);	
+			}
+		}			
 		
 		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
@@ -339,6 +353,7 @@ int main(int argc, char** argv) {
 		eye    = Float3_set ( eye_x, eye_y, eye_z);
 		eye_angle += ROTATION_INCR;
 		
+		// move the objects and recalculate their Model matrices
 		ObjectListNode *scene_obj = obj_list_head;
 		while (scene_obj != NULL) {	
 			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
@@ -348,14 +363,28 @@ int main(int argc, char** argv) {
 		obj_angle += 360 / NUM_OF_FRAMES;
 		
 		
+		// 
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
 		setup_transformation (obj_list_head, &persp_proj, &view);
-		draw_frame           (obj_list_head, gouraud_vshader, gouraud_pshader, zbuffer, active_fbuffer);
 		
-		if (m == PRINTSCREEN_FRAME) {
+		draw_frame           (obj_list_head, vshader_gouraud, pshader_gouraud, zbuffer, active_fbuffer);
+		//draw_frame           (obj_list_head, vshader_depth, pshader_depth, zbuffer, active_fbuffer);
+		
+		if (m == RECORD_FRAME_NUM) {
+		
+			if (ENABLE_PERF) stop_counters();
 			
-			write_tga_file ("framebuffer_0.tga", (tbyte *) active_fbuffer, WIDTH, HEIGHT, 24, 1);
+			char tga_file[32];
+			char frame_num[32];
+			char shadow_num[32];
+			
+			
+			sprintf(frame_num, "%d", m);
+			strcpy (tga_file, "frame_buffer_");
+			strcat (tga_file, frame_num);
+			strcat (tga_file, ".tga");	
+			write_tga_file (tga_file, (tbyte *) fbuffer[m], WIDTH, HEIGHT, 24, 1);
 			
 			tbyte *tmp = (tbyte*) calloc (screen_size, sizeof(tbyte));
 			
@@ -366,22 +395,25 @@ int main(int argc, char** argv) {
 			
 			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 				if (LIGHTS[i].enabled) {
-					char sb_file[32];
-					char num[32];
-					sprintf(num, "%d", i);
-					strcpy (sb_file, "shadow_buffer_");
-					strcat (sb_file, num);
-					strcat (sb_file, ".tga");
+					sprintf(shadow_num, "%d", i);
+					strcpy (tga_file, "shadow_buffer_");
+					strcat (tga_file, frame_num);
+					strcat (tga_file, "_");
+					strcat (tga_file, shadow_num);
+					strcat (tga_file, ".tga");
 					
 					for (int j = 0; j < screen_size; j++) {
 						tmp[j] = LIGHTS[i].shadow_buf[j] >> (8 * (sizeof(screenz_t) - 1) );
 					}
-					write_tga_file (sb_file, tmp, WIDTH, HEIGHT, 8, 1);		
+					write_tga_file (tga_file, tmp, WIDTH, HEIGHT, 8, 1);		
 				}
 			}		
 			
 			free (tmp);		
+			
+			if (ENABLE_PERF) start_counters();
 		}
+		
 	}
 	// while (0);
 	
@@ -413,11 +445,11 @@ int main(int argc, char** argv) {
 		fclose (fp);
 	}
 	
+	free (zbuffer);
+	free_objects (obj_list_head);
+	for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) free (fbuffer[i]);
+	for (int i = 0; i < MAX_NUM_OF_LIGHTS;   i++) free_light (i);
 	
-	free(zbuffer);
-	for (int i = 0; i < NUM_OF_FRAMEBUFFERS; i++) {
-		free(fbuffer[i]);
-	}
 	
     return 0;
 }
