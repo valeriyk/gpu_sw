@@ -435,7 +435,7 @@ BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num) {
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {    
+void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {    
 	if (GL_DEBUG_0) {
 		printf("\tcall draw_triangle()\n");
 	}
@@ -533,15 +533,15 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 */
 
 
-void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
+void tiler (TrianglePShaderData *tri, TriangleListNode *tri_ptr[]) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
 	
 	// re-pack X, Y, Z, W coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x[i] = tri_node->screen_coords[i].as_struct.x;
-		y[i] = tri_node->screen_coords[i].as_struct.y;
+		x[i] = tri->screen_coords[i].as_struct.x;
+		y[i] = tri->screen_coords[i].as_struct.y;
 	}
 	
 	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y));
@@ -580,10 +580,10 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 				
 				size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
 				
-				TrianglePtrListNode *node = tri_ptr[tile_num];
+				TriangleListNode *node = tri_ptr[tile_num];
 				if (node == NULL) {
-					node = calloc (1, sizeof (TrianglePtrListNode));
-					node->tri  = tri_node;
+					node = calloc (1, sizeof (TriangleListNode));
+					node->tri  = tri;
 					node->next = NULL;	
 					
 					tri_ptr[tile_num] = node;
@@ -592,8 +592,8 @@ void tiler (TriangleVtxListNode *tri_node, TrianglePtrListNode *tri_ptr[]) {
 					while (node->next != NULL) {
 						node = node->next;
 					}
-					node->next = calloc (1, sizeof (TrianglePtrListNode));
-					node->next->tri  = tri_node;
+					node->next = calloc (1, sizeof (TriangleListNode));
+					node->next->tri  = tri;
 					node->next->next = NULL;	
 				}
 			}
@@ -628,7 +628,7 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 		printf("call draw_frame()\n");
 	}
 			
-	TrianglePtrListNode *tile_idx_table [NUM_OF_TILES];
+	TriangleListNode *tile_idx_table [NUM_OF_TILES];
 	for (int i = 0; i < NUM_OF_TILES; i++) {
 		tile_idx_table[i] = NULL;
 	}
@@ -640,7 +640,7 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
 		obj_list_node = obj_list_node->next;
 	}
-	TriangleVtxListNode *vtx_list = calloc (num_of_faces, sizeof (TriangleVtxListNode));
+	TrianglePShaderData *tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData));
 	
 	obj_list_node = obj_list_head;
 	
@@ -661,14 +661,14 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 			Triangle ndc;
 			Triangle screen;
 			
-			vtx_list[tri_num].obj = obj_list_node->obj;
+			tri_data_array[tri_num].obj = obj_list_node->obj;
 			
 			bool is_clipped = true; // sticky bit
 			for (size_t j = 0; j < 3; j++) {
 				
 				// // First four floats of Varying contain XYZW of a vertex in clip space
-				vtx_list[tri_num].varying[j].num_of_words = 0;
-				clip.vtx[j] = vshader (vtx_list[tri_num].obj, i, j, &(vtx_list[tri_num].varying[j]) ); // CALL VERTEX SHADER
+				tri_data_array[tri_num].varying[j].num_of_words = 0;
+				clip.vtx[j] = vshader (tri_data_array[tri_num].obj, i, j, &(tri_data_array[tri_num].varying[j]) ); // CALL VERTEX SHADER
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -703,16 +703,16 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						vtx_list[tri_num].screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x, XY_FRACT_BITS);
-						vtx_list[tri_num].screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y, XY_FRACT_BITS);
-						vtx_list[tri_num].screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z, Z_FRACT_BITS);
-						vtx_list[tri_num].w_reciprocal[j]              =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
+						tri_data_array[tri_num].screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x, XY_FRACT_BITS);
+						tri_data_array[tri_num].screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y, XY_FRACT_BITS);
+						tri_data_array[tri_num].screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z, Z_FRACT_BITS);
+						tri_data_array[tri_num].w_reciprocal[j]              =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
 					}		
 				}
 			}
 			
 			if (!is_clipped) {
-				tiler(&(vtx_list[tri_num]), tile_idx_table);
+				tiler(&(tri_data_array[tri_num]), tile_idx_table);
 				tri_num++;
 			}
 		}
@@ -725,24 +725,24 @@ void draw_frame (ObjectListNode *obj_list_head, vertex_shader vshader, pixel_sha
 	}
 					
 	for (int i = 0; i < NUM_OF_TILES; i++) {
-		TrianglePtrListNode *node = tile_idx_table[i];
+		TriangleListNode *node = tile_idx_table[i];
 		while (node != NULL) {
-			TriangleVtxListNode *tri = node->tri;
+			TrianglePShaderData *tri = node->tri;
 			draw_triangle (tri, i, pshader, zbuffer, fbuffer);	
 			node = node->next;
 		}		
 	}
 	
 	for (int i = 0; i < NUM_OF_TILES; i++) {
-		TrianglePtrListNode *node = tile_idx_table[i];
-		TrianglePtrListNode *tmp;
+		TriangleListNode *node = tile_idx_table[i];
+		TriangleListNode *tmp;
 		while (node != NULL) {
 			tmp = node->next;
 			free (node);
 			node = tmp;
 		}		
 	}	
-	free (vtx_list);
+	free (tri_data_array);
 }
 
 

@@ -94,18 +94,17 @@ typedef struct ObjectListNode {
 	struct ObjectListNode *next;
 } ObjectListNode;
 
-typedef struct TriangleVtxListNode {
+typedef struct TrianglePShaderData {
 	FixPt3  screen_coords[3];
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
-	struct TriangleVtxListNode *next;
-} TriangleVtxListNode;
+} TrianglePShaderData;
 
-typedef struct TrianglePtrListNode {
-	struct TriangleVtxListNode *tri;
-	struct TrianglePtrListNode *next;
-} TrianglePtrListNode;
+typedef struct TriangleListNode {
+	struct TrianglePShaderData *tri;
+	struct TriangleListNode *next;
+} TriangleListNode;
 
 
 typedef struct Light {
@@ -143,7 +142,7 @@ void init_viewport   (int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
-void draw_triangle (TriangleVtxListNode *tri, size_t tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
