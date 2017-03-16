@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
 				setup_light_transform (obj_list_head, &ortho_proj, &view, i);
-				draw_frame            (obj_list_head, vshader_depth, pshader_depth, LIGHTS[i].shadow_buf, NULL);	
+				draw_frame            (obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 			}
 		}			
 		
