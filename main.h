@@ -3,7 +3,7 @@
 #define WIDTH  1280
 #define HEIGHT 720
 
-#define NUM_OF_FRAMES 30
+#define NUM_OF_FRAMES 120
 #define NUM_OF_FRAMEBUFFERS	NUM_OF_FRAMES
 
 #define ROTATION_INIT 1

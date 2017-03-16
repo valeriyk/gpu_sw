@@ -23,13 +23,9 @@
 
 Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
-
+/*
 void   print_fmat3 (fmat3 *m, char *header);
 void   print_fmat4 (fmat4 *m, char *header);
-
-
-
-
 
 void print_fmat4 (fmat4 *m, char *header) {
 	printf ("%s\n", header);
@@ -52,10 +48,32 @@ void print_fmat3 (fmat3 *m, char *header) {
 	}
 	printf("\n");
 }
+*/
 
+
+
+/*
 // Setup object transformation, aka world transformation function.  
 // Computes matrices that will be used to transform model's vertices and normals
 // from the object space to the world space
+void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view) {
+	
+	ObjectListNode *node = obj_list_head;
+	
+	while (node != NULL) {
+
+		fmat4 modelview;
+		fmat4_fmat4_mult ( view, &(node->obj->model), &modelview);
+		fmat4_fmat4_mult ( proj, &modelview, &(node->obj->mvp));
+		fmat4_inv_transp (&modelview, &(node->obj->mvit));
+		
+		fmat4_copy (&(node->obj->mvp), &(node->obj->shadow_mvp[light_num]));	
+		
+		node = node->next;
+	}
+}
+*/
+
 void setup_transformation (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view) {
 	
 	ObjectListNode *node = obj_list_head;
@@ -305,7 +323,8 @@ int main(int argc, char** argv) {
 	//init_view (&view, &eye, &center, &up);
     
     init_lights();
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
+    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), true);	
     
     
     float eye_x = 0;
@@ -368,8 +387,8 @@ int main(int argc, char** argv) {
 		light_transform      (&view);
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		
-		draw_frame           (obj_list_head, vshader_gouraud, pshader_gouraud, zbuffer, active_fbuffer);
-		//draw_frame           (obj_list_head, vshader_depth, pshader_depth, zbuffer, active_fbuffer);
+		//draw_frame           (obj_list_head, vshader_gouraud, pshader_gouraud, zbuffer, active_fbuffer);
+		draw_frame           (obj_list_head, vshader_depth, pshader_depth, zbuffer, active_fbuffer);
 		
 		if (m == RECORD_FRAME_NUM) {
 		
