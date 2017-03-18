@@ -1,3 +1,5 @@
+#include "inttypes.h"
+
 #include "tga_addon.h"
 
 void write_tga_file (char *tga_file, tbyte *buffer, int width, int height, int depth, bool lre) {
@@ -48,7 +50,7 @@ Bitmap * new_bitmap_from_tga (const char *tga_file) {
 	bmp->w       = tga->hdr.width;
 	bmp->h       = tga->hdr.height;
 	bmp->bytespp = tga->hdr.depth / 8;
-	printf ("tga: w=%d, h=%d, bpp=%d\n", bmp->w, bmp->h, bmp->bytespp);
+	printf ("tga: w=%"PRIu32", h=%"PRIu32", bpp=%"PRIu32"\n", bmp->w, bmp->h, bmp->bytespp);
 	TGAClose(tga);
 	
 	return bmp;

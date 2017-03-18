@@ -91,6 +91,17 @@ TGAClose(TGA *tga)
 }
 
 
+static char*
+tga_error_strings[] = {
+	"Success",
+	"Error",
+	"Out of memory",
+	"Failed to open file",
+	"Seek failed",
+	"Read failed",
+	"Write failed",
+	"Unknown sub-format"
+};
 char*
 TGAStrError(tuint8 code)
 {

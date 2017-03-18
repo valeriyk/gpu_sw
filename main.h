@@ -1,15 +1,15 @@
 #pragma once 
 
-#define WIDTH  1280
-#define HEIGHT 720
+#define WIDTH  160//1280
+#define HEIGHT 160//720
 
-#define NUM_OF_FRAMES 120
+#define NUM_OF_FRAMES 100
 #define NUM_OF_FRAMEBUFFERS	NUM_OF_FRAMES
 
 #define ROTATION_INIT 1
 #define ROTATION_INCR 2 * 3.141592f / NUM_OF_FRAMES; // 180 degree swing in radians 
 
-#define ENABLE_PERF 1
+#define ENABLE_PERF 0
 #define DEBUG_0 1
 
 #define RECORD_VIDEO 1
