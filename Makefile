@@ -11,7 +11,9 @@ CPPFLAGS     =
 
 LDFLAGS_x86  = -lm
 LDFLAGS_ARC  =
-LDFLAGS_MIPS = -lm -EL -msoft-float -march=m14kc
+#LDFLAGS_MIPS = -lc -lg -lm -EL -msoft-float -march=m14kc -mclib=newlib
+#LDFLAGS_MIPS = -lg -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
+ LDFLAGS_MIPS = -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
 
 LIBS         =
 
