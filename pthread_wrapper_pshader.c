@@ -1,9 +1,39 @@
 #include "pthread_wrapper_pshader.h"
 
+#include <string.h>
+
 //#include "libbarcg.h"
 //#include "platform.h"
 
-BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num);
+
+/*
+void copy_tile_to_local (void *dst, void *src, platform_t *pf, size_t tile_num, size_t elem_size) {
+	
+	size_t extmem_col_offset = tile_num % (pf->screen_width / pf->tile_width);
+	size_t extmem_row_offset = pf->screen_width * elem_size;
+	
+	size_t tile_row_byte_size = pf->tile_width * elem_size;
+	for (int i = 0; pf->tile_height; i++) {
+		memcpy (dst + (tile_row_byte_size * i), src + extmem_col_offset + (extmem_row_offset * i), tile_row_byte_size);
+	}
+}
+
+void copy_tile_to_extmem (void *dst, void *src, platform_t *pf, size_t tile_num, size_t elem_size) {
+	
+	size_t extmem_col_offset = tile_num % (pf->screen_width / pf->tile_width);
+	size_t extmem_row_offset = pf->screen_width * elem_size;
+	
+	size_t tile_row_byte_size = pf->tile_width * elem_size;
+	for (int i = 0; pf->tile_height; i++) {
+		memcpy (dst + extmem_col_offset + (extmem_row_offset * i), src + (tile_row_byte_size * i), tile_row_byte_size);
+	}
+}
+
+copy_tile_to_local (&local_fbuf, p->platform->active_fbuffer, p->platform, j, sizeof (pixel_color_t));
+
+copy_tile_to_extmem (p->platform->active_fbuffer, &local_fbuf, p->platform, j, sizeof (pixel_color_t));
+*/
+
 
 
 void * pthread_wrapper_pshader (void *shader_platform) {
@@ -15,10 +45,13 @@ void * pthread_wrapper_pshader (void *shader_platform) {
 		printf ("run pshader %d\n", i);
 	}
 	
-	// TBD: copy zbuffer tile to local memory
+	size_t elems_in_tile = TILE_WIDTH*TILE_HEIGHT;
+				
+	screenz_t     local_zbuf[elems_in_tile];
+	pixel_color_t local_fbuf[elems_in_tile];
 	
-	// TBD: copy fbuffer tile to local memory
-	
+	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
+	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
 	while (!p->platform->pshaders_stop_req) {	
 		
@@ -50,20 +83,33 @@ void * pthread_wrapper_pshader (void *shader_platform) {
 			
 			if (i == 0) {
 					
-				
 				for (int j = starting_tile; j < p->platform->num_of_tiles; j += incr_tile) {
 					
-					printf ("%d ",j);
+					// copy zbuffer tile to local memory
+					memcpy (&local_zbuf, p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, zbuf_tile_byte_size);
 					
-					//while (!p->platform->pshaders_run_req);
+					// copy fbuffer tile to local memory
+					memcpy (&local_fbuf, p->platform->active_fbuffer + j*fbuf_tile_byte_size, fbuf_tile_byte_size);
+
+					
+					printf ("%d ",j);
 					
 					TriangleListNode **tln = p->platform->tile_idx_table_ptr;
 					TriangleListNode *node = tln[j];
 					while (node != NULL) {
 						TrianglePShaderData *tri = node->tri;
-						draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, (screenz_t*) p->platform->zbuffer_ptr, (pixel_color_t*) p->platform->active_fbuffer, p->platform);
+						//draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, (screenz_t*) p->platform->zbuffer_ptr, (pixel_color_t*) p->platform->active_fbuffer, p->platform);
+						draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, local_zbuf, local_fbuf, p->platform);
+
 						node = node->next;
-					}		
+					}	
+					
+					// flush local zbuffer tile
+					memcpy (p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, &local_zbuf, zbuf_tile_byte_size);
+					
+					// flush local fbuffer tile
+					memcpy (p->platform->active_fbuffer + j*fbuf_tile_byte_size, &local_fbuf, fbuf_tile_byte_size);
+	
 					
 				}
 				printf ("\n");
@@ -94,7 +140,7 @@ void * pthread_wrapper_pshader (void *shader_platform) {
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, platform_t *pf) {    
-	if (GL_DEBUG_0) {
+	if (GL_DEBUG_0 == 1) {
 		printf("\tcall draw_triangle()\n");
 	}
 	
@@ -146,20 +192,28 @@ void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader psha
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
 				screenz_t zi = interpolate_z (z, &bar);
-				size_t pix_num = p.x + p.y * pf->screen_width;
+				//size_t pix_num = p.x + p.y * pf->screen_width;
+				screenxy_t tile_x_offset = (tile_num % (pf->screen_width/TILE_WIDTH)) * TILE_WIDTH;
+				screenxy_t tile_y_offset = (tile_num / (pf->screen_width/TILE_WIDTH)) * TILE_HEIGHT;
+				screenxy_t tile_x = p.x - tile_x_offset;
+				screenxy_t tile_y = p.y - tile_y_offset;
+				size_t pix_num = tile_x + tile_y * TILE_WIDTH;
+
 				
-				/*if (zi > zbuffer[pix_num]) {
+				if (zi > zbuffer[pix_num]) {
 					zbuffer[pix_num] = zi;
 
 					Varying vry_interp = interpolate_varying (tri->varying, tri->w_reciprocal, &bar);
 					
 					pixel_color_t color;
 					if (pshader (tri->obj, &vry_interp, &color) && (fbuffer != NULL)) {
-						fbuffer[p.x + (pf->screen_height - p.y - 1) * pf->screen_width] = color;
+						//fbuffer[p.x + (pf->screen_height - p.y - 1) * pf->screen_width] = color;
+						fbuffer[pix_num] = color;
+						
 						//fbuffer[p.x + (pf->screen_height - p.y - 1) * pf->screen_width] = set_color (200, 0, 0, 0);
 					}
-				}*/
-				fbuffer[p.x + (pf->screen_height - p.y - 1) * pf->screen_width] = set_color (200, 0, 0, 0);
+				}
+				
 			}
 			bar = FixPt3_FixPt3_add (bar, bar_col_incr);
         }
