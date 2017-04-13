@@ -6,43 +6,55 @@
 //#include "platform.h"
 
 
-/*
-void copy_tile_to_local (void *dst, void *src, platform_t *pf, size_t tile_num, size_t elem_size) {
+
+/*void copy_tile_to_local (void *dst, void *src, platform_t *pf, size_t tile_num, size_t elem_size) {
 	
-	size_t extmem_col_offset = tile_num % (pf->screen_width / pf->tile_width);
+	size_t extmem_col_offset = (tile_num % (pf->screen_width / pf->tile_width)) * pf->tile_width * elem_size;
 	size_t extmem_row_offset = pf->screen_width * elem_size;
 	
 	size_t tile_row_byte_size = pf->tile_width * elem_size;
-	for (int i = 0; pf->tile_height; i++) {
+	
+	//printf ("extmem col offset=%d, row offset=%d, row size=%d\n", extmem_col_offset, extmem_row_offset, tile_row_byte_size);
+	
+	for (int i = 0; i < pf->tile_height; i++) {
+		printf ("memcpy: src offset = %d, dst offset = %d\n", extmem_col_offset + (extmem_row_offset * i), tile_row_byte_size * i);
 		memcpy (dst + (tile_row_byte_size * i), src + extmem_col_offset + (extmem_row_offset * i), tile_row_byte_size);
 	}
 }
+*/
 
 void copy_tile_to_extmem (void *dst, void *src, platform_t *pf, size_t tile_num, size_t elem_size) {
 	
-	size_t extmem_col_offset = tile_num % (pf->screen_width / pf->tile_width);
-	size_t extmem_row_offset = pf->screen_width * elem_size;
+	size_t tiles_in_row = pf->screen_width / pf->tile_width;
+	size_t tile_row = tile_num / tiles_in_row;
+	size_t tile_col = tile_num % tiles_in_row;
+	
+	size_t rows_in_tile = pf->tile_height;
+	
+	size_t first_tile_row_offset = (tile_row * tiles_in_row * rows_in_tile) + tile_col;
 	
 	size_t tile_row_byte_size = pf->tile_width * elem_size;
-	for (int i = 0; pf->tile_height; i++) {
-		memcpy (dst + extmem_col_offset + (extmem_row_offset * i), src + (tile_row_byte_size * i), tile_row_byte_size);
+	
+	size_t next_tile_row_offset;
+	
+	for (int i = 0; i < pf->tile_height; i++) {
+		next_tile_row_offset = i * tiles_in_row;
+		memcpy (dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), src + (i * tile_row_byte_size), tile_row_byte_size);
 	}
 }
 
-copy_tile_to_local (&local_fbuf, p->platform->active_fbuffer, p->platform, j, sizeof (pixel_color_t));
+//copy_tile_to_local (&local_fbuf, p->platform->active_fbuffer, p->platform, j, sizeof (pixel_color_t));
 
-copy_tile_to_extmem (p->platform->active_fbuffer, &local_fbuf, p->platform, j, sizeof (pixel_color_t));
-*/
 
 
 
 void * pthread_wrapper_pshader (void *shader_platform) {
 	
 	shader_platform_t *p = shader_platform;
-	uint32_t i = p->shader_num;
+	uint32_t shader_num = p->shader_num;
 		
 	if (PTHREAD_DEBUG0) {
-		printf ("run pshader %d\n", i);
+		printf ("run pshader %d\n", shader_num);
 	}
 	
 	size_t elems_in_tile = TILE_WIDTH*TILE_HEIGHT;
@@ -54,74 +66,75 @@ void * pthread_wrapper_pshader (void *shader_platform) {
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
 	while (!p->platform->pshaders_stop_req) {	
+				
+		if (PTHREAD_DEBUG) {
+			printf("pshader%d: pshader_done=false\n", shader_num);
+		}
+		p->platform->pshader_done[shader_num] = false;
+		
+		if (PTHREAD_DEBUG) {
+			printf("pshader%d: wait for pshader_run_req or pshader_stop_req\n", shader_num);
+		}
+		while (!p->platform->pshaders_run_req && !p->platform->pshaders_stop_req);
+		
+		if (p->platform->pshaders_stop_req) break;
+		
+		if (PTHREAD_DEBUG) {
+			printf("pshader%d: pshader_run_req detected\n", shader_num);
+		}
 		
 		
-		//for (int i = 0; i < p->platform->num_of_pshaders; i++) {
+		int starting_tile = shader_num % p->platform->num_of_pshaders;
+		int     incr_tile = p->platform->num_of_pshaders;
+		
+		//int starting_tile = 1;
+		//int incr_tile     = 2;
+		
+		
+		for (int j = starting_tile; j < p->platform->num_of_tiles; j += incr_tile) {
 			
-			if (PTHREAD_DEBUG) {
-				printf("pshader%d: pshader_done[%d]=false\n", i, i);
-			}
-			p->platform->pshader_done[i] = false;
+			// copy zbuffer tile to local memory
+			//memcpy (&local_zbuf, p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, zbuf_tile_byte_size);
+			memset (&local_zbuf, 0, zbuf_tile_byte_size);
 			
-			if (PTHREAD_DEBUG) {
-				printf("pshader%d: wait for pshader_run_req or pshader_stop_req\n", i);
-			}
-			while (!p->platform->pshaders_run_req && !p->platform->pshaders_stop_req);
+			// copy fbuffer tile to local memory
+			//memcpy (&local_fbuf, p->platform->active_fbuffer + j*fbuf_tile_byte_size, fbuf_tile_byte_size);
+			//copy_tile_to_local (&local_fbuf, p->platform->active_fbuffer, p->platform, j, sizeof (pixel_color_t));
+			memset (&local_fbuf, 0, fbuf_tile_byte_size);
 			
-			if (p->platform->pshaders_stop_req) break;
+			printf ("%d ",j);
 			
-			if (PTHREAD_DEBUG) {
-				printf("pshader%d: pshader_run_req detected\n", i);
-			}
-			
-			/*
-			int starting_tile = i % p->platform->num_of_pshaders;
-			int incr_tile = p->platform->num_of_pshaders;
-			*/
-			int starting_tile = 1;
-			int incr_tile     = 2;
-			
-			if (i == 0) {
-					
-				for (int j = starting_tile; j < p->platform->num_of_tiles; j += incr_tile) {
-					
-					// copy zbuffer tile to local memory
-					memcpy (&local_zbuf, p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, zbuf_tile_byte_size);
-					
-					// copy fbuffer tile to local memory
-					memcpy (&local_fbuf, p->platform->active_fbuffer + j*fbuf_tile_byte_size, fbuf_tile_byte_size);
+			TriangleListNode **tln = p->platform->tile_idx_table_ptr;
+			TriangleListNode *node = tln[j];
+			while (node != NULL) {
+				TrianglePShaderData *tri = node->tri;
+				//draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, (screenz_t*) p->platform->zbuffer_ptr, (pixel_color_t*) p->platform->active_fbuffer, p->platform);
+				draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, local_zbuf, local_fbuf, p->platform);
 
-					
-					printf ("%d ",j);
-					
-					TriangleListNode **tln = p->platform->tile_idx_table_ptr;
-					TriangleListNode *node = tln[j];
-					while (node != NULL) {
-						TrianglePShaderData *tri = node->tri;
-						//draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, (screenz_t*) p->platform->zbuffer_ptr, (pixel_color_t*) p->platform->active_fbuffer, p->platform);
-						draw_triangle (tri, j, (pixel_shader) p->platform->pshader_ptr, local_zbuf, local_fbuf, p->platform);
-
-						node = node->next;
-					}	
-					
-					// flush local zbuffer tile
-					memcpy (p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, &local_zbuf, zbuf_tile_byte_size);
-					
-					// flush local fbuffer tile
-					memcpy (p->platform->active_fbuffer + j*fbuf_tile_byte_size, &local_fbuf, fbuf_tile_byte_size);
-	
-					
-				}
-				printf ("\n");
-			}			
+				node = node->next;
+			}	
 			
-			if (PTHREAD_DEBUG) {
-				printf("pshader%d: pshader_done[%d]=true\n", i, i);
-			}
-			p->platform->pshader_done[i] = true;
+			// flush local zbuffer tile
+			//memcpy (p->platform->zbuffer_ptr + j*zbuf_tile_byte_size, &local_zbuf, zbuf_tile_byte_size);
+			pthread_mutex_lock (p->platform->zbuf_mutex);
+			copy_tile_to_extmem (p->platform->zbuffer_ptr, &local_zbuf, p->platform, j, sizeof (screenz_t));
+			pthread_mutex_unlock (p->platform->zbuf_mutex);
 			
-			while (p->platform->pshaders_run_req);	
-		//}
+			// flush local fbuffer tile
+			//memcpy (p->platform->active_fbuffer + j*fbuf_tile_byte_size, &local_fbuf, fbuf_tile_byte_size);
+			pthread_mutex_lock (p->platform->fbuf_mutex);
+			copy_tile_to_extmem (p->platform->active_fbuffer, &local_fbuf, p->platform, j, sizeof (pixel_color_t));
+			pthread_mutex_unlock (p->platform->fbuf_mutex);
+			
+		}
+		printf ("\n");
+		
+		if (PTHREAD_DEBUG) {
+			printf("pshader%d: pshader_done=true\n", shader_num);
+		}
+		p->platform->pshader_done[shader_num] = true;
+		
+		while (p->platform->pshaders_run_req);	
 	}	
 	return NULL;
 }
