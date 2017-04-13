@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define NUM_OF_VSHADERS 0
-#define NUM_OF_PSHADERS 1
+#define NUM_OF_PSHADERS 10
 #define NUM_OF_USHADERS 0
-#define MAX_NUM_OF_FRAMEBUFFERS	100
+#define MAX_NUM_OF_FRAMEBUFFERS	1000
 
 //#define PLATFORM_SCREEN_WIDTH  160//1280
 //#define PLATFORM_SCREEN_HEIGHT 160//720
@@ -33,6 +34,12 @@ typedef struct platform_t {
 	
 	uint32_t screen_width;
 	uint32_t screen_height;
+	
+	uint32_t tile_width;
+	uint32_t tile_height;
+	
+	pthread_mutex_t *zbuf_mutex;
+	pthread_mutex_t *fbuf_mutex;
 	
 } platform_t;
 

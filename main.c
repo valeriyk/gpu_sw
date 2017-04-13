@@ -5,7 +5,6 @@
 
 #include <pthread.h>
 
-
 #include <stdlib.h>
 #include <stdio.h>
 //#include <math.h>
@@ -15,7 +14,18 @@
 
 int main(int argc, char** argv) {
        
-    platform_t platform;
+    pthread_t host_thread;
+	pthread_t pshader_thread [NUM_OF_PSHADERS];
+	
+	pthread_mutex_t fbuf_mutex;
+	pthread_mutex_t zbuf_mutex;
+	
+	pthread_mutex_init (&fbuf_mutex, NULL);
+	pthread_mutex_init (&zbuf_mutex, NULL);
+	
+	
+	
+	platform_t platform;
 	
 	//platform.tile_idx_table_ptr = NULL;
 	
@@ -31,18 +41,15 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		platform.pshader_done[i] = false;
 	}
-	
-	
 	platform.num_of_vshaders = NUM_OF_VSHADERS;
 	platform.num_of_pshaders = NUM_OF_PSHADERS;
 	platform.num_of_ushaders = NUM_OF_USHADERS;	
 	platform.num_of_tiles    = 0;
 	platform.num_of_fbuffers = MAX_NUM_OF_FRAMEBUFFERS;
+	platform.fbuf_mutex = &fbuf_mutex;
+	platform.zbuf_mutex = &zbuf_mutex;
 	
 	printf ("num_of_fb: %d", platform.num_of_fbuffers);
-		
-	pthread_t host_thread;
-	pthread_t pshader_thread [NUM_OF_PSHADERS];
 	
 	shader_platform_t pshader_platform[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
