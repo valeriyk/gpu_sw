@@ -114,6 +114,8 @@ void set_screen_size (platform_t *p, size_t width, size_t height) {
 	
 	p->screen_width  = SCREEN_WIDTH;
 	p->screen_height = SCREEN_HEIGHT;
+	p->tile_width    = TILE_WIDTH;
+	p->tile_height   = TILE_HEIGHT;
 	p->num_of_tiles  = NUM_OF_TILES;
 }
 
