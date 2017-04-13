@@ -17,6 +17,7 @@
 //#include <platform.h>
 
 
+
 #include <stdint.h>
 //#include <limits.h>
 #include <stdlib.h>
@@ -384,6 +385,7 @@ void * pthread_wrapper_host (void *platform) {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
+		printf ("NUM_OF_FRAMES: %d\n", NUM_OF_FRAMES);
 		printf ("host: m=%d num_of_fb=%d\n", m, p->num_of_fbuffers);
 		p->active_fbuffer = p->fbuffer_ptr[m % p->num_of_fbuffers];
 		
@@ -393,7 +395,7 @@ void * pthread_wrapper_host (void *platform) {
 			pixel_color_t *afb = p->active_fbuffer;
 			afb[i] = set_color (1, 0, 0, 0);
 			
-			screenxy_t *zb = p->zbuffer_ptr;
+			screenz_t *zb = p->zbuffer_ptr;
 			zb[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
@@ -432,11 +434,11 @@ void * pthread_wrapper_host (void *platform) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		
 		
-		//draw_frame           (p, obj_list_head, vshader_gouraud, pshader_gouraud, p->zbuffer_ptr, p->active_fbuffer);
-		draw_frame           (p, obj_list_head, vshader_depth, pshader_depth, p->zbuffer_ptr, p->active_fbuffer);
+		draw_frame           (p, obj_list_head, vshader_gouraud, pshader_gouraud, p->zbuffer_ptr, p->active_fbuffer);
+		//draw_frame           (p, obj_list_head, vshader_depth, pshader_depth, p->zbuffer_ptr, p->active_fbuffer);
 		
 		if (m == RECORD_FRAME_NUM) {
-		
+			printf ("recording frame number %d\n", m);
 			if (ENABLE_PERF) stop_counters();
 			
 			char tga_file[32];

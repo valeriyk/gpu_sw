@@ -215,6 +215,8 @@ int count_shadows (Varying *vry) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
+		assert (LIGHTS[i].shadow_buf != NULL);
+		
 		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[y * get_screen_width() + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
