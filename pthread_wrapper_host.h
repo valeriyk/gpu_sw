@@ -3,7 +3,7 @@
 #define WIDTH  160//1280
 #define HEIGHT 160//720
 
-#define NUM_OF_FRAMES 50
+#define NUM_OF_FRAMES 30
 
 
 #define ROTATION_INIT 1
