@@ -3,7 +3,7 @@
 #define WIDTH  160//1280
 #define HEIGHT 160//720
 
-#define NUM_OF_FRAMES 1000
+#define NUM_OF_FRAMES 50
 
 
 #define ROTATION_INIT 1
@@ -22,10 +22,10 @@
 #define GL_DEBUG_3 0
 #define GL_DEBUG_4 0
 
-#include <platform.h>
+#include <gpu_cfg.h>
 #include <gl.h>
 
 void * pthread_wrapper_host (void *platform);
 
-void draw_frame (platform_t *platform, ObjectListNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 

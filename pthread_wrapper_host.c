@@ -305,30 +305,30 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 }
 
 
-void * pthread_wrapper_host (void *platform) {
+void * pthread_wrapper_host (void *gpu_cfg) {
        
-    platform_t *p = platform;
+    gpu_cfg_t *cfg = gpu_cfg;
     
     
     size_t screen_size = WIDTH * HEIGHT;
     
     //screenz_t *zbuffer = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
-    if ((p->zbuffer_ptr = calloc (screen_size, sizeof(screenz_t))) == NULL) {
+    if ((cfg->zbuffer_ptr = calloc (screen_size, sizeof(screenz_t))) == NULL) {
 		if (DEBUG_MALLOC) printf ("zbuffer calloc failed\n");
 		return NULL;
 	}
     
     
     
-    for (int i = 0; i < p->num_of_fbuffers; i++) {
-		if ((p->fbuffer_ptr[i] = calloc (screen_size, sizeof(pixel_color_t))) == NULL) {
+    for (int i = 0; i < cfg->num_of_fbuffers; i++) {
+		if ((cfg->fbuffer_ptr[i] = calloc (screen_size, sizeof(pixel_color_t))) == NULL) {
 			if (DEBUG_MALLOC) printf ("fbuffer%d calloc failed\n", i);
 			return NULL;
 		}
 	}
     	
     //pixel_color_t *active_fbuffer = NULL;
-    p->active_fbuffer = NULL;
+    cfg->active_fbuffer = NULL;
     		
 	ObjectListNode *obj_list_head = init_objects ();
 	
@@ -349,7 +349,7 @@ void * pthread_wrapper_host (void *platform) {
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	// 4. Viewport Matrix - move to screen coords
-	set_screen_size (p, (size_t) WIDTH, (size_t) HEIGHT);
+	set_screen_size (cfg, (size_t) WIDTH, (size_t) HEIGHT);
     init_viewport (0, 0, get_screen_width(), get_screen_height(), get_screen_depth());
 	
     
@@ -381,21 +381,21 @@ void * pthread_wrapper_host (void *platform) {
 		start_counters();
 	}
     
-    p->pshaders_stop_req = false;
+    cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
 		printf ("NUM_OF_FRAMES: %d\n", NUM_OF_FRAMES);
-		printf ("host: m=%d num_of_fb=%d\n", m, p->num_of_fbuffers);
-		p->active_fbuffer = p->fbuffer_ptr[m % p->num_of_fbuffers];
+		printf ("host: m=%d num_of_fb=%d\n", m, cfg->num_of_fbuffers);
+		cfg->active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
 		
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
-			//((pixel_color_t*) p->active_fbuffer)[i] = set_color (0, 0, 0, 0);
-			pixel_color_t *afb = p->active_fbuffer;
+			//((pixel_color_t*) cfg->active_fbuffer)[i] = set_color (0, 0, 0, 0);
+			pixel_color_t *afb = cfg->active_fbuffer;
 			afb[i] = set_color (1, 0, 0, 0);
 			
-			screenz_t *zb = p->zbuffer_ptr;
+			screenz_t *zb = cfg->zbuffer_ptr;
 			zb[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
@@ -404,13 +404,13 @@ void * pthread_wrapper_host (void *platform) {
 			}
 		}
 		
-		/*for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
 				setup_light_transform (obj_list_head, &ortho_proj, &view, i);
-				draw_frame            (p, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
+				draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 			}
-		}*/			
+		}			
 		
 		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
@@ -434,8 +434,8 @@ void * pthread_wrapper_host (void *platform) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		
 		
-		draw_frame           (p, obj_list_head, vshader_gouraud, pshader_gouraud, p->zbuffer_ptr, p->active_fbuffer);
-		//draw_frame           (p, obj_list_head, vshader_depth, pshader_depth, p->zbuffer_ptr, p->active_fbuffer);
+		draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, cfg->zbuffer_ptr, cfg->active_fbuffer);
+		//draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, cfg->zbuffer_ptr, cfg->active_fbuffer);
 		
 		if (m == RECORD_FRAME_NUM) {
 			printf ("recording frame number %d\n", m);
@@ -450,7 +450,7 @@ void * pthread_wrapper_host (void *platform) {
 			strcpy (tga_file, "frame_buffer_");
 			strcat (tga_file, frame_num);
 			strcat (tga_file, ".tga");	
-			write_tga_file (tga_file, (tbyte *) p->fbuffer_ptr[m], WIDTH, HEIGHT, 24, 1);
+			write_tga_file (tga_file, (tbyte *) cfg->fbuffer_ptr[m], WIDTH, HEIGHT, 24, 1);
 			
 			tbyte *tmp;
 			if ((tmp = (tbyte*) calloc (screen_size, sizeof(tbyte))) == NULL) {
@@ -459,7 +459,7 @@ void * pthread_wrapper_host (void *platform) {
 			}
 			
 			for (int i = 0; i < screen_size; i++) {
-				screenz_t *zb = p->zbuffer_ptr;
+				screenz_t *zb = cfg->zbuffer_ptr;
 				tmp[i] = zb[i] >> 4;// >> (8 * (sizeof(screenz_t) - 1) );
 			}
 			write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
@@ -486,7 +486,7 @@ void * pthread_wrapper_host (void *platform) {
 		}
 		
 	}
-	p->pshaders_stop_req = true;
+	cfg->pshaders_stop_req = true;
 	
 	// while (0);
 	
@@ -502,7 +502,7 @@ void * pthread_wrapper_host (void *platform) {
 		
 		for (int i = 0; i < NUM_OF_FRAMES; i++) {
 			fprintf (fp, "FRAME\n");
-			pixel_color_t *fb = p->fbuffer_ptr[i];
+			pixel_color_t *fb = cfg->fbuffer_ptr[i];
 			for (int j = 0; j < screen_size; j++){
 				uint8_t y = rgb_to_y (fb[j]);
 				fwrite (&y, sizeof (uint8_t), 1, fp);
@@ -519,9 +519,9 @@ void * pthread_wrapper_host (void *platform) {
 		fclose (fp);
 	}
 	
-	free (p->zbuffer_ptr);
+	free (cfg->zbuffer_ptr);
 	free_objects (obj_list_head);
-	for (int i = 0; i < p->num_of_fbuffers; i++) free (p->fbuffer_ptr[i]);
+	for (int i = 0; i < cfg->num_of_fbuffers; i++) free (cfg->fbuffer_ptr[i]);
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS;   i++) free_light (i);
 	
 	
@@ -548,7 +548,7 @@ void * pthread_wrapper_host (void *platform) {
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	if (GL_DEBUG_0)
 	{
@@ -556,18 +556,18 @@ void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_sha
 	}
 	
 	
-	if ((platform->tile_idx_table_ptr = calloc (platform->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
+	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		return;
 	}
 			
-	for (int i = 0; i < platform->num_of_tiles; i++) {
-		TriangleListNode **tln = platform->tile_idx_table_ptr;
+	for (int i = 0; i < cfg->num_of_tiles; i++) {
+		TriangleListNode **tln = cfg->tile_idx_table_ptr;
 		tln[i] = NULL;
 	}
 	
 	
-	platform->pshader_ptr = pshader;
+	cfg->pshader_ptr = pshader;
 					
 	ObjectListNode *obj_list_node;
 	obj_list_node = obj_list_head;		
@@ -653,7 +653,7 @@ void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_sha
 			}
 			
 			if (!is_clipped) {
-				tiler(&(tri_data_array[tri_num]), platform->tile_idx_table_ptr);
+				tiler(&(tri_data_array[tri_num]), cfg->tile_idx_table_ptr);
 				tri_num++;
 			}
 		}
@@ -671,8 +671,8 @@ void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_sha
 	if (PTHREAD_DEBUG) {
 		printf("host: wait till all pshader_done signals are false\n");
 	}
-	for (int i = 0; i < platform->num_of_pshaders; i++) {
-		while (platform->pshader_done[i]);
+	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		while (cfg->pshader_done[i]);
 	}
 	if (PTHREAD_DEBUG) {
 		printf("host: all pshader_done signals are false\n");
@@ -681,14 +681,14 @@ void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_sha
 	if (PTHREAD_DEBUG) {
 		printf("host: pshaders_run_req=true\n");
 	}
-	platform->pshaders_run_req = true;
+	cfg->pshaders_run_req = true;
 	
 		
 	if (PTHREAD_DEBUG) {
 		printf("host: wait till all pshader_done signals are true\n");
 	}
-	for (int i = 0; i < platform->num_of_pshaders; i++) {
-		while (!platform->pshader_done[i]);
+	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		while (!cfg->pshader_done[i]);
 	}
 	if (PTHREAD_DEBUG) {
 		printf("host: all pshader_done signals are true\n");
@@ -697,14 +697,14 @@ void draw_frame (platform_t *platform, ObjectListNode *obj_list_head, vertex_sha
 	if (PTHREAD_DEBUG) {
 		printf("host: pshaders_run_req=false\n");
 	}
-	platform->pshaders_run_req = false;
+	cfg->pshaders_run_req = false;
 	
 	
 	
-	for (int i = 0; i < platform->num_of_tiles; i++) {
-		TriangleListNode **tln = platform->tile_idx_table_ptr;
+	for (int i = 0; i < cfg->num_of_tiles; i++) {
+		TriangleListNode **tln = cfg->tile_idx_table_ptr;
 		
-		//TriangleListNode *node = (*platform->tile_idx_table_ptr)[i];
+		//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
 		TriangleListNode *node = tln[i];
 		TriangleListNode *tmp;
 		while (node != NULL) {
