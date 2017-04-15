@@ -105,18 +105,18 @@ void init_viewport (int x, int y, int w, int h, int d) {
 	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
 }
 
-void set_screen_size (platform_t *p, size_t width, size_t height) {
+void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
 	SCREEN_WIDTH  = width;
 	SCREEN_HEIGHT = height;
 	SCREEN_DEPTH  = (screenz_t) ~0; // all ones
 	
 	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
 	
-	p->screen_width  = SCREEN_WIDTH;
-	p->screen_height = SCREEN_HEIGHT;
-	p->tile_width    = TILE_WIDTH;
-	p->tile_height   = TILE_HEIGHT;
-	p->num_of_tiles  = NUM_OF_TILES;
+	cfg->screen_width  = SCREEN_WIDTH;
+	cfg->screen_height = SCREEN_HEIGHT;
+	cfg->tile_width    = TILE_WIDTH;
+	cfg->tile_height   = TILE_HEIGHT;
+	cfg->num_of_tiles  = NUM_OF_TILES;
 }
 
 size_t get_screen_width (void) {
@@ -412,7 +412,7 @@ BoundBox clip_boundbox_to_screen (BoundBox in) {
 BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num) {
 	
 	BoundBox tile;
-	
+				
 	tile.min.x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
     tile.min.y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
     tile.max.x = tile.min.x + TILE_WIDTH  - 1; 
@@ -425,7 +425,15 @@ BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num) {
     out.min.y = max_of_two (tile.min.y, in.min.y);
     out.max.y = min_of_two (tile.max.y, in.max.y);
     
-	return out;
+    
+    /*
+    out.min.x = max_of_two (              0, in.min.x - tile.min.x);
+    out.max.x = min_of_two (TILE_WIDTH  - 1, in.max.x - tile.min.x);
+    out.min.y = max_of_two (              0, in.min.y - tile.min.y);
+    out.max.y = min_of_two (TILE_HEIGHT - 1, in.max.y - tile.min.y);
+    */
+    
+    return out;
 }
 
 

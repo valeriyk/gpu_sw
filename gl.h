@@ -5,7 +5,7 @@
 #include "geometry_fixpt.h"
 #include "wavefront_obj.h"
 
-#include <platform.h>
+#include <gpu_cfg.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -24,7 +24,7 @@
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
 #define TILE_WIDTH  32
-#define TILE_HEIGHT 16
+#define TILE_HEIGHT 32
 
 
 
@@ -132,7 +132,7 @@ void init_lights (void);
 void new_light (int light_num, Float3 dir, bool add_shadow_buf);
 void free_light (int light_num);
 
-void   set_screen_size   (platform_t *p, size_t width, size_t height);
+void   set_screen_size   (gpu_cfg_t *cfg, size_t width, size_t height);
 size_t get_screen_width  (void);
 size_t get_screen_height (void);
 size_t get_screen_depth  (void);
