@@ -5,14 +5,14 @@
 #include <pthread.h>
 
 #define NUM_OF_VSHADERS 0
-#define NUM_OF_PSHADERS 10
+#define NUM_OF_PSHADERS 8
 #define NUM_OF_USHADERS 0
-#define MAX_NUM_OF_FRAMEBUFFERS	1000
+#define MAX_NUM_OF_FRAMEBUFFERS	50
 
 //#define PLATFORM_SCREEN_WIDTH  160//1280
 //#define PLATFORM_SCREEN_HEIGHT 160//720
 
-typedef struct platform_t {
+typedef struct gpu_cfg_t {
 	
 	void *tile_idx_table_ptr;
 	
@@ -38,13 +38,13 @@ typedef struct platform_t {
 	uint32_t tile_width;
 	uint32_t tile_height;
 	
-	pthread_mutex_t *zbuf_mutex;
-	pthread_mutex_t *fbuf_mutex;
+	//pthread_mutex_t *zbuf_mutex;
+	//pthread_mutex_t *fbuf_mutex;
 	
-} platform_t;
+} gpu_cfg_t;
 
 
-typedef struct shader_platform_t {
-	platform_t *platform;
-	uint32_t    shader_num;
-} shader_platform_t;
+typedef struct shader_cfg_t {
+	gpu_cfg_t *common_cfg;
+	uint32_t   shader_num;
+} shader_cfg_t;

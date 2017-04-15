@@ -2,8 +2,8 @@
 OPT = -O3
 
 #SYSCONF_LINK_x86  =              gcc -g -std=c99 -DTARGET_x86 $(OPT)
-SYSCONF_LINK_x86  =              gcc -g -std=c99 -I../host -I. -I../libtga-1.0.1/src -I../libbarcg -I../pshaderfw -DTARGET_x86 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 $(OPT)
-#-DNDEBUG=0 
+SYSCONF_LINK_x86  =              gcc -g -std=c99 -I../host -I. -I../libtga-1.0.1/src -I../libbarcg -I../pshaderfw -DTARGET_x86 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 $(OPT) -DNDEBUG=0
+
 
 #SYSCONF_LINK_MIPS = mips-mti-elf-gcc -g -std=c99 -Ilibtga-1.0.1/src -DTARGET_MIPS -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT) -EL -msoft-float -march=m14kc
 #SYSCONF_LINK_ARC  =             ccac -g          -Ilibtga-1.0.1/src -DTARGET_ARC  -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT) -tcf=$(TCF)
@@ -29,7 +29,7 @@ TARGET_x86  = main.a
 
 #OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard *.c) )
 OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard *.c) $(wildcard ../host/*.c) $(wildcard ../pshaderfw/*.c) $(wildcard ../libbarcg/*.c) $(wildcard ../libtga-1.0.1/src/*.c))
-INCLUDES_x86 = $(wildcard *.h) $(wildcard ../host/*.h) $(wildcard ../pshaderfw/*.h) $(wildcard ../libbarcg/*.h) $(wildcard ../libtga-1.0.1/src/*.h)
+INCLUDES_x86 =                            $(wildcard *.h) $(wildcard ../host/*.h) $(wildcard ../pshaderfw/*.h) $(wildcard ../libbarcg/*.h) $(wildcard ../libtga-1.0.1/src/*.h)
 
 #OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c)) 
 #OBJECTS_MIPS := $(patsubst %.c, %_mips.o, $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c))
@@ -63,6 +63,10 @@ $(OBJECTS_x86): %_x86.o: %.c $(INCLUDES_x86)
 
 clean:
 	-rm -f *.o
+	-rm -f ../host/*.o
+	-rm -f ../pshaderfw/*.o
+	-rm -f ../libbarcg/*.o
+	-rm -f ../libtga-1.0.1/src/*.o
 	-rm -f *.elf
 	-rm -f *.a
 	-rm -f *.tga
