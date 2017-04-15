@@ -385,8 +385,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
-		printf ("NUM_OF_FRAMES: %d\n", NUM_OF_FRAMES);
-		printf ("host: m=%d num_of_fb=%d\n", m, cfg->num_of_fbuffers);
+		printf ("host: FRAME %d\n", m);
 		cfg->active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
 		
 		// clean up active framebuffer, zbuffer and all shadowbuffers
@@ -404,6 +403,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 			}
 		}
 		
+		/*
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
@@ -411,6 +411,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 				draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 			}
 		}			
+		*/
 		
 		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
@@ -579,6 +580,7 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 	
 	TrianglePShaderData *tri_data_array;
 	if ((tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
+	//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
 		if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
 		return;
 	}
@@ -602,14 +604,18 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 			Triangle ndc;
 			Triangle screen;
 			
-			tri_data_array[tri_num].obj = obj_list_node->obj;
+			TrianglePShaderData d;
+			//tri_data_array[tri_num].obj = obj_list_node->obj;
+			d.obj = obj_list_node->obj;
 			
 			bool is_clipped = true; // sticky bit
 			for (size_t j = 0; j < 3; j++) {
 				
+				
 				// // First four floats of Varying contain XYZW of a vertex in clip space
-				tri_data_array[tri_num].varying[j].num_of_words = 0;
-				clip.vtx[j] = vshader (tri_data_array[tri_num].obj, i, j, &(tri_data_array[tri_num].varying[j]) ); // CALL VERTEX SHADER
+				//tri_data_array[tri_num].varying[j].num_of_words = 0;
+				d.varying[j].num_of_words = 0;
+				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]) ); // CALL VERTEX SHADER
 				
 				// Clip & normalize (clip -> NDC):
 				if (clip.vtx[j].as_struct.w > 0) {
@@ -640,19 +646,23 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 					
 						// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
 						// because we have it for free here
-						screen.vtx[j].as_struct.w = reciprocal_w;
+						//screen.vtx[j].as_struct.w = reciprocal_w;
 
 						// Replace clip coords with screen coords within the Varying struct
 						// before passing it on to draw_triangle()
-						tri_data_array[tri_num].screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x, XY_FRACT_BITS);
-						tri_data_array[tri_num].screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y, XY_FRACT_BITS);
-						tri_data_array[tri_num].screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z, Z_FRACT_BITS);
-						tri_data_array[tri_num].w_reciprocal[j]              =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
+						d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
+						d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+						d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+						//tri_data_array[tri_num].w_reciprocal [j]             =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
+						d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
+						
 					}		
 				}
 			}
 			
 			if (!is_clipped) {
+				tri_data_array[tri_num] = d;
+				
 				tiler(&(tri_data_array[tri_num]), cfg->tile_idx_table_ptr);
 				tri_num++;
 			}
