@@ -101,7 +101,7 @@ typedef struct TrianglePShaderData {
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
-} TrianglePShaderData;
+} __attribute__ ((aligned (1024))) TrianglePShaderData;
 
 typedef struct TriangleListNode {
 	struct TrianglePShaderData *tri;
@@ -219,9 +219,5 @@ BoundBox clip_boundbox_to_screen (BoundBox in);
 BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num);
 
 FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
-
-Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar);
-
-screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar);
 
 void tiler (TrianglePShaderData *tri, TriangleListNode *tri_ptr[]);
