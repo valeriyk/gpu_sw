@@ -76,5 +76,6 @@ int main(int argc, char** argv) {
 		}
 	}
 	
+	printf ("sizeof (TrianglePShaderData) = %d\n", sizeof(TrianglePShaderData));
     return 0;
 }
