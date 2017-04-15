@@ -5,7 +5,103 @@
 //#include "libbarcg.h"
 //#include "platform.h"
 
+Varying   interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar);
+ dfixpt_t interpolate_w       (                fixpt_t w_reciprocal[3], FixPt3 *bar);
+screenz_t interpolate_z       (                fixpt_t            z[3], FixPt3 *bar);
+ 
 
+screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
+	
+	dfixpt_t mul_0 = (int64_t) z[0] * (int64_t) bar->as_array[0]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_1 = (int64_t) z[1] * (int64_t) bar->as_array[1]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t mul_2 = (int64_t) z[2] * (int64_t) bar->as_array[2]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
+	dfixpt_t acc = mul_0 + mul_1 + mul_2; // (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) + (ZM+BM).(ZF+BF) = (ZM+BM+1).(ZF+BF)
+	dfixpt_t sum_of_bars = bar->as_array[0] + bar->as_array[1] + bar->as_array[2]; // BM.BF + BM.BF + BM.BF = (BM+1).BF
+	dfixpt_t res = acc / sum_of_bars; // (ZM+BM+1).(ZF+BF) / (BM+1).BF = ZM.ZF
+	
+	return fixpt_to_screenz ((fixpt_t) res); // ZM
+}
+
+dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
+    	
+	dfixpt_t mul_0 = (dfixpt_t) bar->as_array[0] * (dfixpt_t) w_reciprocal[0]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t mul_1 = (dfixpt_t) bar->as_array[1] * (dfixpt_t) w_reciprocal[1]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t mul_2 = (dfixpt_t) bar->as_array[2] * (dfixpt_t) w_reciprocal[2]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
+	dfixpt_t acc   = mul_0 + mul_1 + mul_2; // (BM+WM).(BF+WF) + (BM+WM).(BF+WF) + (BM+WM).(BF+WF) = (BM+WM+1).(BF+WF)
+	assert (acc != 0);
+	dfixpt_t one = (1LL << (OOWI_FRACT_BITS + BARC_FRACT_BITS + W_RECIPR_FRACT_BITS)); // 1.(WI+BF+WF)
+	dfixpt_t res = one / acc; // 1.(WI+BF+WF) / (BM+WM+1).(BF+WF) = (64-WI).WI
+
+	if (DEBUG_FIXPT_W) {
+		float   mul_0f = fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
+		float   mul_1f = fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
+		float   mul_2f = fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
+		float   accf  = mul_0f + mul_1f + mul_2f;
+		float   resf = 1.0f / accf;
+		
+		printf ("mul_0 %f/%f\t", mul_0f, dfixpt_to_float (mul_0, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("mul_1 %f/%f\t", mul_1f, dfixpt_to_float (mul_1, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("mul_2 %f/%f\t", mul_2f, dfixpt_to_float (mul_2, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("acc %f/%f\t", accf, dfixpt_to_float (acc, BARC_FRACT_BITS + W_RECIPR_FRACT_BITS));
+		printf ("res %f/%f\n", resf, dfixpt_to_float (res, OOWI_FRACT_BITS));
+	}
+	
+	return (dfixpt_t) res;		
+}
+
+
+Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar) {
+
+	assert (vry[0].num_of_words == vry[1].num_of_words);
+	assert (vry[0].num_of_words == vry[2].num_of_words);
+					
+	Varying vry_interp;					
+	vry_interp.num_of_words = vry[0].num_of_words;
+	
+	if (vry_interp.num_of_words > 0) {
+		
+		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar);
+		
+		for (int i = 0; i < vry_interp.num_of_words; i++) {
+			
+			#define NNN 20
+						
+			dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // 18.14 * 3.29 = 21.43
+			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // 
+			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // 
+
+			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // (21.43>>16) * 24.8 = 21.27 * 24.8 = 29.35
+			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // 
+			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // 
+
+			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 29.35
+
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * (dfixpt_t) one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (29.35 * 16.16 = 13.51)>>43 = 56.8
+			
+			if (DEBUG_FIXPT_VARYING) {
+				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
+				float vtx1_norm = vry[1].data[i].as_float * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
+				float vtx2_norm = vry[2].data[i].as_float * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
+				float mpy0 = vtx0_norm * fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS);
+				float mpy1 = vtx1_norm * fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS);
+				float mpy2 = vtx2_norm * fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS);
+				float acc = mpy0 + mpy1 + mpy2;
+				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
+				
+				printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+			}
+		}
+	}
+	
+	return vry_interp;					
+}
 
 void copy_tile_to_extmem (void *dst, void *src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
 	
@@ -125,10 +221,10 @@ void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader psha
 }
 
 
-void * pthread_wrapper_pshader (void *shader_cfg) {
+void * pthread_wrapper_pshader (void *cfg) {
 	
-	shader_cfg_t *cfg = shader_cfg;
-	uint32_t shader_num = cfg->shader_num;
+	shader_cfg_t *shader_cfg = cfg;
+	uint32_t shader_num = shader_cfg->shader_num;
 		
 	if (PTHREAD_DEBUG0) {
 		printf ("run pshader %d\n", shader_num);
@@ -142,33 +238,33 @@ void * pthread_wrapper_pshader (void *shader_cfg) {
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
-	while (!cfg->common_cfg->pshaders_stop_req) {	
+	while (!shader_cfg->common_cfg->pshaders_stop_req) {	
 				
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=false\n", shader_num);
 		}
-		cfg->common_cfg->pshader_done[shader_num] = false;
+		shader_cfg->common_cfg->pshader_done[shader_num] = false;
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: wait for pshader_run_req or pshader_stop_req\n", shader_num);
 		}
-		while (!cfg->common_cfg->pshaders_run_req && !cfg->common_cfg->pshaders_stop_req);
+		while (!shader_cfg->common_cfg->pshaders_run_req && !shader_cfg->common_cfg->pshaders_stop_req);
 		
-		if (cfg->common_cfg->pshaders_stop_req) break;
+		if (shader_cfg->common_cfg->pshaders_stop_req) break;
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_run_req detected\n", shader_num);
 		}
 		
 		
-		int starting_tile = shader_num % cfg->common_cfg->num_of_pshaders;
-		int     incr_tile = cfg->common_cfg->num_of_pshaders;
-		
-		//int starting_tile = 1;
-		//int incr_tile     = 2;
+		int starting_tile = shader_num % shader_cfg->common_cfg->num_of_pshaders;
+		int     incr_tile =              shader_cfg->common_cfg->num_of_pshaders;
 		
 		
-		for (int j = starting_tile; j < cfg->common_cfg->num_of_tiles; j += incr_tile) {
+		if (PSHADER_DEBUG) {
+			printf ("\tpshader %d processes tiles: ", shader_num);
+		}
+		for (int j = starting_tile; j < shader_cfg->common_cfg->num_of_tiles; j += incr_tile) {
 			
 			// initialize zbuffer tile in local memory
 			memset (&local_zbuf, 0, zbuf_tile_byte_size);
@@ -176,13 +272,13 @@ void * pthread_wrapper_pshader (void *shader_cfg) {
 			// initialize fbuffer tile in local memory
 			memset (&local_fbuf, 0, fbuf_tile_byte_size);
 			
-			printf ("%d ",j);
+			if (PSHADER_DEBUG) printf ("%d ", j);
 			
-			TriangleListNode **tln = cfg->common_cfg->tile_idx_table_ptr;
+			TriangleListNode **tln = shader_cfg->common_cfg->tile_idx_table_ptr;
 			TriangleListNode *node = tln[j];
 			while (node != NULL) {
 				TrianglePShaderData *tri = node->tri;
-				draw_triangle (tri, j, (pixel_shader) cfg->common_cfg->pshader_ptr, local_zbuf, local_fbuf, cfg->common_cfg);
+				draw_triangle (tri, j, (pixel_shader) shader_cfg->common_cfg->pshader_ptr, local_zbuf, local_fbuf, shader_cfg->common_cfg);
 
 				node = node->next;
 			}	
@@ -190,24 +286,28 @@ void * pthread_wrapper_pshader (void *shader_cfg) {
 			// flush local zbuffer tile
 			
 			//pthread_mutex_lock (cfg->common_cfg->zbuf_mutex);
-			copy_tile_to_extmem (cfg->common_cfg->zbuffer_ptr, &local_zbuf, cfg->common_cfg, j, sizeof (screenz_t));
+			if (shader_cfg->common_cfg->zbuffer_ptr != NULL) {
+				copy_tile_to_extmem (shader_cfg->common_cfg->zbuffer_ptr, &local_zbuf, shader_cfg->common_cfg, j, sizeof (screenz_t));
+			}
 			//pthread_mutex_unlock (cfg->common_cfg->zbuf_mutex);
 			
 			// flush local fbuffer tile
 			
 			//pthread_mutex_lock (cfg->common_cfg->fbuf_mutex);
-			copy_tile_to_extmem (cfg->common_cfg->active_fbuffer, &local_fbuf, cfg->common_cfg, j, sizeof (pixel_color_t));
+			if (shader_cfg->common_cfg->active_fbuffer != NULL) {
+				copy_tile_to_extmem (shader_cfg->common_cfg->active_fbuffer, &local_fbuf, shader_cfg->common_cfg, j, sizeof (pixel_color_t));
+			}
 			//pthread_mutex_unlock (cfg->common_cfg->fbuf_mutex);
 			
 		}
-		printf ("\n");
+		if (PSHADER_DEBUG) printf ("\n");
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=true\n", shader_num);
 		}
-		cfg->common_cfg->pshader_done[shader_num] = true;
+		shader_cfg->common_cfg->pshader_done[shader_num] = true;
 		
-		while (cfg->common_cfg->pshaders_run_req);	
+		while (shader_cfg->common_cfg->pshaders_run_req);	
 	}	
 	return NULL;
 }
