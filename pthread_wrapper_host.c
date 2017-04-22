@@ -512,12 +512,12 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     
     size_t screen_size = WIDTH * HEIGHT;
     
-    //screenz_t *zbuffer = (screenz_t*) calloc (screen_size, sizeof(screenz_t));
+    /*
     if ((cfg->zbuffer_ptr = calloc (screen_size, sizeof(screenz_t))) == NULL) {
 		if (DEBUG_MALLOC) printf ("zbuffer calloc failed\n");
 		return NULL;
 	}
-    
+    */
     
     
     for (int i = 0; i < cfg->num_of_fbuffers; i++) {
@@ -542,11 +542,12 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 	float far   = 100;
 	
 	fmat4 persp_proj;
-	fmat4 ortho_proj;
 	init_perspective_proj (&persp_proj, left, right, top, bot, near, far);
-	
+
+	fmat4 ortho_proj;	
 	float f = 18.5;
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
+	
 	
 	// 4. Viewport Matrix - move to screen coords
 	set_screen_size (cfg, (size_t) WIDTH, (size_t) HEIGHT);
@@ -558,6 +559,8 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     Float3 eye;
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
+	
+	
 	fmat4 view;	
 	//init_view (&view, &eye, &center, &up);
     
@@ -584,7 +587,6 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
-		//active_fbuffer = (active_fbuffer == fbuffer[0]) ? fbuffer[1] : fbuffer[0];
 		printf ("host: FRAME %d\n", m);
 		pixel_color_t *active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
 		
@@ -592,11 +594,10 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		// clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			//((pixel_color_t*) cfg->active_fbuffer)[i] = set_color (0, 0, 0, 0);
-			pixel_color_t *afb = cfg->active_fbuffer;
-			afb[i] = set_color (1, 0, 0, 0);
+			active_fbuffer[i] = set_color (1, 0, 0, 0);
 			
-			screenz_t *zb = cfg->zbuffer_ptr;
-			zb[i] = 0;
+			//screenz_t *zb = cfg->zbuffer_ptr;
+			//zb[i] = 0;
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
 					LIGHTS[j].shadow_buf[i] = 0;
@@ -637,10 +638,9 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		
 		
-		////draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, cfg->zbuffer_ptr, cfg->active_fbuffer);
-		//draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		//draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, cfg->zbuffer_ptr, cfg->active_fbuffer);
-		draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		//draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		//draw_frame           (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, NULL, active_fbuffer);	
 		
 		if (m == RECORD_FRAME_NUM) {
 			printf ("recording frame number %d\n", m);

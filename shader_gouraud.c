@@ -52,8 +52,8 @@ bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 	float intensity = varying_fifo_pop_float (vry);
 		
 	Float2 text   = varying_fifo_pop_Float2 (vry);
-	size_t uu = (int) text.as_struct.u;
-	size_t vv = (int) text.as_struct.v;
+	size_t uu = (size_t) text.as_struct.u;
+	size_t vv = (size_t) text.as_struct.v;
 	//
 	// If texture is not provided, use gray color
 	//
@@ -64,8 +64,8 @@ bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 	else {	
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
-		assert (uu >= 0);
-		assert (vv >= 0);
+		//assert (uu >= 0);
+		//assert (vv >= 0);
 		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
