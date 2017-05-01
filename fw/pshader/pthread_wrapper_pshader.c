@@ -1,5 +1,6 @@
 #include "pthread_wrapper_pshader.h"
 
+#include <inttypes.h>
 #include <string.h>
 
 //#include "libbarcg.h"
@@ -70,13 +71,22 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // 
 			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // 
 
-			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // (21.43>>16) * 24.8 = 21.27 * 24.8 = 29.35
+			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // (21.43>>NNN) * 24.8 = 21.23 * 24.8 = 33.31
 			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // 
 			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // 
 
-			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 29.35
+			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 33.31
 
-			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * (dfixpt_t) one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (29.35 * 16.16 = 13.51)>>43 = 56.8
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * (dfixpt_t) one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (33.31 * 16.16 = 17.47)>>(29-20+8+16) = 64.0
+			fixpt_t vry_interp_fixpt_tmp = vry_interp.data[i].as_fixpt_t;
+			/*
+			if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			if (vry_interp.data[i].as_fixpt_t > max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				printf ("interp var %" PRId32 " > max of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			*/
+			//assert (vry_interp.data[i].as_fixpt_t >= min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
+			//assert (vry_interp.data[i].as_fixpt_t <= max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			
 			if (DEBUG_FIXPT_VARYING) {
 				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
@@ -88,6 +98,7 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 				float acc = mpy0 + mpy1 + mpy2;
 				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
 				
+				/*
 				printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
 				printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
 				printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
@@ -96,6 +107,13 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 				printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
 				printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
 				printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+				*/
+				if (fabs (vry_interp.data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1)
+					printf ("\nvry interp mismatch: %f/%f\n", vry_interp.data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));
+				//if (fabs (vry_interp.data[i].as_float - dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS)) > 0.001)
+				//	printf ("\nvry interp mismatch: %f/%f\n", vry_interp.data[i].as_float,  fixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+				
+				
 			}
 		}
 	}
@@ -136,20 +154,31 @@ void copy_tile_to_extmem (void *dst, void *src, gpu_cfg_t *cfg, size_t tile_num,
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg) {    
+void draw_triangle (TrianglePShaderData *tri_data, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg) {    
 	if (GL_DEBUG_0 == 1) {
 		printf("\tcall draw_triangle()\n");
 	}
 	
+	//cfg->num_of_tri++;
+	
+	//volatile static int num_of_pix = 0;
+	//volatile static int num_of_pix_after_ztest = 0;
+	//volatile static int num_of_pshader_runs = 0;	
+	
 	fixpt_t    x[3];
 	fixpt_t    y[3];
 	fixpt_t    z[3];
+	
+	
+	//memcpy (&local_tpd, tri, sizeof (TrianglePShaderData));
+	TrianglePShaderData local_tpd = *tri_data;
+	
 		
 	// re-pack X, Y, Z coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x[i] = tri->screen_coords[i].as_struct.x;
-		y[i] = tri->screen_coords[i].as_struct.y;
-		z[i] = tri->screen_coords[i].as_struct.z;
+		x[i] = local_tpd.screen_coords[i].as_struct.x;
+		y[i] = local_tpd.screen_coords[i].as_struct.y;
+		z[i] = local_tpd.screen_coords[i].as_struct.z;
 		
 		assert (z[i] >= 0);
 	}
@@ -185,6 +214,8 @@ void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader psha
 		
 		for (p.x = bb.min.x; p.x <= bb.max.x; p.x++) {
 			
+			//cfg->num_of_pix++;
+			
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
@@ -199,14 +230,19 @@ void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader psha
 				
 				
 				if (zi > zbuffer[pix_num]) {
+					
+					//cfg->num_of_pix_after_ztest++;
+					
 					zbuffer[pix_num] = zi;
 
-					Varying vry_interp = interpolate_varying (tri->varying, tri->w_reciprocal, &bar);
+					Varying vry_interp = interpolate_varying (local_tpd.varying, local_tpd.w_reciprocal, &bar);
 														
 					if (fbuffer != NULL) {
+						//cfg->num_of_pshader_runs++;
 						pixel_color_t color;
-						if (pshader (tri->obj, &vry_interp, &color)) {
+						if (pshader (local_tpd.obj, &vry_interp, &color)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
+							
 							fbuffer[pix_num] = color;
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = set_color (200, 0, 0, 0);
 						}
@@ -219,7 +255,6 @@ void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader psha
         bar_row = FixPt3_FixPt3_add (bar_row, bar_row_incr);
     }
 }
-
 
 void * pthread_wrapper_pshader (void *cfg) {
 	

@@ -92,8 +92,8 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	Float3_normalize (&normal);
 	
 	Float2 text   = varying_fifo_pop_Float2 (vry);
-	size_t uu = (int) text.as_struct.u;
-	size_t vv = (int) text.as_struct.v;
+	size_t uu = (size_t) text.as_struct.u;
+	size_t vv = (size_t) text.as_struct.v;
 	//
 	// If texture is not provided, use gray color
 	//
@@ -102,15 +102,29 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {	
+		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
 		assert (uu >= 0);
 		assert (vv >= 0);
 		
+		int LOW_LIM_U = 10;
+		int LOW_LIM_V = 10;
+		int  HI_LIM_U = obj->texture->w - LOW_LIM_U;
+		int  HI_LIM_V = obj->texture->h - LOW_LIM_V;
+		
+		if (uu < LOW_LIM_U) uu = LOW_LIM_U;
+		if (uu >  HI_LIM_U) uu =  HI_LIM_U;
+				
+		if (vv < LOW_LIM_V) vv = LOW_LIM_V;
+		if (vv >  HI_LIM_V) vv =  HI_LIM_V;
+		
+		
+		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 	
-	
+	pix = set_color (128, 128, 0, 0);
 	
 	
 	
@@ -223,3 +237,4 @@ int count_shadows (Varying *vry) {
 	}
 	return shadows;
 }
+

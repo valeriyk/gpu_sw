@@ -14,7 +14,7 @@
 
 
 
-#define DEBUG_FIXPT_VARYING 0
+#define DEBUG_FIXPT_VARYING 1
 #define DEBUG_FIXPT_W       0
 
 #define FLOAT 0
@@ -60,11 +60,11 @@ typedef struct Triangle {
 } Triangle;
 
 
-#ifdef DEBUG_FIXPT_VARYING
 typedef struct VaryingWord {
+#ifdef DEBUG_FIXPT_VARYING
 	float    as_float;
-#else
-typedef union VaryingWord {
+//#else
+//typedef union VaryingWord {
 #endif
 	fixpt_t  as_fixpt_t;
 } VaryingWord;
