@@ -1,12 +1,6 @@
-/*#pragma once
+#pragma once
 
-#include "shader.h"
+#include "gl.h"
 
-#define PHONG_VSHADER_DEBUG 0
-
-#define PHONG_PSHADER_DEBUG_0 0
-#define PHONG_PSHADER_DEBUG_1 0
-
-Float4 phong_vertex_shader (WFobj *obj, int face_idx, int vtx_idx, fmat4 *mvp);
-bool phong_pixel_shader  (WFobj *obj, Float3 *barw, pixel_color_t *color);
-*/
+Float4 vshader_phong (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry);
+bool   pshader_phong (Object *obj, Varying *vry, pixel_color_t *color);

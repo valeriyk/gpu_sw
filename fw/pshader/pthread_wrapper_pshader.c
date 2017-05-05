@@ -77,7 +77,7 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 
 			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 33.31
 
-			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * (dfixpt_t) one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (33.31 * 16.16 = 17.47)>>(29-20+8+16) = 64.0
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (33.31 * 16.16 = 17.47)>>(29-20+8+16) = 64.0
 			fixpt_t vry_interp_fixpt_tmp = vry_interp.data[i].as_fixpt_t;
 			/*
 			if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))

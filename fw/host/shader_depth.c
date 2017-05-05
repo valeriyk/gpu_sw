@@ -57,6 +57,12 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 	// extract the texture UV coordinates of the vertex
 	if (obj->texture != NULL) {
 		Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		
+		assert (texture.as_struct.u >= 0.0f);
+		assert (texture.as_struct.v >= 0.0f);
+		assert (texture.as_struct.u <= 1.0f);
+		assert (texture.as_struct.v <= 1.0f);
+		
 		texture.as_struct.u *= (float) obj->texture->w;
 		texture.as_struct.v *= (float) obj->texture->h;
 	
@@ -91,7 +97,11 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	Float3 normal = varying_fifo_pop_Float3 (vry);
 	Float3_normalize (&normal);
 	
+		
 	Float2 text   = varying_fifo_pop_Float2 (vry);
+	
+	assert (text.as_struct.u >= 0);
+	assert (text.as_struct.v >= 0);
 	size_t uu = (size_t) text.as_struct.u;
 	size_t vv = (size_t) text.as_struct.v;
 	//
@@ -105,10 +115,10 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
-		assert (uu >= 0);
-		assert (vv >= 0);
+		//assert (uu >= 0);
+		//assert (vv >= 0);
 		
-		int LOW_LIM_U = 10;
+	/*	int LOW_LIM_U = 10;
 		int LOW_LIM_V = 10;
 		int  HI_LIM_U = obj->texture->w - LOW_LIM_U;
 		int  HI_LIM_V = obj->texture->h - LOW_LIM_V;
@@ -118,13 +128,13 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 				
 		if (vv < LOW_LIM_V) vv = LOW_LIM_V;
 		if (vv >  HI_LIM_V) vv =  HI_LIM_V;
-		
+		*/
 		
 		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 	
-	pix = set_color (128, 128, 0, 0);
+	//pix = set_color (128, 128, 0, 0);
 	
 	
 	
@@ -132,13 +142,14 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		diff_intensity[i] = (LIGHTS[i].enabled) ? -Float3_Float3_smult (&normal, &(LIGHTS[i].eye)) : 0;
-		diff_int_total += diff_intensity[i];
-	}
-		
+		if (diff_intensity[i] > 0) {
+			diff_int_total += diff_intensity[i];
+		}
+	}		
 	
 	
 	float spec_intensity = 0;	
-	if (obj->specularmap != NULL) {
+	/*if (obj->specularmap != NULL) {
 		float nl = diff_intensity[0]; //TBD, this is computed above
 		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
 		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
@@ -147,19 +158,22 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 		int32_t spec_factor = get_int32_from_bitmap (obj->specularmap, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
 	}
+	*/
 	
+	//float shadow_factor = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	//float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
+	float intensity = diff_int_total;
+
+	//if ((intensity > 1.0f) || (intensity < -1.0f)) {
+	if (intensity < -0.f) {
+		return false;
+	}
 	
-	float shadow_factor = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
-	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
-	
-	
-	float intensity_treshold = 0.3;
+	float intensity_treshold = 0;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
 	
-	//intensity = 0.8f;
-	//pix = set_color (128, 128, 128, 0);
 		
 	int r = pix.r * intensity + 5;
 	int g = pix.g * intensity + 5;

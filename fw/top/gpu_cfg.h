@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 #define NUM_OF_VSHADERS 0
-#define NUM_OF_PSHADERS 8
+#define NUM_OF_PSHADERS 4
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 

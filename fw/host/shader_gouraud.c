@@ -38,13 +38,19 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	
 	
 	// extract the texture UV coordinates of the vertex
-	//if (obj->texture != NULL) {
+	if (obj->texture != NULL) {
 		Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		
+		assert (texture.as_struct.u >= 0.0f);
+		assert (texture.as_struct.v >= 0.0f);
+		assert (texture.as_struct.u <= 1.0f);
+		assert (texture.as_struct.v <= 1.0f);
+		
 		texture.as_struct.u *= (float) obj->texture->w;
 		texture.as_struct.v *= (float) obj->texture->h;
 	
 		varying_fifo_push_Float2 (vry, &texture);
-	//}
+	}
 			
 	return clip;		
 }
@@ -60,6 +66,10 @@ bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 	}
 		
 	Float2 text   = varying_fifo_pop_Float2 (vry);
+	
+	assert (text.as_struct.u >= 0);
+	assert (text.as_struct.v >= 0);
+	
 	size_t uu = (size_t) text.as_struct.u;
 	size_t vv = (size_t) text.as_struct.v;
 	//int uu = (int) text.as_struct.u;

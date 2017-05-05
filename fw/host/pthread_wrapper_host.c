@@ -4,7 +4,7 @@
 #include <geometry.h>
 
 //#include "shader_normalmap.h"
-//#include "shader_phong.h"
+#include "shader_phong.h"
 #include "shader_gouraud.h"
 #include "shader_depth.h"
 #include "shader_fill_shadow_buf.h"
@@ -638,9 +638,9 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		setup_transformation (obj_list_head, &persp_proj, &view);
 		
 		
-		draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		//draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
 		//draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, NULL, active_fbuffer);
-		//draw_frame           (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, NULL, active_fbuffer);	
+		draw_frame           (cfg, obj_list_head, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		if (m == RECORD_FRAME_NUM) {
 			printf ("recording frame number %d\n", m);
