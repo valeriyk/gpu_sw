@@ -221,3 +221,4 @@ BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num);
 FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
 
 void tiler (TrianglePShaderData *tri, TriangleListNode *tri_ptr[]);
+//void tiler (volatile TrianglePShaderData * volatile tri, volatile TriangleListNode * volatile tri_ptr[]);

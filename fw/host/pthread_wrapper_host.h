@@ -13,8 +13,8 @@
 #define DEBUG_0 1
 
 #define RECORD_VIDEO 1
-#define RECORD_FRAME_NUM NUM_OF_FRAMES-1
-//#define RECORD_FRAME_NUM 0
+//#define RECORD_FRAME_NUM NUM_OF_FRAMES-1
+#define RECORD_FRAME_NUM 0
 
 #define GL_DEBUG_0 0
 #define GL_DEBUG_1 0
@@ -27,5 +27,5 @@
 
 void * pthread_wrapper_host (void *platform);
 
-void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 

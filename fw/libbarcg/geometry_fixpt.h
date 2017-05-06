@@ -21,6 +21,22 @@ typedef  int64_t dfixpt_t;
 #define     OOWI_FRACT_BITS 16
 #define  VARYING_FRACT_BITS 14
 
+/*
+typedef fixpt_t fixpt_t1[1];
+typedef float   float_t1[1];
+
+typedef struct FixPtValue {
+	fixpt_t value;
+} FixPtValue;
+typedef struct FloatValue {
+	float value;
+} FloatValue;
+
+typedef union FixPt1 {
+	fixpt_t1   as_array;
+	FixPtValue as_struct;
+} FixPt1;
+*/
 
 typedef fixpt_t fixpt_t2[2];
 typedef struct FixPtUV {
@@ -31,6 +47,7 @@ typedef union FixPt2 {
 	FixPtUV as_struct;
 } FixPt2;
 
+
 typedef fixpt_t fixpt_t3[3];
 typedef struct FixPtXYZ {
 	fixpt_t x, y, z;
@@ -39,6 +56,7 @@ typedef union FixPt3 {
 	fixpt_t3 as_array;
 	FixPtXYZ as_struct;
 } FixPt3;
+
 
 typedef fixpt_t fixpt_t4[4];
 typedef struct FixPtXYZW {

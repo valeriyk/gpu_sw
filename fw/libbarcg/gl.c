@@ -372,7 +372,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 */
 
 
-void tiler (TrianglePShaderData *tri, TriangleListNode *tri_ptr[]) {
+void tiler (TrianglePShaderData * tri, TriangleListNode * tri_ptr[]) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];

@@ -325,7 +325,7 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	if (GL_DEBUG_0)
 	{
@@ -333,35 +333,15 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 	}
 	
 	
-	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
-		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
-		return;
-	}
-			
-	for (int i = 0; i < cfg->num_of_tiles; i++) {
-		TriangleListNode **tln = cfg->tile_idx_table_ptr;
-		tln[i] = NULL;
-	}
 	
 	
 	cfg->pshader_ptr = pshader;
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 					
+	ObjectListNode *obj_list_head = cfg->obj_list_ptr;
 	ObjectListNode *obj_list_node;
-	obj_list_node = obj_list_head;		
-	int num_of_faces = 0;
-	while (obj_list_node != NULL) {
-		num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
-		obj_list_node = obj_list_node->next;
-	}
 	
-	TrianglePShaderData *tri_data_array;
-	if ((tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
-	//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
-		if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
-		return;
-	}
 	
 	obj_list_node = obj_list_head;
 	
@@ -439,9 +419,13 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 			}
 			
 			if (!is_clipped) {
-				tri_data_array[tri_num] = d;
 				
-				tiler(&(tri_data_array[tri_num]), cfg->tile_idx_table_ptr);
+				
+				TrianglePShaderData *tpsd = cfg->tri_data_array;
+				//cfg->tri_data_array[tri_num] = d;
+				tpsd[tri_num] = d;
+				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
+				tiler (&(tpsd[tri_num]), cfg->tile_idx_table_ptr);
 				tri_num++;
 			}
 		}
@@ -452,56 +436,6 @@ void draw_frame (gpu_cfg_t *cfg, ObjectListNode *obj_list_head, vertex_shader vs
 	if (DEBUG_FIXPT_W) {
 		printf ("max w: %f, max 1/w: %f\t\tmin w: %f, min 1/w: %f\n", max_w, max_w_recip, min_w, min_w_recip);
 	}
-	
-			
-	
-	
-	if (PTHREAD_DEBUG) {
-		printf("host: wait till all pshader_done signals are false\n");
-	}
-	for (int i = 0; i < cfg->num_of_pshaders; i++) {
-		while (cfg->pshader_done[i]);
-	}
-	if (PTHREAD_DEBUG) {
-		printf("host: all pshader_done signals are false\n");
-	}
-	
-	if (PTHREAD_DEBUG) {
-		printf("host: pshaders_run_req=true\n");
-	}
-	cfg->pshaders_run_req = true;
-	
-		
-	if (PTHREAD_DEBUG) {
-		printf("host: wait till all pshader_done signals are true\n");
-	}
-	for (int i = 0; i < cfg->num_of_pshaders; i++) {
-		while (!cfg->pshader_done[i]);
-	}
-	if (PTHREAD_DEBUG) {
-		printf("host: all pshader_done signals are true\n");
-	}
-	
-	if (PTHREAD_DEBUG) {
-		printf("host: pshaders_run_req=false\n");
-	}
-	cfg->pshaders_run_req = false;
-	
-	
-	
-	for (int i = 0; i < cfg->num_of_tiles; i++) {
-		TriangleListNode **tln = cfg->tile_idx_table_ptr;
-		
-		//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
-		TriangleListNode *node = tln[i];
-		TriangleListNode *tmp;
-		while (node != NULL) {
-			tmp = node->next;
-			free (node);
-			node = tmp;
-		}		
-	}	
-	free (tri_data_array);
 }
 
 
@@ -530,7 +464,8 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     //pixel_color_t *active_fbuffer = NULL;
     //cfg->active_fbuffer = NULL;
     		
-	ObjectListNode *obj_list_head = init_objects ();
+	//ObjectListNode *obj_list_head = init_objects ();
+	cfg->obj_list_ptr = init_objects ();
 	
     // 3. Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
@@ -610,8 +545,75 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
-				setup_light_transform (obj_list_head, &ortho_proj, &view, i);
-				draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
+				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
+				
+				/*
+				ObjectListNode *obj_list_node = obj_list_head;		
+				int num_of_faces = 0;
+				while (obj_list_node != NULL) {
+					num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+					obj_list_node = obj_list_node->next;
+				}
+				
+				TrianglePShaderData *tri_data_array;
+				if ((tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
+				//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
+					if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
+					return;
+				}
+				*/
+				
+				//draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
+				
+				/*
+				if (PTHREAD_DEBUG) {
+					printf("host: wait till all pshader_done signals are false\n");
+				}
+				for (int i = 0; i < cfg->num_of_pshaders; i++) {
+					while (cfg->pshader_done[i]);
+				}
+				if (PTHREAD_DEBUG) {
+					printf("host: all pshader_done signals are false\n");
+				}
+				
+				if (PTHREAD_DEBUG) {
+					printf("host: pshaders_run_req=true\n");
+				}
+				cfg->pshaders_run_req = true;
+				
+					
+				if (PTHREAD_DEBUG) {
+					printf("host: wait till all pshader_done signals are true\n");
+				}
+				for (int i = 0; i < cfg->num_of_pshaders; i++) {
+					while (!cfg->pshader_done[i]);
+				}
+				if (PTHREAD_DEBUG) {
+					printf("host: all pshader_done signals are true\n");
+				}
+				
+				if (PTHREAD_DEBUG) {
+					printf("host: pshaders_run_req=false\n");
+				}
+				cfg->pshaders_run_req = false;
+				
+				
+				
+				for (int i = 0; i < cfg->num_of_tiles; i++) {
+					TriangleListNode **tln = cfg->tile_idx_table_ptr;
+					
+					//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
+					TriangleListNode *node = tln[i];
+					TriangleListNode *tmp;
+					while (node != NULL) {
+						tmp = node->next;
+						free (node);
+						node = tmp;
+					}		
+				}	
+				free (tri_data_array);
+				*/
+				
 			}
 		}			
 		
@@ -623,7 +625,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		eye_angle += ROTATION_INCR;
 		
 		// move the objects and recalculate their Model matrices
-		ObjectListNode *scene_obj = obj_list_head;
+		ObjectListNode *scene_obj = cfg->obj_list_ptr;//obj_list_head;
 		while (scene_obj != NULL) {	
 			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
 			obj_init_model   (scene_obj->obj);			
@@ -635,12 +637,95 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		// 
 		init_view            (&view, &eye, &center, &up);
 		light_transform      (&view);
-		setup_transformation (obj_list_head, &persp_proj, &view);
+		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
+		
+
+		//////////////////
+		if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
+			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
+			return NULL;
+		}
+		// ???? TBD
+		/*for (int i = 0; i < cfg->num_of_tiles; i++) {
+			TriangleListNode **tln = cfg->tile_idx_table_ptr;
+			tln[i] = NULL;
+		}
+		*/
+		
+		ObjectListNode *obj_list_node = cfg->obj_list_ptr;		
+		int num_of_faces = 0;
+		while (obj_list_node != NULL) {
+			num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+			obj_list_node = obj_list_node->next;
+		}
+		
+		//TrianglePShaderData *tri_data_array;
+		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
+		//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
+			if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
+			return NULL;
+		}
 		
 		
-		//draw_frame           (cfg, obj_list_head, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		//draw_frame           (cfg, obj_list_head, vshader_depth, pshader_depth, NULL, active_fbuffer);
-		draw_frame           (cfg, obj_list_head, vshader_phong, pshader_phong, NULL, active_fbuffer);
+		//draw_frame           (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		//draw_frame           (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		draw_frame           (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
+		
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: wait till all pshader_done signals are false\n");
+		}
+		/*for (int i = 0; i < cfg->num_of_pshaders; i++) {
+			while (cfg->pshader_done[i]);
+		}
+		*/
+		while (cfg->pshader0_done || cfg->pshader1_done);
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: all pshader_done signals are false\n");
+		}
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: pshaders_run_req=true\n");
+		}
+		cfg->pshaders_run_req = true;
+		
+			
+		if (PTHREAD_DEBUG) {
+			printf("host: wait till all pshader_done signals are true\n");
+		}
+		/*for (int i = 0; i < cfg->num_of_pshaders; i++) {
+			while (!cfg->pshader_done[i]);
+		}
+		*/
+		while (!(cfg->pshader0_done && cfg->pshader1_done));
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: all pshader_done signals are true\n");
+		}
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: pshaders_run_req=false\n");
+		}
+		cfg->pshaders_run_req = false;
+		
+		
+		
+		for (int i = 0; i < cfg->num_of_tiles; i++) {
+			TriangleListNode **tln = cfg->tile_idx_table_ptr;
+			
+			//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
+			TriangleListNode *node = tln[i];
+			TriangleListNode *tmp;
+			while (node != NULL) {
+				tmp = node->next;
+				free (node);
+				node = tmp;
+			}		
+		}	
+		free (cfg->tile_idx_table_ptr);
+		free (cfg->tri_data_array);
+		
 		
 		if (m == RECORD_FRAME_NUM) {
 			printf ("recording frame number %d\n", m);
@@ -726,7 +811,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 	}
 	
 	//free (cfg->zbuffer_ptr);
-	free_objects (obj_list_head);
+	free_objects (cfg->obj_list_ptr);
 	for (int i = 0; i < cfg->num_of_fbuffers; i++) free (cfg->fbuffer_ptr[i]);
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS;   i++) free_light (i);
 	

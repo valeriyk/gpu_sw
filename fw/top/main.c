@@ -1,7 +1,7 @@
 //#include "main.h"
 #include "gpu_cfg.h"
 #include <pthread_wrapper_host.h>
-#include <pthread_wrapper_pshader.h>
+#include <pshader_wrapper.h>
 
 #include <pthread.h>
 
@@ -11,19 +11,13 @@
 //#include <time.h>
 
 
+typedef enum {MAIN = 0, PTHREAD} model_type;
+
 
 int main(int argc, char** argv) {
        
-    pthread_t host_thread;
-	pthread_t pshader_thread [NUM_OF_PSHADERS];
-	
-	//pthread_mutex_t fbuf_mutex;
-	//pthread_mutex_t zbuf_mutex;
-	
-	//pthread_mutex_init (&fbuf_mutex, NULL);
-	//pthread_mutex_init (&zbuf_mutex, NULL);
-	
-	
+   	//model_type model = MAIN;
+   	model_type model = PTHREAD;
 	
 	gpu_cfg_t gpu_cfg;
 	
@@ -36,9 +30,14 @@ int main(int argc, char** argv) {
 	gpu_cfg.pshader_ptr = NULL;
 	gpu_cfg.pshaders_run_req  = false;
 	gpu_cfg.pshaders_stop_req = false;
+	/*
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		gpu_cfg.pshader_done[i] = false;
 	}
+	*/
+	gpu_cfg.pshader0_done = false;
+	gpu_cfg.pshader1_done = false;
+		
 	gpu_cfg.num_of_vshaders = NUM_OF_VSHADERS;
 	gpu_cfg.num_of_pshaders = NUM_OF_PSHADERS;
 	gpu_cfg.num_of_ushaders = NUM_OF_USHADERS;	
@@ -54,25 +53,43 @@ int main(int argc, char** argv) {
 	}
 	
 	
-	if (pthread_create (&host_thread, NULL, pthread_wrapper_host, &gpu_cfg)) {
-		printf ("Error creating host_thread\n");
-		return 2;	
-	}	
-	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
-		if (pthread_create (&pshader_thread[i], NULL, pthread_wrapper_pshader, &pshader_cfg[i])) {
-			printf ("Error creating pshader_thread%d\n", i);
-			return 2;	
-		}
-	}
+	if (model == MAIN) {
+		//host_wrapper();
+		//vshader_wrapper();
+		//pshader_wrapper();
 		
-	if (pthread_join (host_thread, NULL)) {
-		printf ("Error joining host_thread\n");
-		return 2;
-	}	
-	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
-		if (pthread_join (pshader_thread[i], NULL)) {
-			printf ("Error joining pshader_thread%d\n", i);
+	}
+	else if (model == PTHREAD) {
+	
+		pthread_t host_thread;
+		pthread_t pshader_thread [NUM_OF_PSHADERS];
+		
+		//pthread_mutex_t fbuf_mutex;
+		//pthread_mutex_t zbuf_mutex;
+		
+		//pthread_mutex_init (&fbuf_mutex, NULL);
+		//pthread_mutex_init (&zbuf_mutex, NULL);
+		
+		if (pthread_create (&host_thread, NULL, pthread_wrapper_host, &gpu_cfg)) {
+			printf ("Error creating host_thread\n");
 			return 2;	
+		}	
+		for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+			if (pthread_create (&pshader_thread[i], NULL, pshader_wrapper, &pshader_cfg[i])) {
+				printf ("Error creating pshader_thread%d\n", i);
+				return 2;	
+			}
+		}
+			
+		if (pthread_join (host_thread, NULL)) {
+			printf ("Error joining host_thread\n");
+			return 2;
+		}	
+		for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+			if (pthread_join (pshader_thread[i], NULL)) {
+				printf ("Error joining pshader_thread%d\n", i);
+				return 2;	
+			}
 		}
 	}
 	
