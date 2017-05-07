@@ -12,7 +12,7 @@ Varying   interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *
  dfixpt_t interpolate_w       (                fixpt_t w_reciprocal[3], FixPt3 *bar);
 screenz_t interpolate_z       (                fixpt_t            z[3], FixPt3 *bar);
 
-void draw_triangle (TrianglePShaderData *tri, size_t tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
+void draw_triangle (volatile TrianglePShaderData* volatile tri, size_t tile_num, pixel_shader shader, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg);
  
 
 screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
@@ -57,17 +57,17 @@ dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
 
 Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar) {
 
-	assert (vry[0].num_of_words == vry[1].num_of_words);
-	assert (vry[0].num_of_words == vry[2].num_of_words);
+	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
+	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
 					
 	Varying vry_interp;					
-	vry_interp.num_of_words = vry[0].num_of_words;
+	vry_interp.num_of_words_written = vry[0].num_of_words_written;
 	
-	if (vry_interp.num_of_words > 0) {
+	if (vry_interp.num_of_words_written > 0) {
 		
 		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar);
 		
-		for (int i = 0; i < vry_interp.num_of_words; i++) {
+		for (int i = 0; i < vry_interp.num_of_words_written; i++) {
 			
 			#define NNN 20
 						
@@ -125,7 +125,7 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 	return vry_interp;					
 }
 
-void copy_tile_to_extmem (void *dst, void *src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
+void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
 	
 	size_t tiles_in_row = cfg->screen_width / cfg->tile_width;
 	size_t tile_row = tile_num / tiles_in_row;
@@ -141,7 +141,7 @@ void copy_tile_to_extmem (void *dst, void *src, gpu_cfg_t *cfg, size_t tile_num,
 	
 	for (int i = 0; i < cfg->tile_height; i++) {
 		next_tile_row_offset = i * tiles_in_row;
-		memcpy (dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), src + (i * tile_row_byte_size), tile_row_byte_size);
+		memcpy ((void*) dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), (void*) src + (i * tile_row_byte_size), tile_row_byte_size);
 	}
 }
 
@@ -158,10 +158,12 @@ void copy_tile_to_extmem (void *dst, void *src, gpu_cfg_t *cfg, size_t tile_num,
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (TrianglePShaderData *tri_data, size_t tile_num, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg) {    
+void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile_num, pixel_shader pshader_ptr, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg) {    
+	
 	if (GL_DEBUG_0 == 1) {
 		printf("\tcall draw_triangle()\n");
 	}
+
 	
 	//cfg->num_of_tri++;
 	
@@ -198,6 +200,7 @@ void draw_triangle (TrianglePShaderData *tri_data, size_t tile_num, pixel_shader
 	fixpt_t sum_of_bars = fixpt_add (bar_initial.as_array[2], sum_of_2bars);
 	if (sum_of_bars == 0) return;
 	
+		
 	FixPt3 bar_row_incr;
 	bar_row_incr.as_array[0] = fixpt_sub (x[2], x[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_row_incr.as_array[1] = fixpt_sub (x[0], x[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
@@ -218,12 +221,15 @@ void draw_triangle (TrianglePShaderData *tri_data, size_t tile_num, pixel_shader
 		
 		for (p.x = bb.min.x; p.x <= bb.max.x; p.x++) {
 			
+			
 			//cfg->num_of_pix++;
 			
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
 				screenz_t zi = interpolate_z (z, &bar);
+				
+				
 				
 				//size_t pix_num = p.x + p.y * cfg->tile_width;
 				screenxy_t tile_x_offset = (tile_num % (cfg->screen_width/TILE_WIDTH)) * TILE_WIDTH;
@@ -236,31 +242,33 @@ void draw_triangle (TrianglePShaderData *tri_data, size_t tile_num, pixel_shader
 				if (zi > zbuffer[pix_num]) {
 					
 					//cfg->num_of_pix_after_ztest++;
-					
+						
 					zbuffer[pix_num] = zi;
 
 					Varying vry_interp = interpolate_varying (local_tpd.varying, local_tpd.w_reciprocal, &bar);
-														
+					
 					if (fbuffer != NULL) {
 						//cfg->num_of_pshader_runs++;
 						pixel_color_t color;
-						if (pshader (local_tpd.obj, &vry_interp, &color)) {
+						
+						if (pshader_ptr (local_tpd.obj, &vry_interp, &color)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
-							
 							fbuffer[pix_num] = color;
+							
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = set_color (200, 0, 0, 0);
 						}
+						
 					}
-				}
-				
-			}
+				}				
+			}			
 			bar = FixPt3_FixPt3_add (bar, bar_col_incr);
         }
         bar_row = FixPt3_FixPt3_add (bar_row, bar_row_incr);
     }
+
 }
 
-void pshader (shader_cfg_t *shader_cfg) {
+void pshader (const shader_cfg_t* const shader_cfg) {
 	
 	//shader_cfg_t *shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
@@ -289,18 +297,17 @@ void pshader (shader_cfg_t *shader_cfg) {
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
 		if (PSHADER_DEBUG) printf ("%d ", j);
-		
-		volatile TriangleListNode **tln = shader_cfg->common_cfg->tile_idx_table_ptr;
-		volatile TriangleListNode *node = tln[j];
+		volatile TriangleListNode* volatile* volatile tln = shader_cfg->common_cfg->tile_idx_table_ptr;
+		volatile TriangleListNode* volatile node = tln[j];
 		
 		while (node != NULL) {
-			TrianglePShaderData *tri = node->tri;
-			draw_triangle (tri, j, (pixel_shader) shader_cfg->common_cfg->pshader_ptr, local_zbuf, local_fbuf, shader_cfg->common_cfg);
-
+			volatile TrianglePShaderData* volatile tri = node->tri;
+			TrianglePShaderData local_tri_data = *tri;
+			draw_triangle (&local_tri_data, j, (pixel_shader) shader_cfg->common_cfg->pshader_ptr, local_zbuf, local_fbuf, shader_cfg->common_cfg);
 			node = node->next;
 		}	
-		
 		// flush local zbuffer tile
+		
 		
 		//pthread_mutex_lock (cfg->common_cfg->zbuf_mutex);
 		if (shader_cfg->common_cfg->zbuffer_ptr != NULL) {

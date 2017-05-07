@@ -73,7 +73,8 @@ typedef struct VaryingWord {
 typedef VaryingWord VaryingData [NUM_OF_VARYING_WORDS];
 
 typedef struct Varying {
-	int32_t num_of_words;
+	uint16_t num_of_words_written;
+	uint16_t num_of_words_read;
 	VaryingData data;
 } Varying;
 
@@ -104,7 +105,7 @@ typedef struct TrianglePShaderData {
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 
 typedef struct TriangleListNode {
-	struct TrianglePShaderData *tri;
+	volatile struct TrianglePShaderData* volatile tri;
 	struct TriangleListNode *next;
 } TriangleListNode;
 
@@ -125,7 +126,7 @@ extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 
 typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
-typedef bool (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
+typedef bool   (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
 
 
 void init_lights (void);
@@ -220,5 +221,5 @@ BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num);
 
 FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
 
-void tiler (TrianglePShaderData *tri, TriangleListNode *tri_ptr[]);
-//void tiler (volatile TrianglePShaderData * volatile tri, volatile TriangleListNode * volatile tri_ptr[]);
+//void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[]);

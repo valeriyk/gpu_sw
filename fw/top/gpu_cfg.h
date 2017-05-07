@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 #define NUM_OF_VSHADERS 0
-#define NUM_OF_PSHADERS 2
+#define NUM_OF_PSHADERS 8
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 
@@ -14,12 +14,12 @@
 
 typedef struct gpu_cfg_t {
 	
-	void* tile_idx_table_ptr;
-	void* tri_data_array;
-	void* obj_list_ptr;
+	volatile void* volatile tile_idx_table_ptr;
+	volatile void* volatile tri_data_array;
+	volatile void* volatile obj_list_ptr;
 	
 	
-	void* active_fbuffer;
+	volatile void* volatile active_fbuffer;
 	
 	void* fbuffer_ptr[MAX_NUM_OF_FRAMEBUFFERS];
 	void* zbuffer_ptr;
@@ -28,9 +28,7 @@ typedef struct gpu_cfg_t {
 		
 	volatile bool pshaders_run_req;
 	volatile bool pshaders_stop_req;
-//	volatile bool pshader_done[NUM_OF_PSHADERS];
-	volatile bool pshader0_done;
-	volatile bool pshader1_done;
+	volatile bool pshader_done[NUM_OF_PSHADERS];
 	
 	uint32_t num_of_vshaders;
 	uint32_t num_of_pshaders;
@@ -46,11 +44,13 @@ typedef struct gpu_cfg_t {
 	
 	//pthread_mutex_t *zbuf_mutex;
 	//pthread_mutex_t *fbuf_mutex;
+	pthread_mutex_t* mutex;
 	
 } gpu_cfg_t;
 
 
 typedef struct shader_cfg_t {
-	gpu_cfg_t *common_cfg;
+	volatile gpu_cfg_t* common_cfg;
+	
 	uint32_t   shader_num;
 } shader_cfg_t;

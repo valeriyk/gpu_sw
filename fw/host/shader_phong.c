@@ -69,16 +69,23 @@ Float4 vshader_phong (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 
 bool pshader_phong (Object *obj, Varying *vry, pixel_color_t *color) {
 	
+	
+	
+	
 	Float3 normal = varying_fifo_pop_Float3 (vry);
+	
 	Float3_normalize (&normal);
 	float intensity = -Float3_Float3_smult (&normal, &(LIGHTS[0].eye));
-		
+	
+								
 	Float2 text   = varying_fifo_pop_Float2 (vry);
+	
 	
 	assert (text.as_struct.u >= 0);
 	assert (text.as_struct.v >= 0);
 	size_t uu = (size_t) text.as_struct.u;
 	size_t vv = (size_t) text.as_struct.v;
+	
 	//
 	// If texture is not provided, use gray color
 	//

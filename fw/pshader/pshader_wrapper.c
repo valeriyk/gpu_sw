@@ -31,13 +31,9 @@ void * pshader_wrapper (void *cfg) {
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=false\n", shader_num);
 		}
-		//shader_cfg->common_cfg->pshader_done[shader_num] = false;
-		switch (shader_num) {
-			case 0: shader_cfg->common_cfg->pshader0_done = false;
-					break;
-			case 1: shader_cfg->common_cfg->pshader1_done = false;
-					break;
-		}
+		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
+		shader_cfg->common_cfg->pshader_done[shader_num] = false;
+		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: wait for pshader_run_req or pshader_stop_req\n", shader_num);
@@ -50,24 +46,29 @@ void * pshader_wrapper (void *cfg) {
 			printf("pshader%d: pshader_run_req detected\n", shader_num);
 		}
 		
-		if (shader_num == 1) {
+		/*if (shader_num == 1) {
 			while (!shader_cfg->common_cfg->pshader0_done);
-		}
+		}*/
+		//if ((shader_num % 2) == 1) {
+		//if (shader_num > 0) {
+			//while (!shader_cfg->common_cfg->pshader_done[shader_num-1]);
+			//pshader (shader_cfg);
+		//}
+		
+		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
 		pshader (shader_cfg);
+		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
+		
+		
 		
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=true\n", shader_num);
 		}
-		//shader_cfg->common_cfg->pshader_done[shader_num] = true;
-		switch (shader_num) {
-			case 0: shader_cfg->common_cfg->pshader0_done = true;
-					break;
-			case 1: shader_cfg->common_cfg->pshader1_done = true;
-					break;
-		}
-		
-		
+		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
+		shader_cfg->common_cfg->pshader_done[shader_num] = true;
+		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
+				
 		while (shader_cfg->common_cfg->pshaders_run_req);	
 	}	
 	return NULL;

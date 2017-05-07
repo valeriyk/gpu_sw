@@ -372,7 +372,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 */
 
 
-void tiler (TrianglePShaderData * tri, TriangleListNode * tri_ptr[]) {
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[]) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
@@ -419,7 +419,7 @@ void tiler (TrianglePShaderData * tri, TriangleListNode * tri_ptr[]) {
 				
 				size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
 				
-				TriangleListNode *node = tri_ptr[tile_num];
+				volatile TriangleListNode* volatile node = tri_ptr[tile_num];
 				if (node == NULL) {
 					node = calloc (1, sizeof (TriangleListNode));
 					node->tri  = tri;
@@ -444,7 +444,7 @@ void tiler (TrianglePShaderData * tri, TriangleListNode * tri_ptr[]) {
 
 
 void varying_fifo_push_float  (Varying *vry, float data) {
-	size_t idx = vry->num_of_words;
+	size_t idx = vry->num_of_words_written;
 
 	vry->data[idx].as_fixpt_t = fixpt_from_float_no_rnd (data, VARYING_FRACT_BITS);
 	if (DEBUG_FIXPT_VARYING) {
@@ -452,7 +452,7 @@ void varying_fifo_push_float  (Varying *vry, float data) {
 	}
 
 
-	vry->num_of_words++;
+	vry->num_of_words_written++;
 }
 
 void varying_fifo_push_Float2 (Varying *vry, Float2 *data) {
@@ -475,13 +475,14 @@ void varying_fifo_push_Float4 (Varying *vry, Float4 *data) {
 
 static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	
-	size_t num_of_words = vry->num_of_words;
+	size_t num_of_words_written = vry->num_of_words_written;
 	
 	assert ((type == VARYING_FIXPT) || (type == VARYING_FLOAT));
-	assert (num_of_words > 0);
+	assert (num_of_words_written > 0);
 	
-	static size_t idx = 0;
+	//static size_t idx = 0;
 	
+	size_t idx = vry->num_of_words_read;
 	VaryingWord data;
 	if (type == VARYING_FIXPT) {
 		data.as_fixpt_t = vry->data[idx].as_fixpt_t;
@@ -489,8 +490,9 @@ static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	else if (type == VARYING_FLOAT) {
 		data.as_float = fixpt_to_float (vry->data[idx].as_fixpt_t, VARYING_FRACT_BITS);
 	}
-	idx++;
-	if (idx == num_of_words) idx = 0;
+	//idx++;
+	//if (idx == num_of_words) idx = 0;
+	vry->num_of_words_read++;
 	return data;
 }
 

@@ -30,13 +30,10 @@ int main(int argc, char** argv) {
 	gpu_cfg.pshader_ptr = NULL;
 	gpu_cfg.pshaders_run_req  = false;
 	gpu_cfg.pshaders_stop_req = false;
-	/*
+	
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		gpu_cfg.pshader_done[i] = false;
 	}
-	*/
-	gpu_cfg.pshader0_done = false;
-	gpu_cfg.pshader1_done = false;
 		
 	gpu_cfg.num_of_vshaders = NUM_OF_VSHADERS;
 	gpu_cfg.num_of_pshaders = NUM_OF_PSHADERS;
@@ -48,8 +45,8 @@ int main(int argc, char** argv) {
 	
 	shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
-		pshader_cfg[i].common_cfg = &gpu_cfg;
-		pshader_cfg[i].shader_num     = i;
+		pshader_cfg[i].common_cfg       = &gpu_cfg;
+		pshader_cfg[i].shader_num       = i;
 	}
 	
 	
@@ -66,9 +63,12 @@ int main(int argc, char** argv) {
 		
 		//pthread_mutex_t fbuf_mutex;
 		//pthread_mutex_t zbuf_mutex;
+		pthread_mutex_t cfg_mutex;
+		gpu_cfg.mutex = &cfg_mutex;
 		
 		//pthread_mutex_init (&fbuf_mutex, NULL);
 		//pthread_mutex_init (&zbuf_mutex, NULL);
+		pthread_mutex_init (gpu_cfg.mutex, NULL);
 		
 		if (pthread_create (&host_thread, NULL, pthread_wrapper_host, &gpu_cfg)) {
 			printf ("Error creating host_thread\n");

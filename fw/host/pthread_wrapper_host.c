@@ -80,9 +80,9 @@ void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view)
 }
 */
 
-void setup_transformation (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view) {
+void setup_transformation (volatile ObjectListNode* volatile obj_list_head, fmat4 *proj, fmat4 *view) {
 	
-	ObjectListNode *node = obj_list_head;
+	volatile ObjectListNode* volatile node = obj_list_head;
 	
 	while (node != NULL) {
 
@@ -95,9 +95,9 @@ void setup_transformation (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *vi
 	}
 }
 
-void setup_light_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
+void setup_light_transform (volatile ObjectListNode* volatile obj_list_head, fmat4 *proj, fmat4 *view, int light_num) {
 	
-	ObjectListNode *node = obj_list_head;
+	volatile ObjectListNode* volatile node = obj_list_head;
 	
 	while (node != NULL) {
 		
@@ -339,8 +339,8 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 					
-	ObjectListNode *obj_list_head = cfg->obj_list_ptr;
-	ObjectListNode *obj_list_node;
+	volatile ObjectListNode* volatile obj_list_head = cfg->obj_list_ptr;
+	volatile ObjectListNode* volatile obj_list_node;
 	
 	
 	obj_list_node = obj_list_head;
@@ -372,7 +372,8 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 				
 				// // First four floats of Varying contain XYZW of a vertex in clip space
 				//tri_data_array[tri_num].varying[j].num_of_words = 0;
-				d.varying[j].num_of_words = 0;
+				d.varying[j].num_of_words_written = 0;
+				d.varying[j].num_of_words_read    = 0;
 				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]) ); // CALL VERTEX SHADER
 				
 				// Clip & normalize (clip -> NDC):
@@ -421,7 +422,7 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 			if (!is_clipped) {
 				
 				
-				TrianglePShaderData *tpsd = cfg->tri_data_array;
+				volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
 				//cfg->tri_data_array[tri_num] = d;
 				tpsd[tri_num] = d;
 				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
@@ -625,7 +626,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		eye_angle += ROTATION_INCR;
 		
 		// move the objects and recalculate their Model matrices
-		ObjectListNode *scene_obj = cfg->obj_list_ptr;//obj_list_head;
+		volatile ObjectListNode* volatile scene_obj = cfg->obj_list_ptr;//obj_list_head;
 		while (scene_obj != NULL) {	
 			obj_set_rotation (scene_obj->obj, 0, obj_angle, 0);
 			obj_init_model   (scene_obj->obj);			
@@ -652,7 +653,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		}
 		*/
 		
-		ObjectListNode *obj_list_node = cfg->obj_list_ptr;		
+		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
 		int num_of_faces = 0;
 		while (obj_list_node != NULL) {
 			num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
@@ -675,11 +676,10 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		if (PTHREAD_DEBUG) {
 			printf("host: wait till all pshader_done signals are false\n");
 		}
-		/*for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		for (int i = 0; i < cfg->num_of_pshaders; i++) {
 			while (cfg->pshader_done[i]);
 		}
-		*/
-		while (cfg->pshader0_done || cfg->pshader1_done);
+		
 		
 		if (PTHREAD_DEBUG) {
 			printf("host: all pshader_done signals are false\n");
@@ -694,11 +694,9 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		if (PTHREAD_DEBUG) {
 			printf("host: wait till all pshader_done signals are true\n");
 		}
-		/*for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		for (int i = 0; i < cfg->num_of_pshaders; i++) {
 			while (!cfg->pshader_done[i]);
 		}
-		*/
-		while (!(cfg->pshader0_done && cfg->pshader1_done));
 		
 		if (PTHREAD_DEBUG) {
 			printf("host: all pshader_done signals are true\n");
@@ -712,19 +710,19 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		
 		
 		for (int i = 0; i < cfg->num_of_tiles; i++) {
-			TriangleListNode **tln = cfg->tile_idx_table_ptr;
+			volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
 			
 			//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
-			TriangleListNode *node = tln[i];
+			volatile TriangleListNode* volatile node = tln[i];
 			TriangleListNode *tmp;
 			while (node != NULL) {
 				tmp = node->next;
-				free (node);
+				free ((void*) node);
 				node = tmp;
 			}		
 		}	
-		free (cfg->tile_idx_table_ptr);
-		free (cfg->tri_data_array);
+		free ((void*) cfg->tile_idx_table_ptr);
+		free ((void*) cfg->tri_data_array);
 		
 		
 		if (m == RECORD_FRAME_NUM) {
@@ -811,7 +809,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 	}
 	
 	//free (cfg->zbuffer_ptr);
-	free_objects (cfg->obj_list_ptr);
+	free_objects ((void*) cfg->obj_list_ptr);
 	for (int i = 0; i < cfg->num_of_fbuffers; i++) free (cfg->fbuffer_ptr[i]);
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS;   i++) free_light (i);
 	
