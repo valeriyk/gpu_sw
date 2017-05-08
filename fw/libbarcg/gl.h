@@ -23,6 +23,7 @@
 
 #define MAX_NUM_OF_LIGHTS	1
 #define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
+
 #define TILE_WIDTH  32
 #define TILE_HEIGHT 32
 
@@ -125,18 +126,20 @@ extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 //extern Bitmap TEXTURES[MAX_NUM_OF_TEXTURES];
 
 
-typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var);
-typedef bool   (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color);
+typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
+typedef bool   (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color, gpu_cfg_t *cfg);
 
 
 void init_lights (void);
-void new_light (int light_num, Float3 dir, bool add_shadow_buf);
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf);
 void free_light (int light_num);
 
 void   set_screen_size   (gpu_cfg_t *cfg, size_t width, size_t height);
-size_t get_screen_width  (void);
-size_t get_screen_height (void);
-size_t get_screen_depth  (void);
+size_t get_screen_width  (gpu_cfg_t *cfg);
+size_t get_screen_height (gpu_cfg_t *cfg);
+size_t get_screen_depth  (gpu_cfg_t *cfg);
+size_t get_tile_width    (gpu_cfg_t *cfg);
+size_t get_tile_height   (gpu_cfg_t *cfg);
 
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
@@ -216,10 +219,8 @@ int32_t       get_int32_from_bitmap       (const Bitmap *bmp, const int u, const
 
 
 BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]);
-BoundBox clip_boundbox_to_screen (BoundBox in);
-BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num);
+BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
+BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 
 FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
 
-//void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[]);

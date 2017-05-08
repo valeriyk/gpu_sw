@@ -38,6 +38,7 @@ typedef struct gpu_cfg_t {
 	
 	uint32_t screen_width;
 	uint32_t screen_height;
+	uint32_t screen_depth;
 	
 	uint32_t tile_width;
 	uint32_t tile_height;

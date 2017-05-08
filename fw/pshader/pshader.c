@@ -189,7 +189,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 		assert (z[i] >= 0);
 	}
 	
-	BoundBox bb = clip_boundbox_to_tile (get_tri_boundbox (x, y), tile_num);
+	BoundBox bb = clip_boundbox_to_tile (tile_num, get_tri_boundbox (x, y), cfg);
 	
 	fixpt_t px = fixpt_from_screenxy (bb.min.x);
 	fixpt_t py = fixpt_from_screenxy (bb.min.y);
@@ -252,7 +252,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 						pixel_color_t color;
 						
 						pixel_shader pshader_ptr = cfg->pshader_ptr;
-						if (pshader_ptr (local_tpd.obj, &vry_interp, &color)) {
+						if (pshader_ptr (local_tpd.obj, &vry_interp, &color, cfg)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
 							fbuffer[pix_num] = color;
 							

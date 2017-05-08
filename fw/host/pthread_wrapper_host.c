@@ -2,6 +2,7 @@
 
 #include <wavefront_obj.h>
 #include <geometry.h>
+#include <vshader.h>
 
 //#include "shader_normalmap.h"
 #include "shader_phong.h"
@@ -10,6 +11,7 @@
 #include "shader_fill_shadow_buf.h"
 #include "bitmap.h"
 #include "tga_addon.h"
+
 
 #include "profiling.h"
 
@@ -21,7 +23,7 @@
 #include <stdint.h>
 //#include <limits.h>
 #include <stdlib.h>
-#include <math.h>
+//#include <math.h>
 
 #include <time.h>
 
@@ -305,139 +307,7 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 }
 
 
-//
-// obj_draw: Draw 3D Object
-//
-// Arguments:
-//  *obj     - object to be drawn (object coordinates, rotation, scale, translation)
-//   vshader - pointer to vertex shader function
-//   pshader - pointer to pixel shader function
-//  *zbuffer - pointer to Z-buffer
-//  *fbuffer - pointer to framebuffer
-//
-// - For each face (triangle) of the object:
-//    - For each vertex of the face (triangle):
-//       - call vshader() which returns a Varying union containing vertex
-//         coords in clip space
-//       - transform vertex coords from clip space to NDC
-//       - check that NDC belongs to [-1:1], otherwise vertex is clipped
-//       - if the vertex is not clipped then transform its coords from
-//         NDC to screen space
-//    - If at least one vertex is not clipped, call draw_triangle()
-//
-void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
-	
-	if (GL_DEBUG_0)
-	{
-		printf("call draw_frame()\n");
-	}
-	
-	
-	
-	
-	cfg->pshader_ptr = pshader;
-	cfg->zbuffer_ptr = zbuffer;
-	cfg->active_fbuffer = fbuffer;
-					
-	volatile ObjectListNode* volatile obj_list_head = cfg->obj_list_ptr;
-	volatile ObjectListNode* volatile obj_list_node;
-	
-	
-	obj_list_node = obj_list_head;
-	
-	int tri_num = 0;
-	
-	
-	// This is for DEBUG_FIXPT_W
-	float max_w = 0;
-	float max_w_recip = 0;
-	float min_w = 10000;
-	float min_w_recip = 10000;
-	
-		
-	while (obj_list_node != NULL) {
-		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
-						
-			Triangle clip;
-			Triangle ndc;
-			Triangle screen;
-			
-			TrianglePShaderData d;
-			//tri_data_array[tri_num].obj = obj_list_node->obj;
-			d.obj = obj_list_node->obj;
-			
-			bool is_clipped = true; // sticky bit
-			for (size_t j = 0; j < 3; j++) {
-				
-				
-				// // First four floats of Varying contain XYZW of a vertex in clip space
-				//tri_data_array[tri_num].varying[j].num_of_words = 0;
-				d.varying[j].num_of_words_written = 0;
-				d.varying[j].num_of_words_read    = 0;
-				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]) ); // CALL VERTEX SHADER
-				
-				// Clip & normalize (clip -> NDC):
-				if (clip.vtx[j].as_struct.w > 0) {
-					
-					// This division is done once here to avoid three deivisions below
-					// No div by zero because we checked above that it's > 0
-					float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
-					
-					if (DEBUG_FIXPT_W) {
-						if (clip.vtx[j].as_struct.w > max_w) max_w = clip.vtx[j].as_struct.w;
-						if (reciprocal_w > max_w_recip) max_w_recip = reciprocal_w;
-						
-						if (clip.vtx[j].as_struct.w < min_w) min_w = clip.vtx[j].as_struct.w;
-						if (reciprocal_w < min_w_recip) min_w_recip = reciprocal_w;
-					}
-					
-					// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
-					// If at least one coord belongs to [-1:1] then the vertex is not clipped
-					for (int k = 0; k < 4; k++) {
-						ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-						if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-							is_clipped = false;
-						}
-					}
 
-					if (!is_clipped) {
-						screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
-					
-						// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
-						// because we have it for free here
-						//screen.vtx[j].as_struct.w = reciprocal_w;
-
-						// Replace clip coords with screen coords within the Varying struct
-						// before passing it on to draw_triangle()
-						d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
-						d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
-						d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
-						//tri_data_array[tri_num].w_reciprocal [j]             =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
-						d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
-						
-					}		
-				}
-			}
-			
-			if (!is_clipped) {
-				
-				
-				volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
-				//cfg->tri_data_array[tri_num] = d;
-				tpsd[tri_num] = d;
-				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
-				tiler (&(tpsd[tri_num]), cfg->tile_idx_table_ptr);
-				tri_num++;
-			}
-		}
-		
-		obj_list_node = obj_list_node->next;
-	}
-	
-	if (DEBUG_FIXPT_W) {
-		printf ("max w: %f, max 1/w: %f\t\tmin w: %f, min 1/w: %f\n", max_w, max_w_recip, min_w, min_w_recip);
-	}
-}
 
 
 void * pthread_wrapper_host (void *gpu_cfg) {
@@ -487,7 +357,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 	
 	// 4. Viewport Matrix - move to screen coords
 	set_screen_size (cfg, (size_t) WIDTH, (size_t) HEIGHT);
-    init_viewport (0, 0, get_screen_width(), get_screen_height(), get_screen_depth());
+    init_viewport (0, 0, get_screen_width(cfg), get_screen_height(cfg), get_screen_depth(cfg));
 	
     
     // 2. View Matrix - transform global coords to camera coords
@@ -502,7 +372,11 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     
     init_lights();
     //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), true);	
+    
+    screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
+    if (!shadow_buf_0) return NULL;
+    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
     
     
     float eye_x = 0;
@@ -754,7 +628,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 			write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
 			*/
 			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-				if (LIGHTS[i].enabled) {
+				if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 					sprintf(shadow_num, "%d", i);
 					strcpy (tga_file, "shadow_buffer_");
 					strcat (tga_file, frame_num);

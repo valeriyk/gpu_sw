@@ -14,18 +14,22 @@
 // POSITIVE Z TOWARDS ME
 
 
-
+/*
 size_t SCREEN_WIDTH;
 size_t SCREEN_HEIGHT;
 size_t SCREEN_DEPTH;
 
 size_t NUM_OF_TILES;
+*/
 
 fmat4 VIEWPORT;
 
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
-
+void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
+	
+	
+	
 int32_t min_of_three (int32_t a, int32_t b, int32_t c);
 int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
 
@@ -106,31 +110,49 @@ void init_viewport (int x, int y, int w, int h, int d) {
 }
 
 void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
-	SCREEN_WIDTH  = width;
-	SCREEN_HEIGHT = height;
-	SCREEN_DEPTH  = (screenz_t) ~0; // all ones
+	//SCREEN_WIDTH  = width;
+	//SCREEN_HEIGHT = height;
+	//SCREEN_DEPTH  = (screenz_t) ~0; // all ones
 	
-	NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
+	//NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
 	
-	cfg->screen_width  = SCREEN_WIDTH;
-	cfg->screen_height = SCREEN_HEIGHT;
-	cfg->tile_width    = TILE_WIDTH;
-	cfg->tile_height   = TILE_HEIGHT;
-	cfg->num_of_tiles  = NUM_OF_TILES;
+	
+	cfg->screen_width  = width;//SCREEN_WIDTH;
+	cfg->screen_height = height;//SCREEN_HEIGHT;
+	//cfg->tile_width    = TILE_WIDTH;
+	//cfg->tile_height   = TILE_HEIGHT;
+	cfg->num_of_tiles  = (width / TILE_WIDTH) * (height / TILE_HEIGHT);
+	
+	screenz_t depth = ~0; // all ones
+	cfg->screen_depth = (size_t) depth;
+	
+	set_tile_size (cfg, TILE_WIDTH, TILE_HEIGHT);
 }
 
-size_t get_screen_width (void) {
-	return SCREEN_WIDTH;
+void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height) {
+	cfg->tile_width    = width;
+	cfg->tile_height   = height;
 }
 
-size_t get_screen_height (void) {
-	return SCREEN_HEIGHT;
+size_t get_screen_width  (gpu_cfg_t *cfg) {
+	return cfg->screen_width;
 }
 
-size_t get_screen_depth (void) {
-	return SCREEN_DEPTH;
+size_t get_screen_height (gpu_cfg_t *cfg) {
+	return cfg->screen_height;
 }
 
+size_t get_screen_depth  (gpu_cfg_t *cfg) {
+	return cfg->screen_depth;
+}
+
+size_t get_tile_width  (gpu_cfg_t *cfg) {
+	return cfg->tile_width;
+}
+
+size_t get_tile_height (gpu_cfg_t *cfg) {
+	return cfg->tile_height;
+}
 
 void init_lights (void) {
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -140,15 +162,13 @@ void init_lights (void) {
 	}
 }
 
-void new_light (int light_num, Float3 dir, bool add_shadow_buf) { //TBD add light_src,
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf) { //TBD add light_src,
 	LIGHTS[light_num].enabled = true;
 	LIGHTS[light_num].dir = dir;
 	LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
 	
-	if (add_shadow_buf) {
-		LIGHTS[light_num].has_shadow_buf = true;
-		LIGHTS[light_num].shadow_buf = (screenz_t*) calloc (SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(screenz_t));
-	}
+	LIGHTS[light_num].has_shadow_buf = (shadow_buf != NULL);
+	LIGHTS[light_num].shadow_buf = shadow_buf;
 }
 
 void free_light (int light_num) {
@@ -304,24 +324,24 @@ BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
     return bb;
 }
 
-BoundBox clip_boundbox_to_screen (BoundBox in) {
+BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox out;
 	
 	out.min.x = max_of_two (in.min.x, 0);
-    out.max.x = min_of_two (in.max.x, SCREEN_WIDTH - 1);
+    out.max.x = min_of_two (in.max.x, get_screen_width(cfg) - 1);
     out.min.y = max_of_two (in.min.y, 0);
-    out.max.y = min_of_two (in.max.y, SCREEN_HEIGHT - 1);
+    out.max.y = min_of_two (in.max.y, get_screen_height(cfg) - 1);
 
 	return out;
 }
 
-BoundBox clip_boundbox_to_tile (BoundBox in, size_t tile_num) {
+BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox tile;
 				
-	tile.min.x = (tile_num % (SCREEN_WIDTH/TILE_WIDTH)) * TILE_WIDTH;
-    tile.min.y = (tile_num / (SCREEN_WIDTH/TILE_WIDTH)) * TILE_HEIGHT;
+	tile.min.x = (tile_num % (get_screen_width(cfg) / TILE_WIDTH)) * TILE_WIDTH;
+    tile.min.y = (tile_num / (get_screen_width(cfg) / TILE_WIDTH)) * TILE_HEIGHT;
     tile.max.x = tile.min.x + TILE_WIDTH  - 1; 
     tile.max.y = tile.min.y + TILE_HEIGHT - 1;
     
@@ -372,73 +392,6 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 */
 
 
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[]) {
-	
-	fixpt_t x[3];
-	fixpt_t y[3];
-	
-	// re-pack X, Y, Z, W coords of the three vertices
-	for (int i = 0; i < 3; i++) {
-		x[i] = tri->screen_coords[i].as_struct.x;
-		y[i] = tri->screen_coords[i].as_struct.y;
-	}
-	
-	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y));
-    bb.min.x &= ~(TILE_WIDTH-1);
-    bb.min.y &= ~(TILE_HEIGHT-1);
-    
-    ScreenPt p;
-    
-    // Evaluate barycentric coords in all the four corners of each tile
-    for (p.y = bb.min.y; p.y <= bb.max.y; p.y += TILE_HEIGHT) {	
-		for (p.x = bb.min.x; p.x <= bb.max.x; p.x += TILE_WIDTH) {
-
-			// find corners of the tile:
-			fixpt_t x0 = fixpt_from_screenxy (p.x);
-			fixpt_t x1 = fixpt_from_screenxy (p.x + TILE_WIDTH - 1);
-			fixpt_t y0 = fixpt_from_screenxy (p.y);
-			fixpt_t y1 = fixpt_from_screenxy (p.y + TILE_HEIGHT - 1);
-			
-			// get barycentric coords in each corner:
-			FixPt3 b0 = get_bar_coords (x, y, x0, y0);
-			FixPt3 b1 = get_bar_coords (x, y, x0, y1);
-			FixPt3 b2 = get_bar_coords (x, y, x1, y0);
-			FixPt3 b3 = get_bar_coords (x, y, x1, y1);
-			
-			bool tri_inside_tile = true; // sticky bit
-			for (int i = 0; i < 3; i++) {
-				// If barycentric coord "i" is negative in all four corners, triangle is outside the tile
-				// See here: http://forum.devmaster.net/t/advanced-rasterization/6145
-				if ((b0.as_array[i] & b1.as_array[i] & b2.as_array[i] & b3.as_array[i]) < 0) {
-					tri_inside_tile = false;
-					break;
-				}
-			}
-			
-			if (tri_inside_tile) {
-				
-				size_t tile_num = (p.y >> (int) log2f(TILE_HEIGHT)) * (SCREEN_WIDTH / TILE_WIDTH) + (p.x >> (int) log2f(TILE_WIDTH));
-				
-				volatile TriangleListNode* volatile node = tri_ptr[tile_num];
-				if (node == NULL) {
-					node = calloc (1, sizeof (TriangleListNode));
-					node->tri  = tri;
-					node->next = NULL;	
-					
-					tri_ptr[tile_num] = node;
-				}
-				else {
-					while (node->next != NULL) {
-						node = node->next;
-					}
-					node->next = calloc (1, sizeof (TriangleListNode));
-					node->next->tri  = tri;
-					node->next->next = NULL;	
-				}
-			}
-		}
-	}
-}
 
 
 

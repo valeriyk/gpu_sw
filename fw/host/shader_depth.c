@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-int count_shadows (Varying *vry);
+int count_shadows (Varying *vry, gpu_cfg_t *cfg);
 
 
 // Layout of Varying words for this pass:
@@ -38,7 +38,7 @@ int count_shadows (Varying *vry);
 // 8   shadow1.x
 // ....
 
-Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry, gpu_cfg_t *cfg) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
@@ -92,7 +92,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 	return clip;		
 }
 
-bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
+bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *cfg) {
 	
 	Float3 normal = varying_fifo_pop_Float3 (vry);
 	Float3_normalize (&normal);
@@ -160,7 +160,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	}
 	*/
 	
-	//float shadow_factor = 1.0f - count_shadows(vry) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	//float shadow_factor = 1.0f - count_shadows(vry, cfg) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
 	//float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
 	float intensity = diff_int_total;
 
@@ -188,7 +188,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color) {
 	return true;
 }
 
-int count_shadows (Varying *vry) {
+int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 	int    shadows = 0;
 	float  z_fighting = 123; // [almost] arbitrary value
 	
@@ -213,12 +213,12 @@ int count_shadows (Varying *vry) {
 		Float3 screen = varying_fifo_pop_Float3 (vry);
 			
 		assert (screen.as_struct.x >= 0);
-		assert (screen.as_struct.x < get_screen_width ());
+		assert (screen.as_struct.x < get_screen_width (cfg));
 		x = (screenxy_t) screen.as_struct.x;
 		
 		assert (screen.as_struct.y >= 0);
 		//if (screen.as_struct.y >= get_screen_height()) printf ("screen.as_struct.y=%f, get_screen_height()=%zu\n", screen.as_struct.y, get_screen_height());	
-		assert (screen.as_struct.y < get_screen_height());	
+		assert (screen.as_struct.y < get_screen_height(cfg));	
 		//if (screen.as_struct.y >= get_screen_height()) screen.as_struct.y = get_screen_height() - 1; // TBD
 		y = (screenxy_t) screen.as_struct.y;
 		
@@ -245,7 +245,7 @@ int count_shadows (Varying *vry) {
 		*/
 		assert (LIGHTS[i].shadow_buf != NULL);
 		
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[y * get_screen_width() + x];
+		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[y * get_screen_width(cfg) + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
 	}
