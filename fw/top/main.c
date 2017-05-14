@@ -1,6 +1,7 @@
 //#include "main.h"
 #include "gpu_cfg.h"
 #include <pthread_wrapper_host.h>
+#include <vshader_wrapper.h>
 #include <pshader_wrapper.h>
 
 #include <pthread.h>
@@ -28,9 +29,15 @@ int main(int argc, char** argv) {
 	gpu_cfg.zbuffer_ptr = NULL;
 	gpu_cfg.vshader_ptr = NULL;
 	gpu_cfg.pshader_ptr = NULL;
+	gpu_cfg.vshaders_run_req  = false;
+	gpu_cfg.vshaders_stop_req = false;
 	gpu_cfg.pshaders_run_req  = false;
 	gpu_cfg.pshaders_stop_req = false;
 	
+	
+	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+		gpu_cfg.vshader_done[i] = false;
+	}
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		gpu_cfg.pshader_done[i] = false;
 	}
@@ -43,6 +50,11 @@ int main(int argc, char** argv) {
 	//gpu_cfg.fbuf_mutex = &fbuf_mutex;
 	//gpu_cfg.zbuf_mutex = &zbuf_mutex;
 	
+	shader_cfg_t vshader_cfg[NUM_OF_VSHADERS];
+	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+		vshader_cfg[i].common_cfg       = &gpu_cfg;
+		vshader_cfg[i].shader_num       = i;
+	}
 	shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		pshader_cfg[i].common_cfg       = &gpu_cfg;
@@ -59,6 +71,7 @@ int main(int argc, char** argv) {
 	else if (model == PTHREAD) {
 	
 		pthread_t host_thread;
+		pthread_t vshader_thread [NUM_OF_PSHADERS];
 		pthread_t pshader_thread [NUM_OF_PSHADERS];
 		
 		//pthread_mutex_t fbuf_mutex;
@@ -74,6 +87,12 @@ int main(int argc, char** argv) {
 			printf ("Error creating host_thread\n");
 			return 2;	
 		}	
+		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+			if (pthread_create (&vshader_thread[i], NULL, vshader_wrapper, &vshader_cfg[i])) {
+				printf ("Error creating vshader_thread%d\n", i);
+				return 2;	
+			}
+		}
 		for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 			if (pthread_create (&pshader_thread[i], NULL, pshader_wrapper, &pshader_cfg[i])) {
 				printf ("Error creating pshader_thread%d\n", i);
@@ -85,6 +104,12 @@ int main(int argc, char** argv) {
 			printf ("Error joining host_thread\n");
 			return 2;
 		}	
+		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+			if (pthread_join (vshader_thread[i], NULL)) {
+				printf ("Error joining vshader_thread%d\n", i);
+				return 2;	
+			}
+		}
 		for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 			if (pthread_join (pshader_thread[i], NULL)) {
 				printf ("Error joining pshader_thread%d\n", i);
@@ -92,7 +117,5 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
-	
-	printf ("sizeof (TrianglePShaderData) = %d\n", sizeof(TrianglePShaderData));
     return 0;
 }
