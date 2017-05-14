@@ -1,4 +1,4 @@
-#include "pthread_wrapper_host.h"
+#include "host_wrapper.h"
 
 #include <wavefront_obj.h>
 #include <geometry.h>
@@ -387,109 +387,72 @@ void * pthread_wrapper_host (void *gpu_cfg) {
     
     float obj_angle = 0;
     
-    //do {
+    
+    
     
 	if (ENABLE_PERF) {
 		setup_counters();
 		start_counters();
 	}
     
+    //////////////////
+	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
+		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
+		return NULL;
+	}
+	
+		
     cfg->vshaders_stop_req = false;
     cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		printf ("host: FRAME %d\n", m);
 		pixel_color_t *active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
-		
-		/*
-		// clean up active framebuffer, zbuffer and all shadowbuffers
+	
+		// Clean up:
+		for (int i = 0; i < cfg->num_of_tiles; i++) {
+			TriangleListNode **tln = cfg->tile_idx_table_ptr;
+			tln[i] = NULL;
+		}
+		// Clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			//((pixel_color_t*) cfg->active_fbuffer)[i] = set_color (0, 0, 0, 0);
 			active_fbuffer[i] = set_color (1, 0, 0, 0);
 			
-			//screenz_t *zb = cfg->zbuffer_ptr;
-			//zb[i] = 0;
+			if (cfg->zbuffer_ptr != NULL) {
+				screenz_t *zb = cfg->zbuffer_ptr;
+				zb[i] = 0;
+			}
+			
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
 				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
 					LIGHTS[j].shadow_buf[i] = 0;
 				}
 			}
 		}
-		*/
+		
+		
+
+		// Number of faces may change from frame to frame if objects are getting added or removed,
+		// so need to calculate it for every frame and allocate memory each time
+		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
+		int num_of_faces = 0;
+		while (obj_list_node != NULL) {
+			num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+			obj_list_node = obj_list_node->next;
+		}
+		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
+			if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
+			return NULL;
+		}
+			
 		
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				
-				/*
-				ObjectListNode *obj_list_node = obj_list_head;		
-				int num_of_faces = 0;
-				while (obj_list_node != NULL) {
-					num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
-					obj_list_node = obj_list_node->next;
-				}
-				
-				TrianglePShaderData *tri_data_array;
-				if ((tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
-				//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
-					if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
-					return;
-				}
-				*/
-				
 				//draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
-				
-				/*
-				if (PTHREAD_DEBUG) {
-					printf("host: wait till all pshader_done signals are false\n");
-				}
-				for (int i = 0; i < cfg->num_of_pshaders; i++) {
-					while (cfg->pshader_done[i]);
-				}
-				if (PTHREAD_DEBUG) {
-					printf("host: all pshader_done signals are false\n");
-				}
-				
-				if (PTHREAD_DEBUG) {
-					printf("host: pshaders_run_req=true\n");
-				}
-				cfg->pshaders_run_req = true;
-				
-					
-				if (PTHREAD_DEBUG) {
-					printf("host: wait till all pshader_done signals are true\n");
-				}
-				for (int i = 0; i < cfg->num_of_pshaders; i++) {
-					while (!cfg->pshader_done[i]);
-				}
-				if (PTHREAD_DEBUG) {
-					printf("host: all pshader_done signals are true\n");
-				}
-				
-				if (PTHREAD_DEBUG) {
-					printf("host: pshaders_run_req=false\n");
-				}
-				cfg->pshaders_run_req = false;
-				
-				
-				
-				for (int i = 0; i < cfg->num_of_tiles; i++) {
-					TriangleListNode **tln = cfg->tile_idx_table_ptr;
-					
-					//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
-					TriangleListNode *node = tln[i];
-					TriangleListNode *tmp;
-					while (node != NULL) {
-						tmp = node->next;
-						free (node);
-						node = tmp;
-					}		
-				}	
-				free (tri_data_array);
-				*/
-				
 			}
 		}			
 		
@@ -516,31 +479,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 
-		//////////////////
-		if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
-			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
-			return NULL;
-		}
-		// ???? TBD
-		/*for (int i = 0; i < cfg->num_of_tiles; i++) {
-			TriangleListNode **tln = cfg->tile_idx_table_ptr;
-			tln[i] = NULL;
-		}
-		*/
 		
-		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
-		int num_of_faces = 0;
-		while (obj_list_node != NULL) {
-			num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
-			obj_list_node = obj_list_node->next;
-		}
-		
-		//TrianglePShaderData *tri_data_array;
-		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
-		//if ((tri_data_array = malloc (num_of_faces * sizeof (TrianglePShaderData))) == NULL) {
-			if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
-			return NULL;
-		}
 		
 		
 		//draw_frame           (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
@@ -613,7 +552,6 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 				node = tmp;
 			}		
 		}	
-		free ((void*) cfg->tile_idx_table_ptr);
 		free ((void*) cfg->tri_data_array);
 		
 		
@@ -670,8 +608,9 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 	cfg->vshaders_stop_req = true;
 	cfg->pshaders_stop_req = true;
 	
-	// while (0);
-	
+	free ((void*) cfg->tile_idx_table_ptr);
+		
+
 	if (ENABLE_PERF) {
 		stop_counters();
 		read_counters();
@@ -701,10 +640,21 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		fclose (fp);
 	}
 	
-	//free (cfg->zbuffer_ptr);
+	if (cfg->zbuffer_ptr != NULL) {
+		free (cfg->zbuffer_ptr);
+	}
+	
 	free_objects ((void*) cfg->obj_list_ptr);
-	for (int i = 0; i < cfg->num_of_fbuffers; i++) free (cfg->fbuffer_ptr[i]);
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS;   i++) free_light (i);
+	
+	for (int i = 0; i < cfg->num_of_fbuffers; i++) {
+		if (cfg->fbuffer_ptr[i] != NULL) {
+			free (cfg->fbuffer_ptr[i]);
+		}
+	}
+	
+	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		free_light (i);
+	}
 	
 	
     return NULL;

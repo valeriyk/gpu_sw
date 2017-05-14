@@ -1,6 +1,7 @@
 //#include "main.h"
 #include "gpu_cfg.h"
-#include <pthread_wrapper_host.h>
+
+#include    <host_wrapper.h>
 #include <vshader_wrapper.h>
 #include <pshader_wrapper.h>
 
