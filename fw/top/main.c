@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 		//pthread_mutex_init (&zbuf_mutex, NULL);
 		pthread_mutex_init (gpu_cfg.mutex, NULL);
 		
-		if (pthread_create (&host_thread, NULL, pthread_wrapper_host, &gpu_cfg)) {
+		if (pthread_create (&host_thread, NULL, host_wrapper, &gpu_cfg)) {
 			printf ("Error creating host_thread\n");
 			return 2;	
 		}	

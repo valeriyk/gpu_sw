@@ -310,7 +310,7 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 
 
 
-void * pthread_wrapper_host (void *gpu_cfg) {
+void * host_wrapper (void *gpu_cfg) {
        
     gpu_cfg_t *cfg = gpu_cfg;
     
@@ -576,13 +576,13 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 				if (DEBUG_MALLOC) printf ("tga frame calloc failed\n");
 				return NULL;
 			}
-			/*
-			for (int i = 0; i < screen_size; i++) {
-				screenz_t *zb = cfg->zbuffer_ptr;
-				tmp[i] = zb[i] >> 4;// >> (8 * (sizeof(screenz_t) - 1) );
+			if (cfg->zbuffer_ptr != NULL) {
+				for (int i = 0; i < screen_size; i++) {
+					screenz_t *zb = cfg->zbuffer_ptr;
+					tmp[i] = zb[i] >> 4;// >> (8 * (sizeof(screenz_t) - 1) );
+				}
+				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
 			}
-			write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
-			*/
 			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 				if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
 					sprintf(shadow_num, "%d", i);

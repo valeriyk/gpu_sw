@@ -25,7 +25,7 @@
 #include <gpu_cfg.h>
 #include <gl.h>
 
-void * pthread_wrapper_host (void *platform);
+void * host_wrapper (void *platform);
 
 
 
