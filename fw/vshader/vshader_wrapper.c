@@ -10,7 +10,7 @@ void * vshader_wrapper (void *cfg) {
 	
 	assert (cfg != NULL);
 	
-	/*volatile shader_cfg_t* volatile shader_cfg = cfg;
+	volatile shader_cfg_t* volatile shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
 	
 	if (PTHREAD_DEBUG) printf("vshader%d: vshader up and running\n", shader_num);
@@ -34,6 +34,6 @@ void * vshader_wrapper (void *cfg) {
 		shader_cfg->common_cfg->vshader_done[shader_num] = true;
 				
 		while (shader_cfg->common_cfg->vshaders_run_req);	
-	}*/	
+	}	
 	return NULL;
 }

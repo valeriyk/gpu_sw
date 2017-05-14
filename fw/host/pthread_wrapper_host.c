@@ -394,6 +394,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		start_counters();
 	}
     
+    cfg->vshaders_stop_req = false;
     cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
@@ -547,38 +548,50 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		draw_frame           (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		
-		if (PTHREAD_DEBUG) {
-			printf("host: wait till all pshader_done signals are false\n");
+		if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
+		for (int i = 0; i < cfg->num_of_vshaders; i++) {
+			while (cfg->vshader_done[i]);
 		}
+		if (PTHREAD_DEBUG) printf("host: all vshader_done signals are false\n");
+		
+		if (PTHREAD_DEBUG) {
+			printf("host: vshaders_run_req=true\n");
+		}
+		cfg->vshaders_run_req = true;
+		
+			
+		if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are true\n");
+		for (int i = 0; i < cfg->num_of_vshaders; i++) {
+			while (!cfg->vshader_done[i]);
+		}
+		
+		if (PTHREAD_DEBUG) printf("host: all vshader_done signals are true\n");
+		
+		if (PTHREAD_DEBUG) printf("host: vshaders_run_req=false\n");
+		cfg->vshaders_run_req = false;
+		
+		
+		////////////////////
+		
+		if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are false\n");
 		for (int i = 0; i < cfg->num_of_pshaders; i++) {
 			while (cfg->pshader_done[i]);
-		}
-		
-		
-		if (PTHREAD_DEBUG) {
-			printf("host: all pshader_done signals are false\n");
-		}
+		}		
+		if (PTHREAD_DEBUG) printf("host: all pshader_done signals are false\n");
 		
 		if (PTHREAD_DEBUG) {
 			printf("host: pshaders_run_req=true\n");
 		}
 		cfg->pshaders_run_req = true;
 		
-			
-		if (PTHREAD_DEBUG) {
-			printf("host: wait till all pshader_done signals are true\n");
-		}
+		if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are true\n");
 		for (int i = 0; i < cfg->num_of_pshaders; i++) {
 			while (!cfg->pshader_done[i]);
 		}
 		
-		if (PTHREAD_DEBUG) {
-			printf("host: all pshader_done signals are true\n");
-		}
+		if (PTHREAD_DEBUG) printf("host: all pshader_done signals are true\n");
 		
-		if (PTHREAD_DEBUG) {
-			printf("host: pshaders_run_req=false\n");
-		}
+		if (PTHREAD_DEBUG) printf("host: pshaders_run_req=false\n");
 		cfg->pshaders_run_req = false;
 		
 		
@@ -649,6 +662,7 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		}
 		
 	}
+	cfg->vshaders_stop_req = true;
 	cfg->pshaders_stop_req = true;
 	
 	// while (0);

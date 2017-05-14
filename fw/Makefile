@@ -2,7 +2,8 @@
 OPT = -O3
 
 #SYSCONF_LINK_x86  =              gcc -g -std=c99 -DTARGET_x86 $(OPT)
-SYSCONF_LINK_x86  =              gcc -g -std=c99 -pthread -Itop -Ihost -Ilibtga-1.0.1/src -Ilibbarcg -Ivshader -Ipshader -DTARGET_x86 -DPSHADER_DEBUG=1 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 $(OPT) -DDEBUG_FIXPT_VARYING
+SYSCONF_LINK_x86  =              gcc -g -std=c99 -pthread -Itop -Ihost -Ilibtga-1.0.1/src -Ilibbarcg -Ivshader -Ipshader -DTARGET_x86 -DPSHADER_DEBUG=0 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=1 -DPTHREAD_DEBUG0=1 -DDEBUG_MALLOC=0 $(OPT)
+#-DDEBUG_FIXPT_VARYING
 #-DNDEBUG 
 
 
