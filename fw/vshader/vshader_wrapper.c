@@ -1,4 +1,5 @@
 #include "vshader_wrapper.h"
+#include "vshader.h"
 
 #include <inttypes.h>
 #include <string.h>
@@ -28,7 +29,9 @@ void * vshader_wrapper (void *cfg) {
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_run_req detected\n", shader_num);
 		
 		// vshader_loop (shader_cfg);
-				
+		//draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+		draw_frame (shader_cfg->common_cfg, shader_cfg->common_cfg->vshader_ptr, shader_cfg->common_cfg->pshader_ptr, shader_cfg->common_cfg->zbuffer_ptr, shader_cfg->common_cfg->active_fbuffer);
+		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);
 		shader_cfg->common_cfg->vshader_done[shader_num] = true;

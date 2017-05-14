@@ -2,7 +2,7 @@
 
 #include <wavefront_obj.h>
 #include <geometry.h>
-#include <vshader.h>
+//#include <vshader.h>
 
 //#include "shader_normalmap.h"
 #include "shader_phong.h"
@@ -545,8 +545,13 @@ void * pthread_wrapper_host (void *gpu_cfg) {
 		
 		//draw_frame           (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
 		//draw_frame           (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
-		draw_frame           (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
+		//draw_frame           (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
+		
+		cfg->vshader_ptr = vshader_phong;
+		cfg->pshader_ptr = pshader_phong;
+		cfg->zbuffer_ptr = NULL;
+		cfg->active_fbuffer = active_fbuffer;
 		
 		if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
 		for (int i = 0; i < cfg->num_of_vshaders; i++) {
