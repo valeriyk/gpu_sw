@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#define NUM_OF_VSHADERS 0
+#define NUM_OF_VSHADERS 1
 #define NUM_OF_PSHADERS 8
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
@@ -26,6 +26,10 @@ typedef struct gpu_cfg_t {
 	void* vshader_ptr;
 	void* pshader_ptr;
 		
+	volatile bool vshaders_run_req;
+	volatile bool vshaders_stop_req;
+	volatile bool vshader_done[NUM_OF_VSHADERS];
+	
 	volatile bool pshaders_run_req;
 	volatile bool pshaders_stop_req;
 	volatile bool pshader_done[NUM_OF_PSHADERS];
