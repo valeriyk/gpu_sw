@@ -82,6 +82,10 @@ void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view)
 }
 */
 
+void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+
+
+
 void setup_transformation (volatile ObjectListNode* volatile obj_list_head, fmat4 *proj, fmat4 *view) {
 	
 	volatile ObjectListNode* volatile node = obj_list_head;
@@ -307,7 +311,60 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 }
 
 
+void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+	
+	cfg->vshader_ptr = vshader;
+	cfg->pshader_ptr = pshader;
+	cfg->zbuffer_ptr = zbuffer;
+	cfg->active_fbuffer = fbuffer;
+		
+	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
+	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+		while (cfg->vshader_done[i]);
+	}
+	if (PTHREAD_DEBUG) printf("host: all vshader_done signals are false\n");
+	
+	if (PTHREAD_DEBUG) {
+		printf("host: vshaders_run_req=true\n");
+	}
+	cfg->vshaders_run_req = true;
+	
+		
+	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are true\n");
+	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+		while (!cfg->vshader_done[i]);
+	}
+	
+	if (PTHREAD_DEBUG) printf("host: all vshader_done signals are true\n");
+	
+	if (PTHREAD_DEBUG) printf("host: vshaders_run_req=false\n");
+	cfg->vshaders_run_req = false;
+	
+	
+	////////////////////
+	
+	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are false\n");
+	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		while (cfg->pshader_done[i]);
+	}		
+	if (PTHREAD_DEBUG) printf("host: all pshader_done signals are false\n");
+	
+	if (PTHREAD_DEBUG) {
+		printf("host: pshaders_run_req=true\n");
+	}
+	cfg->pshaders_run_req = true;
+	
+	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are true\n");
+	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+		while (!cfg->pshader_done[i]);
+	}
+	
+	if (PTHREAD_DEBUG) printf("host: all pshader_done signals are true\n");
+	
+	if (PTHREAD_DEBUG) printf("host: pshaders_run_req=false\n");
+	cfg->pshaders_run_req = false;
 
+}
 
 
 void * host_wrapper (void *gpu_cfg) {
@@ -375,8 +432,8 @@ void * host_wrapper (void *gpu_cfg) {
     
     screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
     if (!shadow_buf_0) return NULL;
-    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
+    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
     
     
     float eye_x = 0;
@@ -400,20 +457,21 @@ void * host_wrapper (void *gpu_cfg) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		return NULL;
 	}
+	// Clean up data structures for each new frame:
+	for (int i = 0; i < cfg->num_of_tiles; i++) {
+		TriangleListNode **tln = cfg->tile_idx_table_ptr;
+		tln[i] = NULL;
+	}
 	
 		
     cfg->vshaders_stop_req = false;
     cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
-		lprintf ("host: FRAME %d\n", m);
+		printf ("host: FRAME %d\n", m);
 		pixel_color_t *active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
 	
-		// Clean up data structures for each new frame:
-		for (int i = 0; i < cfg->num_of_tiles; i++) {
-			TriangleListNode **tln = cfg->tile_idx_table_ptr;
-			tln[i] = NULL;
-		}
+		
 		// Clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
 			//((pixel_color_t*) cfg->active_fbuffer)[i] = set_color (0, 0, 0, 0);
@@ -453,6 +511,7 @@ void * host_wrapper (void *gpu_cfg) {
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
 				//draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
+				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 			}
 		}			
 		
@@ -480,64 +539,9 @@ void * host_wrapper (void *gpu_cfg) {
 		
 
 		
-		
-		
-		//draw_frame           (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		//draw_frame           (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
-		//draw_frame           (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
-		
-		
-		cfg->vshader_ptr = vshader_phong;
-		cfg->pshader_ptr = pshader_phong;
-		cfg->zbuffer_ptr = NULL;
-		cfg->active_fbuffer = active_fbuffer;
-		
-		if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
-		for (int i = 0; i < cfg->num_of_vshaders; i++) {
-			while (cfg->vshader_done[i]);
-		}
-		if (PTHREAD_DEBUG) printf("host: all vshader_done signals are false\n");
-		
-		if (PTHREAD_DEBUG) {
-			printf("host: vshaders_run_req=true\n");
-		}
-		cfg->vshaders_run_req = true;
-		
-			
-		if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are true\n");
-		for (int i = 0; i < cfg->num_of_vshaders; i++) {
-			while (!cfg->vshader_done[i]);
-		}
-		
-		if (PTHREAD_DEBUG) printf("host: all vshader_done signals are true\n");
-		
-		if (PTHREAD_DEBUG) printf("host: vshaders_run_req=false\n");
-		cfg->vshaders_run_req = false;
-		
-		
-		////////////////////
-		
-		if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are false\n");
-		for (int i = 0; i < cfg->num_of_pshaders; i++) {
-			while (cfg->pshader_done[i]);
-		}		
-		if (PTHREAD_DEBUG) printf("host: all pshader_done signals are false\n");
-		
-		if (PTHREAD_DEBUG) {
-			printf("host: pshaders_run_req=true\n");
-		}
-		cfg->pshaders_run_req = true;
-		
-		if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are true\n");
-		for (int i = 0; i < cfg->num_of_pshaders; i++) {
-			while (!cfg->pshader_done[i]);
-		}
-		
-		if (PTHREAD_DEBUG) printf("host: all pshader_done signals are true\n");
-		
-		if (PTHREAD_DEBUG) printf("host: pshaders_run_req=false\n");
-		cfg->pshaders_run_req = false;
-		
+		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		
 		for (int i = 0; i < cfg->num_of_tiles; i++) {
@@ -550,8 +554,10 @@ void * host_wrapper (void *gpu_cfg) {
 				tmp = node->next;
 				free ((void*) node);
 				node = tmp;
-			}		
+			}
+			tln[i] = NULL;		
 		}	
+		
 		free ((void*) cfg->tri_data_array);
 		
 		

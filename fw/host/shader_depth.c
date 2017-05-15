@@ -115,29 +115,10 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
-		//assert (uu >= 0);
-		//assert (vv >= 0);
-		
-	/*	int LOW_LIM_U = 10;
-		int LOW_LIM_V = 10;
-		int  HI_LIM_U = obj->texture->w - LOW_LIM_U;
-		int  HI_LIM_V = obj->texture->h - LOW_LIM_V;
-		
-		if (uu < LOW_LIM_U) uu = LOW_LIM_U;
-		if (uu >  HI_LIM_U) uu =  HI_LIM_U;
-				
-		if (vv < LOW_LIM_V) vv = LOW_LIM_V;
-		if (vv >  HI_LIM_V) vv =  HI_LIM_V;
-		*/
-		
 		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
-	
-	//pix = set_color (128, 128, 0, 0);
-	
-	
-	
+		
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -157,12 +138,12 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 		
 		int32_t spec_factor = get_int32_from_bitmap (obj->specularmap, uu, vv);
 		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
-	}
-	*/
+	}*/
 	
-	//float shadow_factor = 1.0f - count_shadows(vry, cfg) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
-	//float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
-	float intensity = diff_int_total;
+	
+	float shadow_factor = 1.0f - count_shadows(vry, cfg) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
+	//float intensity = diff_int_total;
 
 	//if ((intensity > 1.0f) || (intensity < -1.0f)) {
 	if (intensity < -0.f) {
