@@ -406,10 +406,10 @@ void * host_wrapper (void *gpu_cfg) {
     cfg->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
-		printf ("host: FRAME %d\n", m);
+		lprintf ("host: FRAME %d\n", m);
 		pixel_color_t *active_fbuffer = cfg->fbuffer_ptr[m % cfg->num_of_fbuffers];
 	
-		// Clean up:
+		// Clean up data structures for each new frame:
 		for (int i = 0; i < cfg->num_of_tiles; i++) {
 			TriangleListNode **tln = cfg->tile_idx_table_ptr;
 			tln[i] = NULL;
