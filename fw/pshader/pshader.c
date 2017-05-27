@@ -16,7 +16,13 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri, size_t tile_num,
  
 
 screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
-	
+
+	// ZF = Z_FRACT_BITS
+	// ZM = 32-ZF
+	// WF = W_RECIPR_FRACT_BITS
+	// WM = 32-WF
+	// BF = BARC_FRACT_BITS
+	// BM = 32-BF	
 	dfixpt_t mul_0 = (int64_t) z[0] * (int64_t) bar->as_array[0]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
 	dfixpt_t mul_1 = (int64_t) z[1] * (int64_t) bar->as_array[1]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
 	dfixpt_t mul_2 = (int64_t) z[2] * (int64_t) bar->as_array[2]; // ZM.ZF * BM.BF = (ZM+BM).(ZF+BF)
@@ -24,18 +30,23 @@ screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
 	dfixpt_t sum_of_bars = bar->as_array[0] + bar->as_array[1] + bar->as_array[2]; // BM.BF + BM.BF + BM.BF = (BM+1).BF
 	dfixpt_t res = acc / sum_of_bars; // (ZM+BM+1).(ZF+BF) / (BM+1).BF = ZM.ZF
 	
-	return fixpt_to_screenz ((fixpt_t) res); // ZM
+	return fixpt_to_screenz ((fixpt_t) res);
 }
 
 dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
     	
+	// WF = W_RECIPR_FRACT_BITS
+	// WM = 32-WF
+	// BF = BARC_FRACT_BITS
+	// BM = 32-BF
+	// OF = OOWI_FRACT_BITS
 	dfixpt_t mul_0 = (dfixpt_t) bar->as_array[0] * (dfixpt_t) w_reciprocal[0]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
 	dfixpt_t mul_1 = (dfixpt_t) bar->as_array[1] * (dfixpt_t) w_reciprocal[1]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
 	dfixpt_t mul_2 = (dfixpt_t) bar->as_array[2] * (dfixpt_t) w_reciprocal[2]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
 	dfixpt_t acc   = mul_0 + mul_1 + mul_2; // (BM+WM).(BF+WF) + (BM+WM).(BF+WF) + (BM+WM).(BF+WF) = (BM+WM+1).(BF+WF)
 	assert (acc != 0);
-	dfixpt_t one = (1LL << (OOWI_FRACT_BITS + BARC_FRACT_BITS + W_RECIPR_FRACT_BITS)); // 1.(WI+BF+WF)
-	dfixpt_t res = one / acc; // 1.(WI+BF+WF) / (BM+WM+1).(BF+WF) = (64-WI).WI
+	dfixpt_t one = (1LL << (OOWI_FRACT_BITS + BARC_FRACT_BITS + W_RECIPR_FRACT_BITS)); // 1.(OF+BF+WF)
+	dfixpt_t res = one / acc; // 1.(OF+BF+WF) / (BM+WM+1).(BF+WF) = (1).(OF)
 
 	if (DEBUG_FIXPT_W) {
 		float   mul_0f = fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS) * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
@@ -65,24 +76,31 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 	
 	if (vry_interp.num_of_words_written > 0) {
 		
-		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar);
+		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar); // = (1).(OF)
 		
 		for (int i = 0; i < vry_interp.num_of_words_written; i++) {
 			
 			#define NNN 20
-						
-			dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // 18.14 * 3.29 = 21.43
-			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // 
-			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // 
+			// VF = VARYING_FRACT_BITS
+			// VM = 32-VF
+			// WF = W_RECIPR_FRACT_BITS
+			// WM = 32-WF
+			// BF = BARC_FRACT_BITS
+			// BM = 32-BF
+			// OF = OOWI_FRACT_BITS
+			dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
+			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
 
-			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // (21.43>>NNN) * 24.8 = 21.23 * 24.8 = 33.31
-			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // 
-			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // 
+			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
+			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN) 
+			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
 
-			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // 33.31
+			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // = (VM+WM+BM+1).(VF+WF+BF-NNN)
 
-			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS - NNN + BARC_FRACT_BITS + OOWI_FRACT_BITS)); // (33.31 * 16.16 = 17.47)>>(29-20+8+16) = 64.0
-			fixpt_t vry_interp_fixpt_tmp = vry_interp.data[i].as_fixpt_t;
+			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
+			
 			/*
 			if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
 				printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
@@ -93,6 +111,8 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 			//assert (vry_interp.data[i].as_fixpt_t <= max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			
 			if (DEBUG_FIXPT_VARYING) {
+				fixpt_t vry_interp_fixpt_tmp = vry_interp.data[i].as_fixpt_t;
+				
 				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
 				float vtx1_norm = vry[1].data[i].as_float * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
 				float vtx2_norm = vry[2].data[i].as_float * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
@@ -266,7 +286,6 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
         }
         bar_row = FixPt3_FixPt3_add (bar_row, bar_row_incr);
     }
-
 }
 
 void pshader (const shader_cfg_t* const shader_cfg) {
