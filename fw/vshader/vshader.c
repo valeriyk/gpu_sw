@@ -179,16 +179,12 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 					if (!is_clipped) {
 						screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
 					
-						// We don't need W anymore, but we will need 1/W later, so replacing the former with the latter
-						// because we have it for free here
-						//screen.vtx[j].as_struct.w = reciprocal_w;
-
 						// Replace clip coords with screen coords within the Varying struct
-						// before passing it on to draw_triangle()
+						// before passing it on to Tiler
 						d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
 						d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
 						d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
-						//tri_data_array[tri_num].w_reciprocal [j]             =  fixpt_from_float_no_rnd (screen.vtx[j].as_struct.w, W_RECIPR_FRACT_BITS);
+						// We don't need W anymore, but we will need 1/W later:
 						d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
 						
 					}		
