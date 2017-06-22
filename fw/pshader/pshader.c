@@ -300,7 +300,6 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 		y[i] = local_tpd.screen_coords[i].as_struct.y;
 		z[i] = local_tpd.screen_coords[i].as_struct.z;
 		
-		printf ("z=%x\n", z[i]);
 		assert (z[i] >= 0);
 	}
 	
