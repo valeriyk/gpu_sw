@@ -101,7 +101,7 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNod
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void vshader_main (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	if (GL_DEBUG_0)
 	{
@@ -165,18 +165,18 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 		
 				// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
 				// If at least one coord doesn't belong to [-1:1] then the vertex is clipped
-				for (int k = 0; k < 4; k++) {
+				for (int k = 0; k < 3; k++) {
 					
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
 					
-					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+					if ((ndc.vtx[j].as_array[k] >= 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
 						is_clipped = true;
 						break;
 					}
 				}
 				// Typically W shouldn't be part of NDC, but I need it here to do correct matrix multiplication below (VIEWPORT is 4x4)
-				// I could also do this in the loop above because as_struct.w == as_array[3], but I think keeping it separate is clearer
-				//ndc.vtx[j].as_struct.w = 1.0f;
+				// as_struct.w == as_array[3]
+				ndc.vtx[j].as_struct.w = 1.0f;
 
 				if (!is_clipped) {
 					screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));

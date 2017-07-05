@@ -15,6 +15,7 @@
 
 
 #define DEBUG_FIXPT_VARYING 1
+#define DEBUG_FIXPT_W       1
 
 #define FLOAT 0
 
