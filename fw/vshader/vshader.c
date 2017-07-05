@@ -119,17 +119,15 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 	volatile ObjectListNode* volatile obj_list_node;
 	
 	
+	// Clean up data structures for each new frame:
+	for (int i = 0; i < cfg->num_of_tiles; i++) {
+		TriangleListNode **tln = cfg->tile_idx_table_ptr;
+		tln[i] = NULL;
+	}
+	
 	obj_list_node = obj_list_head;
 	
 	int tri_num = 0;
-	
-	
-	// This is for DEBUG_FIXPT_W
-	float max_w = 0;
-	float max_w_recip = 0;
-	float min_w = 10000;
-	float min_w_recip = 10000;
-	
 		
 	while (obj_list_node != NULL) {
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
@@ -142,57 +140,60 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 			//tri_data_array[tri_num].obj = obj_list_node->obj;
 			d.obj = obj_list_node->obj;
 			
-			bool is_clipped = true; // sticky bit
+			bool is_clipped = false; // sticky bit
+			
 			for (size_t j = 0; j < 3; j++) {
 				
-				
-				// // First four floats of Varying contain XYZW of a vertex in clip space
+				// First four floats of Varying contain XYZW of a vertex in clip space
 				//tri_data_array[tri_num].varying[j].num_of_words = 0;
 				d.varying[j].num_of_words_written = 0;
 				d.varying[j].num_of_words_read    = 0;
 				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
-				
+								
 				// Clip & normalize (clip -> NDC):
-				if (clip.vtx[j].as_struct.w > 0) {
-					
-					// This division is done once here to avoid three deivisions below
-					// No div by zero because we checked above that it's > 0
-					float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
-					
-					if (DEBUG_FIXPT_W) {
-						if (clip.vtx[j].as_struct.w > max_w) max_w = clip.vtx[j].as_struct.w;
-						if (reciprocal_w > max_w_recip) max_w_recip = reciprocal_w;
-						
-						if (clip.vtx[j].as_struct.w < min_w) min_w = clip.vtx[j].as_struct.w;
-						if (reciprocal_w < min_w_recip) min_w_recip = reciprocal_w;
-					}
-					
-					// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
-					// If at least one coord belongs to [-1:1] then the vertex is not clipped
-					for (int k = 0; k < 4; k++) {
-						ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-						if ((ndc.vtx[j].as_array[k] <= 1.0f) && (ndc.vtx[j].as_array[k] >= -1.0f)) {
-							is_clipped = false;
-						}
-					}
-
-					if (!is_clipped) {
-						screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
-					
-						// Replace clip coords with screen coords within the Varying struct
-						// before passing it on to Tiler
-						d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
-						d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
-						d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
-						// We don't need W anymore, but we will need 1/W later:
-						d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
-						
-					}		
+				// Clip.w contains Eye.z, so first check that it is greater than zero
+				// because I don't need to draw anything behind me
+				if (clip.vtx[j].as_struct.w <= 0) {
+					is_clipped = true;
+					break;
 				}
+				
+				// This division is done once here to avoid three divisions below
+				// No div by zero because we just checked above that W > 0
+				// Clip.w can be less than 1.0, so reciprocal_w can be > 1.0
+				float reciprocal_w = 1.0f / clip.vtx[j].as_struct.w; 
+		
+				// Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
+				// If at least one coord doesn't belong to [-1:1] then the vertex is clipped
+				for (int k = 0; k < 4; k++) {
+					
+					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
+					
+					if ((ndc.vtx[j].as_array[k] > 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
+						is_clipped = true;
+						break;
+					}
+				}
+				// Typically W shouldn't be part of NDC, but I need it here to do correct matrix multiplication below (VIEWPORT is 4x4)
+				// I could also do this in the loop above because as_struct.w == as_array[3], but I think keeping it separate is clearer
+				//ndc.vtx[j].as_struct.w = 1.0f;
+
+				if (!is_clipped) {
+					screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
+				
+					// Replace clip coords with screen coords within the Varying struct
+					// before passing it on to Tiler
+					d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
+					d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+					d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					// We don't need W anymore, but we will need 1/W later:
+					d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
+					
+				}
+				else break;
 			}
 			
 			if (!is_clipped) {
-				
 				
 				volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
 				//cfg->tri_data_array[tri_num] = d;
@@ -204,9 +205,5 @@ void draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, sc
 		}
 		
 		obj_list_node = obj_list_node->next;
-	}
-	
-	if (DEBUG_FIXPT_W) {
-		printf ("max w: %f, max 1/w: %f\t\tmin w: %f, min 1/w: %f\n", max_w, max_w_recip, min_w, min_w_recip);
 	}
 }

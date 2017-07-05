@@ -395,7 +395,7 @@ void * host_wrapper (void *gpu_cfg) {
 	//ObjectListNode *obj_list_head = init_objects ();
 	cfg->obj_list_ptr = init_objects ();
 	
-    // 3. Projection Matrix - perspective correction
+    // Projection Matrix - perspective correction
 	float aspect_ratio = 16/9;
 	float top   = 0.5;
 	float bot   = -top;
@@ -412,12 +412,12 @@ void * host_wrapper (void *gpu_cfg) {
 	init_ortho_proj       (&ortho_proj, left*f, right*f, top*f, bot*f, near, far);
 	
 	
-	// 4. Viewport Matrix - move to screen coords
+	// Viewport Matrix - move to screen coords
 	set_screen_size (cfg, (size_t) WIDTH, (size_t) HEIGHT);
     init_viewport (0, 0, get_screen_width(cfg), get_screen_height(cfg), get_screen_depth(cfg));
 	
     
-    // 2. View Matrix - transform global coords to camera coords
+    // View Matrix - transform global coords to camera coords
 	//Float3 eye       = Float3_set ( 3.0f,   2.0f,   5.0f);
     Float3 eye;
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
@@ -456,11 +456,6 @@ void * host_wrapper (void *gpu_cfg) {
 	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		return NULL;
-	}
-	// Clean up data structures for each new frame:
-	for (int i = 0; i < cfg->num_of_tiles; i++) {
-		TriangleListNode **tln = cfg->tile_idx_table_ptr;
-		tln[i] = NULL;
 	}
 	
 		
@@ -508,9 +503,9 @@ void * host_wrapper (void *gpu_cfg) {
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
+				
 				init_view             (&view, &(LIGHTS[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				//draw_frame            (cfg, obj_list_head, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
 			}
 		}			
@@ -537,7 +532,6 @@ void * host_wrapper (void *gpu_cfg) {
 		light_transform      (&view);
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
-
 		
 		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
 		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
