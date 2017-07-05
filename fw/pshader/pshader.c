@@ -382,9 +382,8 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
     }
 }
 
-void pshader (const shader_cfg_t* const shader_cfg) {
+void pshader_main (const shader_cfg_t* const shader_cfg) {
 	
-	//shader_cfg_t *shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
 	
 	size_t elems_in_tile = TILE_WIDTH*TILE_HEIGHT;
@@ -422,21 +421,14 @@ void pshader (const shader_cfg_t* const shader_cfg) {
 			node = node->next;
 		}	
 		// flush local zbuffer tile
-		
-		
-		//pthread_mutex_lock (cfg->common_cfg->zbuf_mutex);
 		if (shader_cfg->common_cfg->zbuffer_ptr != NULL) {
 			copy_tile_to_extmem (shader_cfg->common_cfg->zbuffer_ptr, &local_zbuf, shader_cfg->common_cfg, tile_num, sizeof (screenz_t));
 		}
-		//pthread_mutex_unlock (cfg->common_cfg->zbuf_mutex);
 		
 		// flush local fbuffer tile
-		
-		//pthread_mutex_lock (cfg->common_cfg->fbuf_mutex);
 		if (shader_cfg->common_cfg->active_fbuffer != NULL) {
 			copy_tile_to_extmem (shader_cfg->common_cfg->active_fbuffer, &local_fbuf, shader_cfg->common_cfg, tile_num, sizeof (pixel_color_t));
 		}
-		//pthread_mutex_unlock (cfg->common_cfg->fbuf_mutex);
 		
 	}
 	if (PSHADER_DEBUG) printf ("\n");
