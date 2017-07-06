@@ -278,13 +278,6 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 		printf("\tcall draw_triangle()\n");
 	}
 
-	
-	//cfg->num_of_tri++;
-	
-	//volatile static int num_of_pix = 0;
-	//volatile static int num_of_pix_after_ztest = 0;
-	//volatile static int num_of_pshader_runs = 0;	
-	
 	fixpt_t    x[3];
 	fixpt_t    y[3];
 	fixpt_t    z[3];
@@ -359,7 +352,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 						
 					zbuffer[pix_num] = zi;
 
-					Varying vry_interp = interpolate_varying3 (local_tpd.varying, local_tpd.w_reciprocal, &bar);
+					Varying vry_interp = interpolate_varying (local_tpd.varying, local_tpd.w_reciprocal, &bar);
 					
 					if (fbuffer != NULL) {
 						//cfg->num_of_pshader_runs++;
@@ -372,7 +365,6 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 							
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = set_color (200, 0, 0, 0);
 						}
-						
 					}
 				}				
 			}			

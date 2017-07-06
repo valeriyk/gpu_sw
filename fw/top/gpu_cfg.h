@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <pthread.h>
+//#include <pthread.h>
 
 #define NUM_OF_VSHADERS 1
 #define NUM_OF_PSHADERS 8
@@ -46,10 +46,6 @@ typedef struct gpu_cfg_t {
 	
 	uint32_t tile_width;
 	uint32_t tile_height;
-	
-	//pthread_mutex_t *zbuf_mutex;
-	//pthread_mutex_t *fbuf_mutex;
-	pthread_mutex_t* mutex;
 	
 } gpu_cfg_t;
 

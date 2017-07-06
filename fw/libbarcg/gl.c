@@ -428,12 +428,8 @@ void varying_fifo_push_Float4 (Varying *vry, Float4 *data) {
 
 static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	
-	size_t num_of_words_written = vry->num_of_words_written;
-	
 	assert ((type == VARYING_FIXPT) || (type == VARYING_FLOAT));
-	assert (num_of_words_written > 0);
-	
-	//static size_t idx = 0;
+	assert (vry->num_of_words_written > 0);
 	
 	size_t idx = vry->num_of_words_read;
 	VaryingWord data;
@@ -443,8 +439,7 @@ static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	else if (type == VARYING_FLOAT) {
 		data.as_float = fixpt_to_float (vry->data[idx].as_fixpt_t, VARYING_FRACT_BITS);
 	}
-	//idx++;
-	//if (idx == num_of_words) idx = 0;
+	
 	vry->num_of_words_read++;
 	return data;
 }

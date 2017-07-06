@@ -1,4 +1,6 @@
-#TCF          = ../../../hw/em7d_v1/build/tool_config/arc_no_stack_chk.tcf
+# TCF is needed for ARC builds only
+TCF          = ../../hw/em7d_v1/build/tool_config/arc_no_stack_chk.tcf
+
 OPT = -O3
 
 #SYSCONF_LINK_x86  =              gcc -g -std=c99 -DTARGET_x86 $(OPT)
@@ -8,14 +10,14 @@ SYSCONF_LINK_x86  =              gcc -g -std=c99 -pthread -Itop -Ihost -Ilibtga-
 
 
 #SYSCONF_LINK_MIPS = mips-mti-elf-gcc -g -std=c99 -Ilibtga-1.0.1/src -DTARGET_MIPS -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT) -EL -msoft-float -march=m14kc
-#SYSCONF_LINK_ARC  =             ccac -g          -Ilibtga-1.0.1/src -DTARGET_ARC  -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT) -tcf=$(TCF)
+SYSCONF_LINK_ARC  =             ccac -g          -Itop -Ihost -Ilibtga-1.0.1/src -Ilibbarcg -Ivshader -Ipshader -DTARGET_ARC -DPSHADER_DEBUG=0 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 -DNDEBUG=1 $(OPT) -tcf=$(TCF)
 
 
 
 CPPFLAGS     =
 
 LDFLAGS_x86  = -lm -pthread
-#LDFLAGS_ARC  = 
+LDFLAGS_ARC  = 
 ##LDFLAGS_MIPS = -lc -lg -lm -EL -msoft-float -march=m14kc -mclib=newlib
 ##LDFLAGS_MIPS = -lg -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
 #LDFLAGS_MIPS = -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
@@ -24,7 +26,10 @@ LIBS         =
 
 DESTDIR = ./
 TARGET_x86  = main.a
-#TARGET_ARC  = main_arc.elf
+TARGET_ARC     = arc.elf
+TARGET_ARC_HOST     = arc_host.elf
+TARGET_ARC_VSHADER  = arc_vshader.elf
+TARGET_ARC_PSHADER  = arc_pshader.elf
 #TARGET_MIPS = main_mips.elf
 
 #VPATH=thirdparty/libtga
@@ -33,12 +38,25 @@ TARGET_x86  = main.a
 OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
 INCLUDES_x86 =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 
-#OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c)) 
+OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+
+OBJECTS_ARC_HOST  := $(patsubst %.c, %_arc.o,  $(wildcard host/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC_HOST =                            $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_ARC_VSHADER  := $(patsubst %.c, %_arc.o,  $(wildcard vshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC_VSHADER =                            $(wildcard vshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_ARC_PSHADER  := $(patsubst %.c, %_arc.o,  $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC_PSHADER =                            $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 #OBJECTS_MIPS := $(patsubst %.c, %_mips.o, $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c))
 
 #all: x86 arc mips
 
-#arc: $(DESTDIR)$(TARGET_ARC)
+arc: arc_host arc_vshader arc_pshader
+arc_host:    $(DESTDIR)$(TARGET_ARC_HOST)
+arc_vshader: $(DESTDIR)$(TARGET_ARC_VSHADER)
+arc_pshader: $(DESTDIR)$(TARGET_ARC_PSHADER)
+
+arc_single: $(DESTDIR)$(TARGET_ARC)
 
 #mips: $(DESTDIR)$(TARGET_MIPS)
 
@@ -47,8 +65,8 @@ x86: $(DESTDIR)$(TARGET_x86)
 $(DESTDIR)$(TARGET_x86): $(OBJECTS_x86)
 	$(SYSCONF_LINK_x86) -Wall -o $(DESTDIR)$(TARGET_x86) $(OBJECTS_x86) $(LIBS) $(LDFLAGS_x86)
 
-#$(DESTDIR)$(TARGET_ARC): $(OBJECTS_ARC) $(TCF)
-#	$(SYSCONF_LINK_ARC) -Wall $(LDFLAGS_ARC) -o $(DESTDIR)$(TARGET_ARC) $(OBJECTS_ARC) $(LIBS)
+$(DESTDIR)$(TARGET_ARC): $(OBJECTS_ARC) $(TCF)
+	$(SYSCONF_LINK_ARC) -Wall $(LDFLAGS_ARC) -o $(DESTDIR)$(TARGET_ARC) $(OBJECTS_ARC) $(LIBS)
 
 #$(DESTDIR)$(TARGET_MIPS): $(OBJECTS_MIPS)
 #	$(SYSCONF_LINK_MIPS) -Wall -o $(DESTDIR)$(TARGET_MIPS) $(OBJECTS_MIPS) $(LIBS) $(LDFLAGS_MIPS)
@@ -56,8 +74,17 @@ $(DESTDIR)$(TARGET_x86): $(OBJECTS_x86)
 $(OBJECTS_x86): %_x86.o: %.c $(INCLUDES_x86)
 	$(SYSCONF_LINK_x86) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
 
-#$(OBJECTS_ARC): %_arc.o: %.c %.h
-#	$(SYSCONF_LINK_ARC) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+$(OBJECTS_ARC): %_arc.o: %.c $(INCLUDES_ARC)
+	$(SYSCONF_LINK_ARC) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+
+$(OBJECTS_ARC_HOST): %_arc.o: %.c $(INCLUDES_ARC_HOST)
+	$(SYSCONF_LINK_ARC) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+
+$(OBJECTS_ARC_VSHADER): %_arc.o: %.c $(INCLUDES_ARC_VSHADER)
+	$(SYSCONF_LINK_ARC) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+
+$(OBJECTS_ARC_VSHADER): %_arc.o: %.c $(INCLUDES_ARC_VSHADER)
+	$(SYSCONF_LINK_ARC) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
 
 #$(OBJECTS_MIPS): %_mips.o: %.c %.h
 #	$(SYSCONF_LINK_MIPS) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@

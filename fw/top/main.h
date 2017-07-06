@@ -1,3 +1,7 @@
 #pragma once 
 
-//#define PTHREAD_DEBUG 0
+//#define USE_PTHREAD
+
+#ifdef USE_PTHREAD
+#include <pthread.h>
+#endif

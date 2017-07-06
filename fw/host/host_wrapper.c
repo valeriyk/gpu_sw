@@ -2,7 +2,9 @@
 
 #include <wavefront_obj.h>
 #include <geometry.h>
-//#include <vshader.h>
+
+#include <vshader.h>
+#include <pshader.h>
 
 //#include "shader_normalmap.h"
 #include "shader_phong.h"
@@ -318,6 +320,8 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 		
+#ifdef USE_PTHREAD
+
 	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
 		while (cfg->vshader_done[i]);
@@ -363,6 +367,19 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	
 	if (PTHREAD_DEBUG) printf("host: pshaders_run_req=false\n");
 	cfg->pshaders_run_req = false;
+
+#else
+
+	vshader_main (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
+	
+	shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
+	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+		pshader_cfg[i].common_cfg       = cfg;
+		pshader_cfg[i].shader_num       = i;
+		pshader_main (&(pshader_cfg[i]));
+	}	
+	
+#endif
 
 }
 
