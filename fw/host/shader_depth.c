@@ -71,7 +71,8 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 		
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		if (LIGHTS[i].enabled) {
+		Light *l = cfg->lights_table_ptr;
+		if (l[i].enabled) {
 			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &model4d); // model -> world -> eye -> clip
 			
 			//Perspective divide is only needed when perspective projection is used for shadows
@@ -122,7 +123,8 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		diff_intensity[i] = (LIGHTS[i].enabled) ? -Float3_Float3_smult (&normal, &(LIGHTS[i].eye)) : 0;
+		Light *l = cfg->lights_table_ptr;
+		diff_intensity[i] = (l[i].enabled) ? -Float3_Float3_smult (&normal, &(l[i].eye)) : 0;
 		if (diff_intensity[i] > 0) {
 			diff_int_total += diff_intensity[i];
 		}
@@ -173,9 +175,11 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 	int    shadows = 0;
 	float  z_fighting = 123; // [almost] arbitrary value
 	
+	Light *l = cfg->lights_table_ptr;
+	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
-		if (!LIGHTS[i].enabled) continue;
+		if (!l[i].enabled) continue;
 		
 		
 		screenxy_t x;
@@ -224,9 +228,9 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
-		assert (LIGHTS[i].shadow_buf != NULL);
+		assert (l[i].shadow_buf != NULL);
 		
-		screenz_t shadow_buf_z = LIGHTS[i].shadow_buf[y * get_screen_width(cfg) + x];
+		screenz_t shadow_buf_z = l[i].shadow_buf[y * get_screen_width(cfg) + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
 	}

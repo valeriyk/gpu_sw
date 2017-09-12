@@ -29,7 +29,8 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	Float4 norm4d_eye = fmat4_Float4_mult (&(obj->mvit), &norm4d);
 	Float3 norm_eye   = Float4_Float3_vect_conv (&norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
 	Float3_normalize (&norm_eye);
-	float diff_intensity = -Float3_Float3_smult (&norm_eye, &(LIGHTS[0].eye));
+	Light *l = cfg->lights_table_ptr;
+	float diff_intensity = -Float3_Float3_smult (&norm_eye, &(l[0].eye));// TBD, why [0]?
 	
 	assert (diff_intensity <=  1.0f);
 	assert (diff_intensity >= -1.0f);

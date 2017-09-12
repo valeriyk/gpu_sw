@@ -130,9 +130,9 @@ typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, V
 typedef bool   (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color, gpu_cfg_t *cfg);
 
 
-void init_lights (void);
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf);
-void free_light (int light_num);
+void init_lights (gpu_cfg_t *cfg);
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, gpu_cfg_t *cfg);
+void free_light (int light_num, gpu_cfg_t *cfg);
 
 void   set_screen_size   (gpu_cfg_t *cfg, size_t width, size_t height);
 size_t get_screen_width  (gpu_cfg_t *cfg);

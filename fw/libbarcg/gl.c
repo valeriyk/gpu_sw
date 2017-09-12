@@ -154,29 +154,32 @@ size_t get_tile_height (gpu_cfg_t *cfg) {
 	return cfg->tile_height;
 }
 
-void init_lights (void) {
+void init_lights (gpu_cfg_t *cfg) {
+	Light *l = cfg->lights_table_ptr;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		LIGHTS[i].enabled        = false;
-		LIGHTS[i].has_shadow_buf = false;
-		LIGHTS[i].shadow_buf     = NULL;
+		l[i].enabled        = false;
+		l[i].has_shadow_buf = false;
+		l[i].shadow_buf     = NULL;
 	}
 }
 
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf) { //TBD add light_src,
-	LIGHTS[light_num].enabled = true;
-	LIGHTS[light_num].dir = dir;
-	LIGHTS[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, gpu_cfg_t *cfg) { //TBD add light_src,
+	Light *l = cfg->lights_table_ptr;
+	l[light_num].enabled = true;
+	l[light_num].dir = dir;
+	l[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
 	
-	LIGHTS[light_num].has_shadow_buf = (shadow_buf != NULL);
-	LIGHTS[light_num].shadow_buf = shadow_buf;
+	l[light_num].has_shadow_buf = (shadow_buf != NULL);
+	l[light_num].shadow_buf = shadow_buf;
 }
 
-void free_light (int light_num) {
-	LIGHTS[light_num].enabled        = false;
-	LIGHTS[light_num].has_shadow_buf = false;
+void free_light (int light_num, gpu_cfg_t *cfg) {
+	Light *l = cfg->lights_table_ptr;
+	l[light_num].enabled        = false;
+	l[light_num].has_shadow_buf = false;
 	
-    if (LIGHTS[light_num].shadow_buf != NULL) {
-		free (LIGHTS[light_num].shadow_buf);
+    if (l[light_num].shadow_buf != NULL) {
+		free (l[light_num].shadow_buf);
 	}
 }
 

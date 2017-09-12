@@ -8,6 +8,20 @@
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 
+#define GPU_CFG_ABS_ADDRESS 0x400
+
+
+//#define SINGLEPROC_SINGLETHREAD
+//#define SINGLEPROC_MULTITHREAD
+//#define MULTIPROC
+
+#ifdef SINGLEPROC_MULTITHREAD
+	#define USE_PTHREAD
+	#include <pthread.h>
+#endif
+
+
+
 
 typedef struct gpu_cfg_t {
 	
@@ -22,6 +36,8 @@ typedef struct gpu_cfg_t {
 	void* zbuffer_ptr;
 	void* vshader_ptr;
 	void* pshader_ptr;
+	
+	void* lights_table_ptr;
 		
 	volatile bool vshaders_run_req;
 	volatile bool vshaders_stop_req;
@@ -49,6 +65,5 @@ typedef struct gpu_cfg_t {
 
 typedef struct shader_cfg_t {
 	volatile gpu_cfg_t* common_cfg;
-	
 	uint32_t   shader_num;
 } shader_cfg_t;

@@ -21,14 +21,21 @@ int main(int argc, char** argv) {
    	gpu_cfg_t gpu_cfg;
 	
 	gpu_cfg.tile_idx_table_ptr = NULL;
+	
 	for (int i = 0; i < MAX_NUM_OF_FRAMEBUFFERS; i++) {
 		gpu_cfg.fbuffer_ptr[i] = NULL;
 	}
+	
 	gpu_cfg.zbuffer_ptr = NULL;
+	
+	gpu_cfg.lights_table_ptr = NULL;
+	
 	gpu_cfg.vshader_ptr = NULL;
 	gpu_cfg.pshader_ptr = NULL;
+		
 	gpu_cfg.vshaders_run_req  = false;
 	gpu_cfg.vshaders_stop_req = false;
+	
 	gpu_cfg.pshaders_run_req  = false;
 	gpu_cfg.pshaders_stop_req = false;
 	

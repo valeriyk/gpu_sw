@@ -8,10 +8,19 @@
 //#include "platform.h"
 
 
-void * pshader_wrapper (void *cfg) {
+#ifndef MULTIPROC
+  void * pshader_wrapper (void *cfg) {
 	
 	shader_cfg_t *shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
+	gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
+#else
+  int main (void) {
+	uint32_t shader_num = 0; // TBD - replace with reading a register
+	gpu_cfg_t *common_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+#endif
+	
+	
 		
 	if (PTHREAD_DEBUG0) {
 		printf ("run pshader %d\n", shader_num);
@@ -26,38 +35,38 @@ void * pshader_wrapper (void *cfg) {
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	*/
 	
-	while (!shader_cfg->common_cfg->pshaders_stop_req) {	
+	while (!common_cfg->pshaders_stop_req) {	
 				
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=false\n", shader_num);
 		}
-		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
-		shader_cfg->common_cfg->pshader_done[shader_num] = false;
-		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
+		//pthread_mutex_lock (common_cfg->mutex);
+		common_cfg->pshader_done[shader_num] = false;
+		//pthread_mutex_unlock (common_cfg->mutex);
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: wait for pshader_run_req or pshader_stop_req\n", shader_num);
 		}
-		while (!(shader_cfg->common_cfg->pshaders_run_req || shader_cfg->common_cfg->pshaders_stop_req));
+		while (!(common_cfg->pshaders_run_req || common_cfg->pshaders_stop_req));
 		
-		if (shader_cfg->common_cfg->pshaders_stop_req) break;
+		if (common_cfg->pshaders_stop_req) break;
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_run_req detected\n", shader_num);
 		}
 		
 		/*if (shader_num == 1) {
-			while (!shader_cfg->common_cfg->pshader0_done);
+			while (!common_cfg->pshader0_done);
 		}*/
 		//if ((shader_num % 2) == 1) {
 		//if (shader_num > 0) {
-			//while (!shader_cfg->common_cfg->pshader_done[shader_num-1]);
+			//while (!common_cfg->pshader_done[shader_num-1]);
 			//pshader (shader_cfg);
 		//}
 		
-		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
-		pshader_loop (shader_cfg);
-		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
+		//pthread_mutex_lock (common_cfg->mutex);
+		pshader_loop (common_cfg, shader_num);
+		//pthread_mutex_unlock (common_cfg->mutex);
 		
 		
 		
@@ -65,11 +74,15 @@ void * pshader_wrapper (void *cfg) {
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=true\n", shader_num);
 		}
-		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
-		shader_cfg->common_cfg->pshader_done[shader_num] = true;
-		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
+		//pthread_mutex_lock (common_cfg->mutex);
+		common_cfg->pshader_done[shader_num] = true;
+		//pthread_mutex_unlock (common_cfg->mutex);
 				
-		while (shader_cfg->common_cfg->pshaders_run_req);	
-	}	
+		while (common_cfg->pshaders_run_req);	
+	}
+#ifndef MULTIPROC	
 	return NULL;
+#else
+	return 0;
+#endif
 }

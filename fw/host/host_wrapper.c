@@ -3,8 +3,10 @@
 #include <wavefront_obj.h>
 #include <geometry.h>
 
-#include <vshader.h>
-#include <pshader.h>
+#ifdef SINGLEPROC_SINGLETHREAD
+	#include <vshader.h>
+	#include <pshader.h>
+#endif
 
 //#include "shader_normalmap.h"
 #include "shader_phong.h"
@@ -31,7 +33,7 @@
 
 // POSITIVE Z TOWARDS ME
 
-Light LIGHTS[MAX_NUM_OF_LIGHTS];
+//Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
 /*
 void   print_fmat3 (fmat3 *m, char *header);
@@ -120,17 +122,18 @@ void setup_light_transform (volatile ObjectListNode* volatile obj_list_head, fma
 }
 
 
-void light_transform (fmat4 *view) {
+void light_transform (fmat4 *view, gpu_cfg_t *cfg) {
 	Float4 light4_a;
 	Float4 light4_b;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		if (!LIGHTS[i].enabled) continue;
-		light4_a = Float3_Float4_conv (&(LIGHTS[i].dir), 0);
+		Light *l = cfg->lights_table_ptr;
+		if (!l[i].enabled) continue;
+		light4_a = Float3_Float4_conv (&(l[i].dir), 0);
 		// Light vector changes after View transformation only,
 		// it does not depend on Model and Projection transformations
 		light4_b = fmat4_Float4_mult  (view, &light4_a);
-		LIGHTS[i].eye = Float4_Float3_vect_conv (&light4_b);
-		Float3_normalize (&(LIGHTS[i].eye));
+		l[i].eye = Float4_Float3_vect_conv (&light4_b);
+		Float3_normalize (&(l[i].eye));
 	}
 }
 
@@ -321,7 +324,7 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 		
-#ifdef USE_PTHREAD
+#ifndef SINGLEPROC_SINGLETHREAD
 
 	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
@@ -384,9 +387,13 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 
 }
 
+#ifndef MULTIPROC
+  void * host_wrapper (void *gpu_cfg) {
+#else
+  int main (void) {
+	gpu_cfg_t *gpu_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+#endif
 
-void * host_wrapper (void *gpu_cfg) {
-       
     gpu_cfg_t *cfg = gpu_cfg;
     
     
@@ -403,8 +410,14 @@ void * host_wrapper (void *gpu_cfg) {
     for (int i = 0; i < cfg->num_of_fbuffers; i++) {
 		if ((cfg->fbuffer_ptr[i] = calloc (screen_size, sizeof(pixel_color_t))) == NULL) {
 			if (DEBUG_MALLOC) printf ("fbuffer%d calloc failed\n", i);
-			return NULL;
+			goto error;
 		}
+	}
+	
+	//Light LIGHTS[MAX_NUM_OF_LIGHTS];
+	if ((cfg->lights_table_ptr = calloc (MAX_NUM_OF_LIGHTS, sizeof(Light))) == NULL) {
+		if (DEBUG_MALLOC) printf ("light table calloc failed\n");
+		goto error;
 	}
     	
     //pixel_color_t *active_fbuffer = NULL;
@@ -445,13 +458,13 @@ void * host_wrapper (void *gpu_cfg) {
 	fmat4 view;	
 	//init_view (&view, &eye, &center, &up);
     
-    init_lights();
+    init_lights(cfg);
     //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
     
     screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
-    if (!shadow_buf_0) return NULL;
+    if (!shadow_buf_0) goto error;
     //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL, cfg);	
     
     
     float eye_x = 0;
@@ -473,7 +486,7 @@ void * host_wrapper (void *gpu_cfg) {
     //////////////////
 	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
-		return NULL;
+		goto error;
 	}
 	
 		
@@ -496,8 +509,9 @@ void * host_wrapper (void *gpu_cfg) {
 			}
 			
 			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
-				if (LIGHTS[j].enabled && LIGHTS[j].has_shadow_buf) {
-					LIGHTS[j].shadow_buf[i] = 0;
+				Light *l = cfg->lights_table_ptr;
+				if (l[j].enabled && l[j].has_shadow_buf) {
+					l[j].shadow_buf[i] = 0;
 				}
 			}
 		}
@@ -514,17 +528,18 @@ void * host_wrapper (void *gpu_cfg) {
 		}
 		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
-			return NULL;
+			goto error;
 		}
 			
 		
 		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-			if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
+			Light *l = cfg->lights_table_ptr;
+			if (l[i].enabled && l[i].has_shadow_buf) {
 				
-				init_view             (&view, &(LIGHTS[i].src), &center, &up);
+				init_view             (&view, &(l[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, LIGHTS[i].shadow_buf, NULL);	
+				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, l[i].shadow_buf, NULL);	
 			}
 		}			
 		
@@ -547,7 +562,7 @@ void * host_wrapper (void *gpu_cfg) {
 		
 		// 
 		init_view            (&view, &eye, &center, &up);
-		light_transform      (&view);
+		light_transform      (&view, cfg);
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
@@ -592,7 +607,7 @@ void * host_wrapper (void *gpu_cfg) {
 			tbyte *tmp;
 			if ((tmp = (tbyte*) calloc (screen_size, sizeof(tbyte))) == NULL) {
 				if (DEBUG_MALLOC) printf ("tga frame calloc failed\n");
-				return NULL;
+				goto error;
 			}
 			if (cfg->zbuffer_ptr != NULL) {
 				for (int i = 0; i < screen_size; i++) {
@@ -602,7 +617,8 @@ void * host_wrapper (void *gpu_cfg) {
 				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
 			}
 			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-				if (LIGHTS[i].enabled && LIGHTS[i].has_shadow_buf) {
+				Light *l = cfg->lights_table_ptr;
+				if (l[i].enabled && l[i].has_shadow_buf) {
 					sprintf(shadow_num, "%d", i);
 					strcpy (tga_file, "shadow_buffer_");
 					strcat (tga_file, frame_num);
@@ -611,7 +627,7 @@ void * host_wrapper (void *gpu_cfg) {
 					strcat (tga_file, ".tga");
 					
 					for (int j = 0; j < screen_size; j++) {
-						tmp[j] = LIGHTS[i].shadow_buf[j] >> (8 * (sizeof(screenz_t) - 1) );
+						tmp[j] = l[i].shadow_buf[j] >> (8 * (sizeof(screenz_t) - 1) );
 					}
 					write_tga_file (tga_file, tmp, WIDTH, HEIGHT, 8, 1);		
 				}
@@ -636,7 +652,7 @@ void * host_wrapper (void *gpu_cfg) {
 	
 	if (RECORD_VIDEO) {		
 		FILE *fp = fopen ("video.y4m", "w");
-		if (!fp) return NULL; // TBD return error - used to be return 1
+		if (!fp) goto error;
 		fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
 		
 		for (int i = 0; i < NUM_OF_FRAMES; i++) {
@@ -671,9 +687,21 @@ void * host_wrapper (void *gpu_cfg) {
 	}
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		free_light (i);
+		free_light (i, cfg);
 	}
 	
-	
+#ifndef MULTIPROC
     return NULL;
+#else
+	return 0;
+#endif
+
+error:
+
+#ifndef MULTIPROC
+    return NULL;
+#else
+	return 1;
+#endif
+	
 }
