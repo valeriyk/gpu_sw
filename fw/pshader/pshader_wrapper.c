@@ -56,7 +56,7 @@ void * pshader_wrapper (void *cfg) {
 		//}
 		
 		//pthread_mutex_lock (shader_cfg->common_cfg->mutex);
-		pshader_main (shader_cfg);
+		pshader_loop (shader_cfg);
 		//pthread_mutex_unlock (shader_cfg->common_cfg->mutex);
 		
 		

@@ -2,15 +2,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-//#include <pthread.h>
 
 #define NUM_OF_VSHADERS 1
-#define NUM_OF_PSHADERS 8
+#define NUM_OF_PSHADERS 1
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 
-//#define PLATFORM_SCREEN_WIDTH  160//1280
-//#define PLATFORM_SCREEN_HEIGHT 160//720
 
 typedef struct gpu_cfg_t {
 	

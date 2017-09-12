@@ -6,7 +6,6 @@
 #include <gl.h>
 
 //#include "libbarcg.h"
-//#include "platform.h"
 
 Varying   interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar);
  dfixpt_t interpolate_w       (                fixpt_t w_reciprocal[3], FixPt3 *bar);
@@ -374,7 +373,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
     }
 }
 
-void pshader_main (const shader_cfg_t* const shader_cfg) {
+void pshader_loop (const shader_cfg_t* const shader_cfg) {
 	
 	uint32_t shader_num = shader_cfg->shader_num;
 	

@@ -16,7 +16,7 @@
 // 2   texture.v
 // ....
 
-Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry) {
+Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry, gpu_cfg_t *cfg) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
@@ -55,7 +55,7 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	return clip;		
 }
 
-bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
+bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *cfg) {
 	
 	float intensity = varying_fifo_pop_float (vry);
 	
@@ -65,15 +65,6 @@ bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 		return false;
 	}
 		
-	Float2 text   = varying_fifo_pop_Float2 (vry);
-	
-	assert (text.as_struct.u >= 0);
-	assert (text.as_struct.v >= 0);
-	
-	size_t uu = (size_t) text.as_struct.u;
-	size_t vv = (size_t) text.as_struct.v;
-	//int uu = (int) text.as_struct.u;
-	//int vv = (int) text.as_struct.v;
 	//
 	// If texture is not provided, use gray color
 	//
@@ -82,10 +73,16 @@ bool pshader_gouraud (Object *obj, Varying *vry, pixel_color_t *color) {
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {	
+
+		Float2 text   = varying_fifo_pop_Float2 (vry);
+		
+		assert (text.as_struct.u >= 0);
+		assert (text.as_struct.v >= 0);
+		
+		size_t uu = (size_t) text.as_struct.u;
+		size_t vv = (size_t) text.as_struct.v;
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
-		//assert (uu >= 0);
-		//assert (vv >= 0);
 		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}

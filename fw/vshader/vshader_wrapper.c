@@ -30,7 +30,7 @@ void * vshader_wrapper (void *cfg) {
 		
 		// vshader_loop (shader_cfg);
 		//draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
-		vshader_main (shader_cfg->common_cfg, shader_cfg->common_cfg->vshader_ptr, shader_cfg->common_cfg->pshader_ptr, shader_cfg->common_cfg->zbuffer_ptr, shader_cfg->common_cfg->active_fbuffer);
+		vshader_loop (shader_cfg->common_cfg, shader_cfg->common_cfg->vshader_ptr, shader_cfg->common_cfg->pshader_ptr, shader_cfg->common_cfg->zbuffer_ptr, shader_cfg->common_cfg->active_fbuffer);
 		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);

@@ -3,8 +3,6 @@
 
 #include "geometry_fixpt.h"
 
-//#include <fixmath.h>
-
 #include <math.h>
 
 
@@ -77,15 +75,7 @@ bool pshader_phong (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	Float3_normalize (&normal);
 	float intensity = -Float3_Float3_smult (&normal, &(LIGHTS[0].eye));
 	
-								
-	Float2 text   = varying_fifo_pop_Float2 (vry);
-	
-	
-	assert (text.as_struct.u >= 0);
-	assert (text.as_struct.v >= 0);
-	size_t uu = (size_t) text.as_struct.u;
-	size_t vv = (size_t) text.as_struct.v;
-	
+					
 	//
 	// If texture is not provided, use gray color
 	//
@@ -94,6 +84,13 @@ bool pshader_phong (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {	
+	
+		Float2 text = varying_fifo_pop_Float2 (vry);
+	
+		assert (text.as_struct.u >= 0);
+		assert (text.as_struct.v >= 0);
+		size_t uu = (size_t) text.as_struct.u;
+		size_t vv = (size_t) text.as_struct.v;
 		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
@@ -104,11 +101,11 @@ bool pshader_phong (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	
 
 	//if ((intensity > 1.0f) || (intensity < -1.0f)) {
-	if (intensity < -0.f) {
+	if (intensity < 0) {
 		return false;
 	}
 	
-	float intensity_treshold = 0;
+	float intensity_treshold = 0.2;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}

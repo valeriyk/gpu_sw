@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 	gpu_cfg.pshaders_stop_req = false;
 	
 	
-	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
 		gpu_cfg.vshader_done[i] = false;
 	}
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {

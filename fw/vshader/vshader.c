@@ -101,7 +101,7 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNod
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void vshader_main (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	if (GL_DEBUG_0)
 	{

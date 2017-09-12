@@ -10,7 +10,7 @@ SYSCONF_LINK_x86  =              gcc -g -std=c99 -pthread -Itop -Ihost -Ilibtga-
 
 
 #SYSCONF_LINK_MIPS = mips-mti-elf-gcc -g -std=c99 -Ilibtga-1.0.1/src -DTARGET_MIPS -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=1 -DNDEBUG=1 $(OPT) -EL -msoft-float -march=m14kc
-SYSCONF_LINK_ARC  =             ccac -g          -Itop -Ihost -Ilibtga-1.0.1/src -Ilibbarcg -Ivshader -Ipshader -DTARGET_ARC -DPSHADER_DEBUG=0 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 -DNDEBUG=1 $(OPT) -tcf=$(TCF)
+SYSCONF_LINK_ARC  =             ccac -g          -Itop -Ihost -Ilibtga-1.0.1/src -Ilibbarcg -Ivshader -Ipshader -DTARGET_ARC -DPSHADER_DEBUG=0 -DGL_DEBUG_0=0 -DGL_DEBUG_1=0 -DGL_DEBUG_2=0 -DDEBUG_Z=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0  $(OPT) -tcf=$(TCF)
 
 
 
@@ -24,7 +24,7 @@ LDFLAGS_ARC  =
 
 LIBS         =
 
-DESTDIR = ./
+DESTDIR = .
 TARGET_x86  = main.a
 TARGET_ARC     = arc.elf
 TARGET_ARC_HOST     = arc_host.elf
@@ -52,24 +52,28 @@ INCLUDES_ARC_PSHADER =                            $(wildcard pshader/*.h) $(wild
 #all: x86 arc mips
 
 arc: arc_host arc_vshader arc_pshader
-arc_host:    $(DESTDIR)$(TARGET_ARC_HOST)
-arc_vshader: $(DESTDIR)$(TARGET_ARC_VSHADER)
-arc_pshader: $(DESTDIR)$(TARGET_ARC_PSHADER)
+arc_host:    $(DESTDIR)/$(TARGET_ARC_HOST)
+arc_vshader: $(DESTDIR)/$(TARGET_ARC_VSHADER)
+arc_pshader: $(DESTDIR)/$(TARGET_ARC_PSHADER)
 
-arc_single: $(DESTDIR)$(TARGET_ARC)
+arc_single: $(DESTDIR)/$(TARGET_ARC)
 
-#mips: $(DESTDIR)$(TARGET_MIPS)
+#mips: $(DESTDIR)/$(TARGET_MIPS)
 
-x86: $(DESTDIR)$(TARGET_x86)
+x86: $(DESTDIR)/$(TARGET_x86)
 
-$(DESTDIR)$(TARGET_x86): $(OBJECTS_x86)
-	$(SYSCONF_LINK_x86) -Wall -o $(DESTDIR)$(TARGET_x86) $(OBJECTS_x86) $(LIBS) $(LDFLAGS_x86)
+$(DESTDIR)/$(TARGET_x86): $(OBJECTS_x86)
+	$(SYSCONF_LINK_x86) -Wall -o $(DESTDIR)/$(TARGET_x86) $(OBJECTS_x86) $(LIBS) $(LDFLAGS_x86)
 
-$(DESTDIR)$(TARGET_ARC): $(OBJECTS_ARC) $(TCF)
-	$(SYSCONF_LINK_ARC) -Wall $(LDFLAGS_ARC) -o $(DESTDIR)$(TARGET_ARC) $(OBJECTS_ARC) $(LIBS)
+$(DESTDIR)/$(TARGET_ARC): $(OBJECTS_ARC) $(TCF)
+	$(SYSCONF_LINK_ARC) -Wall $(LDFLAGS_ARC) -o $(DESTDIR)/$(TARGET_ARC) $(OBJECTS_ARC) $(LIBS)
 
-#$(DESTDIR)$(TARGET_MIPS): $(OBJECTS_MIPS)
-#	$(SYSCONF_LINK_MIPS) -Wall -o $(DESTDIR)$(TARGET_MIPS) $(OBJECTS_MIPS) $(LIBS) $(LDFLAGS_MIPS)
+$(DESTDIR)/$(TARGET_ARC_HOST): $(OBJECTS_ARC_HOST) $(TCF)
+	$(SYSCONF_LINK_ARC) -Wall $(LDFLAGS_ARC) -o $(DESTDIR)/$(TARGET_ARC_HOST) $(OBJECTS_ARC_HOST) $(LIBS)
+
+
+#$(DESTDIR)/$(TARGET_MIPS): $(OBJECTS_MIPS)
+#	$(SYSCONF_LINK_MIPS) -Wall -o $(DESTDIR)/$(TARGET_MIPS) $(OBJECTS_MIPS) $(LIBS) $(LDFLAGS_MIPS)
 
 $(OBJECTS_x86): %_x86.o: %.c $(INCLUDES_x86)
 	$(SYSCONF_LINK_x86) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@

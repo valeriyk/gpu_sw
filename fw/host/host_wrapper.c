@@ -197,9 +197,9 @@ ObjectListNode* init_objects (void) {
 			return NULL;
 		}
 		head = node;
-		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+		//node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 		//node->obj = obj_new (african_head, african_head_diff, NULL, NULL);
-		//node->obj = obj_new (african_head, NULL, NULL, NULL);
+		node->obj = obj_new (african_head, NULL, NULL, NULL);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
@@ -212,7 +212,8 @@ ObjectListNode* init_objects (void) {
 				return NULL;
 			}
 			node       = node->next;
-			node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+			//node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+			node->obj = obj_new (african_head, NULL, NULL, NULL);
 			node->next = NULL;
 			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
 			obj_set_translation (node->obj, 1.f, 0.f, -10.0f);
@@ -370,13 +371,13 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 
 #else
 
-	vshader_main (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
+	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
 	
 	shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
 		pshader_cfg[i].common_cfg       = cfg;
 		pshader_cfg[i].shader_num       = i;
-		pshader_main (&(pshader_cfg[i]));
+		pshader_loop (&(pshader_cfg[i]));
 	}	
 	
 #endif
@@ -449,8 +450,8 @@ void * host_wrapper (void *gpu_cfg) {
     
     screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
     if (!shadow_buf_0) return NULL;
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
-    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
+    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
+    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL);	
     
     
     float eye_x = 0;
@@ -550,8 +551,8 @@ void * host_wrapper (void *gpu_cfg) {
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
-		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		
