@@ -35,32 +35,6 @@
 
 //Light LIGHTS[MAX_NUM_OF_LIGHTS];
 
-/*
-void   print_fmat3 (fmat3 *m, char *header);
-void   print_fmat4 (fmat4 *m, char *header);
-
-void print_fmat4 (fmat4 *m, char *header) {
-	printf ("%s\n", header);
-	for (int i = 0; i < 4; i++) {
-		printf("row %d: ", i);
-		for (int j = 0; j < 4; j++)
-			printf ("%f ", (*m)[i][j]);
-		printf("\n");
-	}
-	printf("\n");
-}
-
-void print_fmat3 (fmat3 *m, char *header) {
-	printf ("%s\n", header);
-	for (int i = 0; i < 3; i++) {
-		printf("row %d: ", i);
-		for (int j = 0; j < 3; j++)
-			printf ("%f ", (*m)[i][j]);
-		printf("\n");
-	}
-	printf("\n");
-}
-*/
 
 
 
@@ -86,7 +60,7 @@ void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view)
 }
 */
 
-void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 
 
@@ -122,7 +96,7 @@ void setup_light_transform (volatile ObjectListNode* volatile obj_list_head, fma
 }
 
 
-void light_transform (fmat4 *view, gpu_cfg_t *cfg) {
+void light_transform (fmat4 *view, volatile gpu_cfg_t *cfg) {
 	Float4 light4_a;
 	Float4 light4_b;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
@@ -316,14 +290,20 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 	return (uint8_t) (128.f + rgb.r * 0.439f - rgb.g * 0.368f - rgb.b * 0.071f);
 }
 
+/*
+void save_host_results (volatile gpu_cfg_t *cfg) {
+	cfg->obj_list_ptr;
+	//Float3 model = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
+}
+*/
 
-void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	cfg->vshader_ptr = vshader;
 	cfg->pshader_ptr = pshader;
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
-		
+			
 #ifndef SINGLEPROC_SINGLETHREAD
 
 	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
@@ -347,7 +327,6 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	
 	if (PTHREAD_DEBUG) printf("host: vshaders_run_req=false\n");
 	cfg->vshaders_run_req = false;
-	
 	
 	////////////////////
 	
@@ -375,12 +354,12 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 #else
 
 	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
-	
-	shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
+	//shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
-		pshader_cfg[i].common_cfg       = cfg;
-		pshader_cfg[i].shader_num       = i;
-		pshader_loop (&(pshader_cfg[i]));
+		//pshader_cfg[i].common_cfg       = cfg;
+		//pshader_cfg[i].shader_num       = i;
+		//pshader_loop (&(pshader_cfg[i]));
+		pshader_loop (cfg, i);
 	}	
 	
 #endif
@@ -388,14 +367,50 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 }
 
 #ifndef MULTIPROC
-  void * host_wrapper (void *gpu_cfg) {
+ void * host_wrapper (void *gpu_cfg) {
 #else
-  int main (void) {
-	gpu_cfg_t *gpu_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+ int main (void) {
+	volatile gpu_cfg_t * volatile gpu_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
 #endif
 
-    gpu_cfg_t *cfg = gpu_cfg;
+    volatile gpu_cfg_t * volatile cfg = gpu_cfg;
     
+    
+    /*
+    cfg->tile_idx_table_ptr = NULL;
+	
+	for (int i = 0; i < MAX_NUM_OF_FRAMEBUFFERS; i++) {
+		cfg->fbuffer_ptr[i] = NULL;
+	}
+	
+	cfg->zbuffer_ptr = NULL;
+	
+	cfg->lights_table_ptr = NULL;
+	cfg->viewport_ptr = NULL;
+	
+	cfg->vshader_ptr = NULL;
+	cfg->pshader_ptr = NULL;
+		
+	cfg->vshaders_run_req  = false;
+	cfg->vshaders_stop_req = false;
+	
+	cfg->pshaders_run_req  = false;
+	cfg->pshaders_stop_req = false;
+	
+	
+	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+		cfg->vshader_done[i] = false;
+	}
+	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+		cfg->pshader_done[i] = false;
+	}
+	*/
+	cfg->num_of_vshaders = NUM_OF_VSHADERS;
+	cfg->num_of_pshaders = NUM_OF_PSHADERS;
+	cfg->num_of_ushaders = NUM_OF_USHADERS;	
+	cfg->num_of_tiles    = 0;
+	cfg->num_of_fbuffers = MAX_NUM_OF_FRAMEBUFFERS;
+	
     
     size_t screen_size = WIDTH * HEIGHT;
     
@@ -419,7 +434,12 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 		if (DEBUG_MALLOC) printf ("light table calloc failed\n");
 		goto error;
 	}
-    	
+    
+    if ((cfg->viewport_ptr = calloc (1, sizeof(fmat4))) == NULL) {
+		if (DEBUG_MALLOC) printf ("viewport calloc failed\n");
+		goto error;
+	}	
+	
     //pixel_color_t *active_fbuffer = NULL;
     //cfg->active_fbuffer = NULL;
     		
@@ -445,7 +465,7 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	
 	// Viewport Matrix - move to screen coords
 	set_screen_size (cfg, (size_t) WIDTH, (size_t) HEIGHT);
-    init_viewport (0, 0, get_screen_width(cfg), get_screen_height(cfg), get_screen_depth(cfg));
+    init_viewport   (cfg, 0, 0, get_screen_width(cfg), get_screen_height(cfg), get_screen_depth(cfg));
 	
     
     // View Matrix - transform global coords to camera coords
@@ -463,7 +483,7 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
     
     screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
     if (!shadow_buf_0) goto error;
-    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0);	
+    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0, cfg);	
     new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL, cfg);	
     
     
@@ -532,7 +552,7 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 		}
 			
 		
-		
+		/*
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 			Light *l = cfg->lights_table_ptr;
 			if (l[i].enabled && l[i].has_shadow_buf) {
@@ -542,7 +562,7 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, l[i].shadow_buf, NULL);	
 			}
 		}			
-		
+		*/
 		
 		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
@@ -678,6 +698,10 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 		free (cfg->zbuffer_ptr);
 	}
 	
+	if (cfg->viewport_ptr != NULL) {
+		free (cfg->viewport_ptr);
+	}
+	
 	free_objects ((void*) cfg->obj_list_ptr);
 	
 	for (int i = 0; i < cfg->num_of_fbuffers; i++) {
@@ -689,6 +713,10 @@ void launch_shaders (gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		free_light (i, cfg);
 	}
+	if (cfg->lights_table_ptr != NULL) {
+		free (cfg->lights_table_ptr);
+	}
+	
 	
 #ifndef MULTIPROC
     return NULL;

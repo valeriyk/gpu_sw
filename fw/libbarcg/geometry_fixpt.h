@@ -81,7 +81,8 @@ static inline fixpt_t fixpt_from_float (float a, uint8_t fract_bits) {
 	fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits));
 	return c;
 }
-
+	
+	
 static inline fixpt_t fixpt_from_float_no_rnd (float a, uint8_t fract_bits) {
 	fixpt_t c = (fixpt_t) (a * (1 << fract_bits));
 	return c;

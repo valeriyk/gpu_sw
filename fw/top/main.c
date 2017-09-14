@@ -30,6 +30,8 @@ int main(int argc, char** argv) {
 	
 	gpu_cfg.lights_table_ptr = NULL;
 	
+	gpu_cfg.viewport_ptr = NULL;
+	
 	gpu_cfg.vshader_ptr = NULL;
 	gpu_cfg.pshader_ptr = NULL;
 		

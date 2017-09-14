@@ -5,12 +5,12 @@
 #include <stdlib.h>
 
 
+#include <shader_gouraud.h> // TBD REMOVE
+
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], gpu_cfg_t *cfg);
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], volatile gpu_cfg_t *cfg);
 
-
-
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], gpu_cfg_t *cfg) {
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], volatile gpu_cfg_t *cfg) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
@@ -101,15 +101,7 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNod
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
-	
-	if (GL_DEBUG_0)
-	{
-		printf("call draw_frame()\n");
-	}
-	
-	
-	
+void vshader_loop (volatile gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	cfg->pshader_ptr = pshader;
 	cfg->zbuffer_ptr = zbuffer;
@@ -121,7 +113,7 @@ void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, 
 	
 	// Clean up data structures for each new frame:
 	for (int i = 0; i < cfg->num_of_tiles; i++) {
-		TriangleListNode **tln = cfg->tile_idx_table_ptr;
+		volatile TriangleListNode * volatile *tln = cfg->tile_idx_table_ptr;
 		tln[i] = NULL;
 	}
 	
@@ -130,8 +122,10 @@ void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, 
 	int tri_num = 0;
 		
 	while (obj_list_node != NULL) {
+		
 		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj); i++) {
-						
+			
+			
 			Triangle clip;
 			Triangle ndc;
 			Triangle screen;
@@ -149,7 +143,7 @@ void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, 
 				d.varying[j].num_of_words_written = 0;
 				d.varying[j].num_of_words_read    = 0;
 				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
-								
+												
 				// Clip & normalize (clip -> NDC):
 				// Clip.w contains Eye.z, so first check that it is greater than zero
 				// because I don't need to draw anything behind me
@@ -168,19 +162,18 @@ void vshader_loop (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, 
 				for (int k = 0; k < 3; k++) {
 					
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
-					
 					if ((ndc.vtx[j].as_array[k] >= 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
 						is_clipped = true;
 						break;
 					}
 				}
+				
 				// Typically W shouldn't be part of NDC, but I need it here to do correct matrix multiplication below (VIEWPORT is 4x4)
 				// as_struct.w == as_array[3]
 				ndc.vtx[j].as_struct.w = 1.0f;
 
 				if (!is_clipped) {
-					screen.vtx[j] = fmat4_Float4_mult (&VIEWPORT, &(ndc.vtx[j]));
-				
+					screen.vtx[j] = fmat4_Float4_mult (cfg->viewport_ptr, &(ndc.vtx[j]));
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler
 					d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);

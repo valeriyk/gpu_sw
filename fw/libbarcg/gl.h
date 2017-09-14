@@ -103,7 +103,9 @@ typedef struct TrianglePShaderData {
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
-} __attribute__ ((aligned (1024))) TrianglePShaderData;
+//} __attribute__ ((aligned (1024))) TrianglePShaderData;
+} TrianglePShaderData;
+//#pragma align_to(1024,stack)
 
 typedef struct TriangleListNode {
 	volatile struct TrianglePShaderData* volatile tri;
@@ -121,30 +123,30 @@ typedef struct Light {
 } Light;
 
 
-extern fmat4 VIEWPORT;
-extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
+//extern fmat4 VIEWPORT;
+//extern Light LIGHTS[MAX_NUM_OF_LIGHTS];
 //extern Bitmap TEXTURES[MAX_NUM_OF_TEXTURES];
 
 
-typedef Float4 (*vertex_shader) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
-typedef bool   (*pixel_shader)  (Object *obj, Varying *var, pixel_color_t *color, gpu_cfg_t *cfg);
+typedef Float4 (*vertex_shader) (volatile Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, volatile gpu_cfg_t *cfg);
+typedef bool   (*pixel_shader)  (volatile Object *obj, volatile Varying *var, pixel_color_t *color, volatile gpu_cfg_t *cfg);
 
 
-void init_lights (gpu_cfg_t *cfg);
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, gpu_cfg_t *cfg);
-void free_light (int light_num, gpu_cfg_t *cfg);
+void init_lights (volatile gpu_cfg_t *cfg);
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, volatile gpu_cfg_t *cfg);
+void free_light (int light_num, volatile gpu_cfg_t *cfg);
 
-void   set_screen_size   (gpu_cfg_t *cfg, size_t width, size_t height);
-size_t get_screen_width  (gpu_cfg_t *cfg);
-size_t get_screen_height (gpu_cfg_t *cfg);
-size_t get_screen_depth  (gpu_cfg_t *cfg);
-size_t get_tile_width    (gpu_cfg_t *cfg);
-size_t get_tile_height   (gpu_cfg_t *cfg);
+void   set_screen_size   (volatile gpu_cfg_t *cfg, size_t width, size_t height);
+size_t get_screen_width  (volatile gpu_cfg_t *cfg);
+size_t get_screen_height (volatile gpu_cfg_t *cfg);
+size_t get_screen_depth  (volatile gpu_cfg_t *cfg);
+size_t get_tile_width    (volatile gpu_cfg_t *cfg);
+size_t get_tile_height   (volatile gpu_cfg_t *cfg);
 
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 void init_ortho_proj       (fmat4 *m, float left, float right, float top, float bot, float near, float far);
-void init_viewport   (int x, int y, int w, int h, int d);
+void init_viewport   (volatile gpu_cfg_t *cfg, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 
@@ -167,15 +169,15 @@ void varying_fifo_push_Float2 (Varying *vry, Float2 *data);
 void varying_fifo_push_Float3 (Varying *vry, Float3 *data);
 void varying_fifo_push_Float4 (Varying *vry, Float4 *data);
 
-fixpt_t varying_fifo_pop_fixpt  (Varying *vry);
-FixPt2  varying_fifo_pop_FixPt2 (Varying *vry);
-FixPt3  varying_fifo_pop_FixPt3 (Varying *vry);
-FixPt4  varying_fifo_pop_FixPt4 (Varying *vry);
+fixpt_t varying_fifo_pop_fixpt  (volatile Varying *vry);
+FixPt2  varying_fifo_pop_FixPt2 (volatile Varying *vry);
+FixPt3  varying_fifo_pop_FixPt3 (volatile Varying *vry);
+FixPt4  varying_fifo_pop_FixPt4 (volatile Varying *vry);
 
-float   varying_fifo_pop_float  (Varying *vry);
-Float2  varying_fifo_pop_Float2 (Varying *vry);
-Float3  varying_fifo_pop_Float3 (Varying *vry);
-Float4  varying_fifo_pop_Float4 (Varying *vry);
+float   varying_fifo_pop_float  (volatile Varying *vry);
+Float2  varying_fifo_pop_Float2 (volatile Varying *vry);
+Float3  varying_fifo_pop_Float3 (volatile Varying *vry);
+Float4  varying_fifo_pop_Float4 (volatile Varying *vry);
 
 
 
@@ -213,14 +215,15 @@ Float3        get_normal_from_map        (const Object *obj, const int u, const 
 int           get_specularity_from_map   (const Object *obj, const int u, const int v);
 */
 
-pixel_color_t get_pixel_color_from_bitmap   (const Bitmap *bmp, const int u, const int v);
+pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const int v);
 Float3        get_norm_Float3_from_bitmap (const Bitmap *bmp, const int u, const int v);
 int32_t       get_int32_from_bitmap       (const Bitmap *bmp, const int u, const int v);
 
 
-BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]);
-BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
-BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
+BoundBox get_tri_boundbox        (fixpt_t x[3], fixpt_t y[3]);
+BoundBox clip_boundbox_to_screen (BoundBox in, volatile gpu_cfg_t *cfg);
+BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, volatile gpu_cfg_t *cfg);
 
 FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
 
+void save_vshader_results (volatile gpu_cfg_t* cfg);

@@ -7,17 +7,18 @@
 
 
 
+
 #ifndef MULTIPROC
-  void * vshader_wrapper (void *cfg) {
+ void * vshader_wrapper (void *cfg) {
 	assert (cfg != NULL);
 	
 	volatile shader_cfg_t* volatile shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
-	gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
+	volatile gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
 #else
-  int main (void) {
+ int main (void) {
 	uint32_t shader_num = 0; // TBD - replace with reading a register
-	gpu_cfg_t *common_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+	volatile gpu_cfg_t * volatile common_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
 #endif
 	
 	
@@ -37,8 +38,7 @@
 		
 		// vshader_loop (shader_cfg);
 		//draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
-		vshader_loop (common_cfg, common_cfg->vshader_ptr, common_cfg->pshader_ptr, common_cfg->zbuffer_ptr, common_cfg->active_fbuffer);
-		
+		vshader_loop (common_cfg, common_cfg->vshader_ptr, common_cfg->pshader_ptr, common_cfg->zbuffer_ptr, (pixel_color_t *) common_cfg->active_fbuffer);		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);
 		common_cfg->vshader_done[shader_num] = true;

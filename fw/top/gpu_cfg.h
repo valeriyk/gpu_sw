@@ -8,7 +8,7 @@
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 
-#define GPU_CFG_ABS_ADDRESS 0x400
+#define GPU_CFG_ABS_ADDRESS 0xFFFE0000
 
 
 //#define SINGLEPROC_SINGLETHREAD
@@ -38,6 +38,8 @@ typedef struct gpu_cfg_t {
 	void* pshader_ptr;
 	
 	void* lights_table_ptr;
+	
+	void* viewport_ptr;
 		
 	volatile bool vshaders_run_req;
 	volatile bool vshaders_stop_req;

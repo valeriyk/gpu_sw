@@ -84,7 +84,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 			// 	shadow_clip.as_array[k] = shadow_clip.as_array[k] / shadow_clip.as_struct.w;
 			// }			
 			
-			Float4 shadow_screen = fmat4_Float4_mult (&VIEWPORT, &shadow_clip);
+			Float4 shadow_screen = fmat4_Float4_mult (cfg->viewport_ptr, &shadow_clip);
 			Float3 shadow_screen3 = Float4_Float3_vect_conv (&shadow_screen); // don't need W for ortho projection
 			varying_fifo_push_Float3 (vry, &shadow_screen3);
 		}

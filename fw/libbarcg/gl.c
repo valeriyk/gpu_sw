@@ -22,11 +22,11 @@ size_t SCREEN_DEPTH;
 size_t NUM_OF_TILES;
 */
 
-fmat4 VIEWPORT;
+//fmat4 VIEWPORT;
 
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
-void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
+void set_tile_size (volatile gpu_cfg_t *cfg, size_t width, size_t height);
 	
 	
 	
@@ -93,23 +93,23 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	return pc;
 }
 
-void init_viewport (int x, int y, int w, int h, int d) {
+void init_viewport (volatile gpu_cfg_t *cfg, int x, int y, int w, int h, int d) {
 
 	// X: map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
 	// Y: map [-1:1] to [0:SCREEN_HEIGHT]
 	// Z: map [-1:1] to [SCREEN_DEPTH:0]				
 	// W: leave as is
 				
-	fmat4_identity (&VIEWPORT);
-	fmat4_set (&VIEWPORT, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
-	fmat4_set (&VIEWPORT, 0, 3, x + w / 2.0f);
-	fmat4_set (&VIEWPORT, 1, 1, h / 2.0f);
-	fmat4_set (&VIEWPORT, 1, 3, y + h / 2.0f);
-	fmat4_set (&VIEWPORT, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
-	fmat4_set (&VIEWPORT, 2, 3,  d / 2.0f);
+	fmat4_identity (cfg->viewport_ptr);
+	fmat4_set (cfg->viewport_ptr, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
+	fmat4_set (cfg->viewport_ptr, 0, 3, x + w / 2.0f);
+	fmat4_set (cfg->viewport_ptr, 1, 1, h / 2.0f);
+	fmat4_set (cfg->viewport_ptr, 1, 3, y + h / 2.0f);
+	fmat4_set (cfg->viewport_ptr, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
+	fmat4_set (cfg->viewport_ptr, 2, 3,  d / 2.0f);
 }
 
-void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
+void set_screen_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
 	//SCREEN_WIDTH  = width;
 	//SCREEN_HEIGHT = height;
 	//SCREEN_DEPTH  = (screenz_t) ~0; // all ones
@@ -129,32 +129,32 @@ void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
 	set_tile_size (cfg, TILE_WIDTH, TILE_HEIGHT);
 }
 
-void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height) {
+void set_tile_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
 	cfg->tile_width    = width;
 	cfg->tile_height   = height;
 }
 
-size_t get_screen_width  (gpu_cfg_t *cfg) {
+size_t get_screen_width  (volatile gpu_cfg_t *cfg) {
 	return cfg->screen_width;
 }
 
-size_t get_screen_height (gpu_cfg_t *cfg) {
+size_t get_screen_height (volatile gpu_cfg_t *cfg) {
 	return cfg->screen_height;
 }
 
-size_t get_screen_depth  (gpu_cfg_t *cfg) {
+size_t get_screen_depth  (volatile gpu_cfg_t *cfg) {
 	return cfg->screen_depth;
 }
 
-size_t get_tile_width  (gpu_cfg_t *cfg) {
+size_t get_tile_width  (volatile gpu_cfg_t *cfg) {
 	return cfg->tile_width;
 }
 
-size_t get_tile_height (gpu_cfg_t *cfg) {
+size_t get_tile_height (volatile gpu_cfg_t *cfg) {
 	return cfg->tile_height;
 }
 
-void init_lights (gpu_cfg_t *cfg) {
+void init_lights (volatile gpu_cfg_t *cfg) {
 	Light *l = cfg->lights_table_ptr;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		l[i].enabled        = false;
@@ -163,7 +163,7 @@ void init_lights (gpu_cfg_t *cfg) {
 	}
 }
 
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, gpu_cfg_t *cfg) { //TBD add light_src,
+void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, volatile gpu_cfg_t *cfg) { //TBD add light_src,
 	Light *l = cfg->lights_table_ptr;
 	l[light_num].enabled = true;
 	l[light_num].dir = dir;
@@ -173,7 +173,7 @@ void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, gpu_cfg_t *cfg
 	l[light_num].shadow_buf = shadow_buf;
 }
 
-void free_light (int light_num, gpu_cfg_t *cfg) {
+void free_light (int light_num, volatile gpu_cfg_t *cfg) {
 	Light *l = cfg->lights_table_ptr;
 	l[light_num].enabled        = false;
 	l[light_num].has_shadow_buf = false;
@@ -327,7 +327,7 @@ BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
     return bb;
 }
 
-BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
+BoundBox clip_boundbox_to_screen (BoundBox in, volatile gpu_cfg_t *cfg) {
 	
 	BoundBox out;
 	
@@ -339,7 +339,7 @@ BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 	return out;
 }
 
-BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
+BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, volatile gpu_cfg_t *cfg) {
 	
 	BoundBox tile;
 				
@@ -429,7 +429,7 @@ void varying_fifo_push_Float4 (Varying *vry, Float4 *data) {
 	}
 }
 
-static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
+static inline VaryingWord varying_fifo_pop (volatile Varying *vry, varying_type type) {
 	
 	assert ((type == VARYING_FIXPT) || (type == VARYING_FLOAT));
 	assert (vry->num_of_words_written > 0);
@@ -447,12 +447,12 @@ static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	return data;
 }
 
-float  varying_fifo_pop_float (Varying *vry) {
+float  varying_fifo_pop_float (volatile Varying *vry) {
 	VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
 	return v.as_float;
 }
 
-Float2  varying_fifo_pop_Float2 (Varying *vry) {
+Float2  varying_fifo_pop_Float2 (volatile Varying *vry) {
 	Float2 data;
 	for (int i = 0; i < 2; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -461,7 +461,7 @@ Float2  varying_fifo_pop_Float2 (Varying *vry) {
 	return data;
 }
 
-Float3  varying_fifo_pop_Float3 (Varying *vry) {
+Float3  varying_fifo_pop_Float3 (volatile Varying *vry) {
 	Float3 data;
 	for (int i = 0; i < 3; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -470,7 +470,7 @@ Float3  varying_fifo_pop_Float3 (Varying *vry) {
 	return data;
 }
 
-Float4  varying_fifo_pop_Float4 (Varying *vry) {
+Float4  varying_fifo_pop_Float4 (volatile Varying *vry) {
 	Float4 data;
 	for (int i = 0; i < 4; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -480,12 +480,12 @@ Float4  varying_fifo_pop_Float4 (Varying *vry) {
 }
 
 
-fixpt_t  varying_fifo_pop_fixpt (Varying *vry) {
+fixpt_t  varying_fifo_pop_fixpt (volatile Varying *vry) {
 	VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
 	return v.as_fixpt_t;
 }
 
-FixPt2  varying_fifo_pop_FixPt2 (Varying *vry) {
+FixPt2  varying_fifo_pop_FixPt2 (volatile Varying *vry) {
 	FixPt2 data;
 	for (int i = 0; i < 2; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
@@ -494,7 +494,7 @@ FixPt2  varying_fifo_pop_FixPt2 (Varying *vry) {
 	return data;
 }
 
-FixPt3  varying_fifo_pop_FixPt3 (Varying *vry) {
+FixPt3  varying_fifo_pop_FixPt3 (volatile Varying *vry) {
 	FixPt3 data;
 	for (int i = 0; i < 3; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
@@ -503,7 +503,7 @@ FixPt3  varying_fifo_pop_FixPt3 (Varying *vry) {
 	return data;
 }
 
-FixPt4  varying_fifo_pop_FixPt4 (Varying *vry) {
+FixPt4  varying_fifo_pop_FixPt4 (volatile Varying *vry) {
 	FixPt4 data;
 	for (int i = 0; i < 4; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
@@ -554,3 +554,4 @@ int32_t get_int32_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 		return 0;
 	}
 }
+

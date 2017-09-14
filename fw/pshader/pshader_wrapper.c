@@ -9,15 +9,15 @@
 
 
 #ifndef MULTIPROC
-  void * pshader_wrapper (void *cfg) {
+ void * pshader_wrapper (void *cfg) {
 	
 	shader_cfg_t *shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
-	gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
+	volatile gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
 #else
-  int main (void) {
+ int main (void) {
 	uint32_t shader_num = 0; // TBD - replace with reading a register
-	gpu_cfg_t *common_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+	volatile gpu_cfg_t * volatile common_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
 #endif
 	
 	

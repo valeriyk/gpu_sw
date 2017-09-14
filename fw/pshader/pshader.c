@@ -14,6 +14,8 @@ screenz_t interpolate_z       (                fixpt_t            z[3], FixPt3 *
 void draw_triangle (volatile TrianglePShaderData* volatile tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg);
  
 
+void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
+
 screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
 
 	// ZF = Z_FRACT_BITS
@@ -373,7 +375,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
     }
 }
 
-void pshader_loop (const gpu_cfg_t* const common_cfg, const uint32_t shader_num) {
+void pshader_loop (volatile gpu_cfg_t* common_cfg, const uint32_t shader_num) {
 	
 	//uint32_t shader_num = shader_cfg->shader_num;
 	
