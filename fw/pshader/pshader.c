@@ -404,6 +404,7 @@ void pshader_loop (volatile gpu_cfg_t* common_cfg, const uint32_t shader_num) {
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
 		if (PSHADER_DEBUG) printf ("%d ", tile_num);
+		/*
 		volatile TriangleListNode* volatile* volatile tln = common_cfg->tile_idx_table_ptr;
 		volatile TriangleListNode* volatile node = tln[tile_num];
 		
@@ -412,7 +413,20 @@ void pshader_loop (volatile gpu_cfg_t* common_cfg, const uint32_t shader_num) {
 			TrianglePShaderData local_tri_data = *tri;
 			draw_triangle (&local_tri_data, tile_num, local_zbuf, local_fbuf, common_cfg);
 			node = node->next;
-		}	
+		}
+		*/
+		
+		//volatile TriangleListNode* volatile* volatile tln = common_cfg->tile_idx_table_ptr;
+		//volatile TriangleListNode* volatile node = tln[tile_num];
+		
+		for (int i = 0; i < 2000; i++) {
+			TrianglePShaderData *local_tri_data;
+			TrianglePShaderData **a = common_cfg->tile_idx_table_ptr;
+			local_tri_data = a[tile_num*2000 + i];
+			if (local_tri_data == NULL) break;
+			draw_triangle (local_tri_data, tile_num, local_zbuf, local_fbuf, common_cfg);
+		}
+			
 		// flush local zbuffer tile
 		if (common_cfg->zbuffer_ptr != NULL) {
 			copy_tile_to_extmem (common_cfg->zbuffer_ptr, &local_zbuf, common_cfg, tile_num, sizeof (screenz_t));

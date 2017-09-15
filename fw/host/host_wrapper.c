@@ -504,11 +504,14 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 	}
     
     //////////////////
-	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
+	/*if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
+		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
+		goto error;
+	}*/
+	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData*) * 2000)) == NULL) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		goto error;
 	}
-	
 		
     cfg->vshaders_stop_req = false;
     cfg->pshaders_stop_req = false;
@@ -536,6 +539,11 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 			}
 		}
 		
+		// TEST
+		for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
+			TrianglePShaderData **d = cfg->tile_idx_table_ptr;
+			d[i] = NULL;
+		}
 		
 
 		// Number of faces may change from frame to frame if objects are getting added or removed,
@@ -590,7 +598,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
-		
+		/*
 		for (int i = 0; i < cfg->num_of_tiles; i++) {
 			volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
 			
@@ -603,7 +611,9 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 				node = tmp;
 			}
 			tln[i] = NULL;		
-		}	
+		}
+		*/	
+		
 		
 		free ((void*) cfg->tri_data_array);
 		
@@ -662,9 +672,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 	cfg->vshaders_stop_req = true;
 	cfg->pshaders_stop_req = true;
 	
-	free ((void*) cfg->tile_idx_table_ptr);
-		
-
 	if (ENABLE_PERF) {
 		stop_counters();
 		read_counters();
@@ -701,6 +708,8 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 	if (cfg->viewport_ptr != NULL) {
 		free (cfg->viewport_ptr);
 	}
+	
+	free ((void*) cfg->tile_idx_table_ptr);
 	
 	free_objects ((void*) cfg->obj_list_ptr);
 	

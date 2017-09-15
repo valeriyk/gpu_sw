@@ -6,9 +6,9 @@
 
 
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], volatile gpu_cfg_t *cfg);
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TrianglePShaderData ** volatile tri_ptr, volatile gpu_cfg_t *cfg);
 
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], volatile gpu_cfg_t *cfg) {
+void tiler (volatile TrianglePShaderData* volatile tri, volatile TrianglePShaderData ** volatile tri_ptr, volatile gpu_cfg_t *cfg) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
@@ -55,6 +55,7 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNod
 				
 				size_t tile_num = (p.y >> (int) log2f(get_tile_height(cfg))) * (get_screen_width(cfg) / get_tile_width(cfg)) + (p.x >> (int) log2f(get_tile_width(cfg)));
 				
+				/*
 				volatile TriangleListNode* volatile node = tri_ptr[tile_num];
 				if (node == NULL) {
 					node = calloc (1, sizeof (TriangleListNode));
@@ -70,6 +71,12 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNod
 					node->next = calloc (1, sizeof (TriangleListNode));
 					node->next->tri  = tri;
 					node->next->next = NULL;	
+				}*/
+				for (int i = 0; i < 2000; i++) {
+					if (tri_ptr[tile_num*2000 + i] == NULL) {
+						tri_ptr[tile_num*2000 + i] = tri;
+						break;
+					}
 				}
 			}
 		}
@@ -190,7 +197,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader 
 				//cfg->tri_data_array[tri_num] = d;
 				tpsd[tri_num] = d;
 				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
-				tiler (&(tpsd[tri_num]), cfg->tile_idx_table_ptr, cfg);
+				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tile_idx_table_ptr, cfg);
 				tri_num++;
 			}
 		}
