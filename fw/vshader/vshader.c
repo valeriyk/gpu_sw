@@ -5,8 +5,6 @@
 #include <stdlib.h>
 
 
-#include <shader_gouraud.h> // TBD REMOVE
-
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
 void tiler (volatile TrianglePShaderData* volatile tri, volatile TriangleListNode* volatile tri_ptr[], volatile gpu_cfg_t *cfg);
 
