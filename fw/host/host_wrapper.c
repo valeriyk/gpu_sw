@@ -551,7 +551,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
 		int num_of_faces = 0;
 		while (obj_list_node != NULL) {
-			num_of_faces += wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+			num_of_faces += wfobj_get_num_of_faces (obj_list_node->obj->wfobj, 0);
 			obj_list_node = obj_list_node->next;
 		}
 		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
