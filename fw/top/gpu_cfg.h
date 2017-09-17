@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NUM_OF_VSHADERS 1
-#define NUM_OF_PSHADERS 1
+#define NUM_OF_VSHADERS 8
+#define NUM_OF_PSHADERS 8
 #define NUM_OF_USHADERS 0
 #define MAX_NUM_OF_FRAMEBUFFERS	100
 
@@ -25,12 +25,13 @@
 
 typedef struct gpu_cfg_t {
 	
-	volatile void* volatile tile_idx_table_ptr;
-	volatile void* volatile tri_data_array;
+	//volatile void* volatile tile_idx_table_ptr;
+	//volatile void* volatile tri_data_array;
 	volatile void* volatile obj_list_ptr;
 	
-	volatile void* volatile tri_for_vshader[NUM_OF_VSHADERS]; // N arrays of TriangleVShaderData structs
-	volatile void* volatile tri_for_pshader[NUM_OF_PSHADERS]; // M arrays of TrianglePShaderData structs
+	volatile void* volatile tri_ptr_list[NUM_OF_VSHADERS];
+	//volatile void* volatile tri_for_vshader[NUM_OF_VSHADERS]; // N arrays of TriangleVShaderData structs
+	volatile void* volatile tri_for_pshader[NUM_OF_VSHADERS]; // M arrays of TrianglePShaderData structs
 	
 	volatile void* volatile active_fbuffer;
 	

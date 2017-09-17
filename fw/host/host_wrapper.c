@@ -508,10 +508,20 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		goto error;
 	}*/
+	/*
 	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData*) * 2000)) == NULL) {
 		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 		goto error;
 	}
+	*/
+	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+		if ((cfg->tri_ptr_list[i] = calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData*) * 2000)) == NULL) {
+			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
+			goto error;
+		}
+	}
+	
+
 		
     cfg->vshaders_stop_req = false;
     cfg->pshaders_stop_req = false;
@@ -539,15 +549,10 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 			}
 		}
 		
-		// TEST
-		for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
-			TrianglePShaderData **d = cfg->tile_idx_table_ptr;
-			d[i] = NULL;
-		}
 		
-
 		// Number of faces may change from frame to frame if objects are getting added or removed,
 		// so need to calculate it for every frame and allocate memory each time
+		/*
 		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
 		int num_of_faces = 0;
 		while (obj_list_node != NULL) {
@@ -557,6 +562,23 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tri_data_array calloc failed\n");
 			goto error;
+		}
+		*/
+		
+		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;	
+		uint32_t num_of_faces = 0;
+		while (obj_list_node != NULL) {
+			num_of_faces += wfobj_get_num_of_faces (obj_list_node->obj->wfobj);
+			obj_list_node = obj_list_node->next;
+		}
+		// + 1 needed because we do integer division and there may be remainder, we need space for it too.
+		// For simplicity I simply enlarge all arrays, although some of them don't need this extra space.
+		uint32_t num_of_faces_per_vshader = (num_of_faces / cfg->num_of_vshaders) + 1;
+		for (int i = 0; i < NUM_OF_VSHADERS; i++) {			
+			if ((cfg->tri_for_pshader[i] = calloc (num_of_faces_per_vshader, sizeof (TrianglePShaderData))) == NULL) {
+				if (DEBUG_MALLOC) printf ("tri_for_pshader[%d] calloc failed\n", i);
+				goto error;
+			}	
 		}
 			
 		
@@ -598,6 +620,8 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
+		
+		// Clean-up moded to vshader main loop:
 		/*
 		for (int i = 0; i < cfg->num_of_tiles; i++) {
 			volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
@@ -615,7 +639,10 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		*/	
 		
 		
-		free ((void*) cfg->tri_data_array);
+		//free ((void*) cfg->tri_data_array);
+		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+			free ((void*) cfg->tri_for_pshader[i]);
+		}
 		
 		
 		if (m == RECORD_FRAME_NUM) {
@@ -709,7 +736,12 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shade
 		free (cfg->viewport_ptr);
 	}
 	
-	free ((void*) cfg->tile_idx_table_ptr);
+	//free ((void*) cfg->tile_idx_table_ptr);
+	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+		free ((void*) cfg->tri_ptr_list[i]);
+	}
+	
+
 	
 	free_objects ((void*) cfg->obj_list_ptr);
 	

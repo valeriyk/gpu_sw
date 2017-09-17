@@ -115,12 +115,19 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 	volatile ObjectListNode* volatile obj_list_head = cfg->obj_list_ptr;
 	volatile ObjectListNode* volatile obj_list_node;
 	
-	
+	/*
 	// Clean up data structures for each new frame:
 	for (int i = 0; i < cfg->num_of_tiles; i++) {
 		volatile TriangleListNode * volatile *tln = cfg->tile_idx_table_ptr;
 		tln[i] = NULL;
 	}
+	*/
+	TrianglePShaderData **d = cfg->tri_ptr_list[vshader_idx];
+	for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
+		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
+		d[i] = NULL;
+	}
+	
 	
 	obj_list_node = obj_list_head;
 	
@@ -128,7 +135,14 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 		
 	while (obj_list_node != NULL) {
 		
-		for (size_t i = 0; i < wfobj_get_num_of_faces(obj_list_node->obj->wfobj, 0); i++) {
+		uint32_t num_of_faces = wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+		//uint32_t num_of_faces = num_of_faces_in_obj / cfg->num_of_vshaders;
+		//uint32_t remainder    = num_of_faces_in_obj % cfg->num_of_vshaders;
+		//if (vshader_idx < remainder) num_of_faces++;
+		
+		uint32_t face_num_init = vshader_idx;
+		uint32_t face_num_incr = cfg->num_of_vshaders;
+		for (size_t i = face_num_init; i < num_of_faces; i += face_num_incr) {
 			
 			
 			Triangle clip;
@@ -147,7 +161,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 				//tri_data_array[tri_num].varying[j].num_of_words = 0;
 				d.varying[j].num_of_words_written = 0;
 				d.varying[j].num_of_words_read    = 0;
-				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]), vshader_idx, cfg); // CALL VERTEX SHADER
+				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
 												
 				// Clip & normalize (clip -> NDC):
 				// Clip.w contains Eye.z, so first check that it is greater than zero
@@ -193,11 +207,19 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 			
 			if (!is_clipped) {
 				
-				volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
+				// It is important that we first write local copy of TrianglePShaderData to memory and then pass its address to the tiler!				
+				
+				//volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
+				volatile TrianglePShaderData* volatile tpsd = cfg->tri_for_pshader[vshader_idx];
 				//cfg->tri_data_array[tri_num] = d;
+				
 				tpsd[tri_num] = d;
+				
 				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
-				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tile_idx_table_ptr, cfg);
+				//tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tile_idx_table_ptr, cfg);
+				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tri_ptr_list[vshader_idx], cfg);
+				//tiler (&d, cfg->tri_ptr_list[vshader_idx], cfg);
+				
 				tri_num++;
 			}
 		}

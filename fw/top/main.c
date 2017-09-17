@@ -20,7 +20,11 @@ int main(int argc, char** argv) {
        
    	gpu_cfg_t gpu_cfg;
 	
-	gpu_cfg.tile_idx_table_ptr = NULL;
+	//gpu_cfg.tile_idx_table_ptr = NULL;
+	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+		gpu_cfg.tri_ptr_list[i] = NULL;
+		gpu_cfg.tri_for_pshader[i] = NULL;
+	}
 	
 	for (int i = 0; i < MAX_NUM_OF_FRAMEBUFFERS; i++) {
 		gpu_cfg.fbuffer_ptr[i] = NULL;

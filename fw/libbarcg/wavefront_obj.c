@@ -6,14 +6,14 @@
 #include <assert.h>
 
 //#define NUM_OF_FACE_BINS NUM_OF_VSHADERS
-#define NUM_OF_FACE_BINS 1
+//#define NUM_OF_FACE_BINS 1
 
 typedef struct WFO_Private {
 	DynArray *vtx;
 	DynArray *norm;
 	DynArray *text;
-	//DynArray *face;
-	DynArray *face[NUM_OF_FACE_BINS];
+	DynArray *face;
+	//DynArray *face[NUM_OF_FACE_BINS];
 	//int face_offset;
 	//int vtx_offset;
 } WFO_Private;
@@ -37,9 +37,10 @@ WaveFrontObj * wfobj_new (const char *wfobj_file) {
 	wfobj->private->vtx  = dyn_array_create (sizeof (float), 384);
     wfobj->private->norm = dyn_array_create (sizeof (float), 384);
 	wfobj->private->text = dyn_array_create (sizeof (float), 256);
-	for (int i = 0; i < NUM_OF_FACE_BINS; i++) {
-		wfobj->private->face[i] = dyn_array_create (sizeof   (int), 1152);
-	}
+	//for (int i = 0; i < NUM_OF_FACE_BINS; i++) {
+	//	wfobj->private->face[i] = dyn_array_create (sizeof   (int), 1152);
+	//}
+	wfobj->private->face = dyn_array_create (sizeof   (int), 1152);
 	//wfobj->private->face_offset = 0;
     //wfobj->private->vtx_offset  = 0;
     
@@ -52,38 +53,39 @@ void wfobj_free (WaveFrontObj *wfobj) {
 	dyn_array_destroy (wfobj->private->vtx);
 	dyn_array_destroy (wfobj->private->norm);
 	dyn_array_destroy (wfobj->private->text);
-	for (int i = 0; i < NUM_OF_FACE_BINS; i++) {
-		dyn_array_destroy (wfobj->private->face[i]);
-	}	
+	//for (int i = 0; i < NUM_OF_FACE_BINS; i++) {
+	//	dyn_array_destroy (wfobj->private->face[i]);
+	//}	
+	dyn_array_destroy (wfobj->private->face);
 	free (wfobj->private);
 	free (wfobj);
 }
 
 
-int wfobj_get_num_of_faces (const WaveFrontObj *wfobj, uint32_t bin_num) {
-	return wfobj->private->face[bin_num]->end / 9;
+int wfobj_get_num_of_faces (const WaveFrontObj *wfobj) {
+	return wfobj->private->face->end / 9;
 }
 
-Float3 wfobj_get_vtx_coords  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx, const int vshader_idx) {
+Float3 wfobj_get_vtx_coords  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx) {
 	Float3 c;
-	int vtx_coords_offset = *((int*) dyn_array_get (wfobj->private->face[vshader_idx], face_idx*9 + vtx_idx*3));
+	int vtx_coords_offset = *((int*) dyn_array_get (wfobj->private->face, face_idx*9 + vtx_idx*3));
 	c.as_struct.x = *((float*) dyn_array_get (wfobj->private->vtx, vtx_coords_offset*3 + 0));
 	c.as_struct.y = *((float*) dyn_array_get (wfobj->private->vtx, vtx_coords_offset*3 + 1));
 	c.as_struct.z = *((float*) dyn_array_get (wfobj->private->vtx, vtx_coords_offset*3 + 2));
 	return c;
 }
 
-Float2 wfobj_get_texture_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx, const int vshader_idx) {
+Float2 wfobj_get_texture_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
 	Float2 c;
-	int text_coords_offset = *((int*) dyn_array_get (wfobj->private->face[vshader_idx], face_idx*9 + vtx_idx*3 + 1));
+	int text_coords_offset = *((int*) dyn_array_get (wfobj->private->face, face_idx*9 + vtx_idx*3 + 1));
 	c.as_struct.u = *((float*) dyn_array_get (wfobj->private->text, text_coords_offset*2 + 0));
 	c.as_struct.v = *((float*) dyn_array_get (wfobj->private->text, text_coords_offset*2 + 1));
 	return c;
 }
 
-Float3 wfobj_get_norm_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx, const int vshader_idx) {
+Float3 wfobj_get_norm_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
 	Float3 c;
-	int norm_coords_offset = *((int*) dyn_array_get (wfobj->private->face[vshader_idx], face_idx*9 + vtx_idx*3 + 2));
+	int norm_coords_offset = *((int*) dyn_array_get (wfobj->private->face, face_idx*9 + vtx_idx*3 + 2));
 	c.as_struct.x = *((float*) dyn_array_get (wfobj->private->norm, norm_coords_offset*3 + 0));
 	c.as_struct.y = *((float*) dyn_array_get (wfobj->private->norm, norm_coords_offset*3 + 1));
 	c.as_struct.z = *((float*) dyn_array_get (wfobj->private->norm, norm_coords_offset*3 + 2));
@@ -92,7 +94,7 @@ Float3 wfobj_get_norm_coords (const WaveFrontObj *wfobj, const int face_idx, con
 
 void push_data (WaveFrontObj *wfobj, wfobj_line_type line_type, wfobj_line_field line_field, wfobj_face_elem face_elem, char *alpha_num) {
 	DynArrayItem data;
-	static uint32_t bin_num = 0;
+	//static uint32_t bin_num = 0;
 	// convert string to number and save it
 	if ((line_type == V_DATA) && ((line_field == VALUE1) || (line_field == VALUE2) || (line_field == VALUE3))) {
 		data.f = (float) atof (alpha_num);
@@ -100,10 +102,11 @@ void push_data (WaveFrontObj *wfobj, wfobj_line_type line_type, wfobj_line_field
 	}
 	else if ((line_type == F_DATA) && ((face_elem == VERTEX_IDX) || (face_elem == TEXTURE_IDX) || (face_elem == NORMAL_IDX))) {
 		data.i = atoi (alpha_num) - 1; // decrement all indices because in OBJ they start at 1
-		dyn_array_push (wfobj->private->face[bin_num++], &data);
-		if (bin_num >= NUM_OF_FACE_BINS) {
-			bin_num = 0; // wrap
-		}
+		//dyn_array_push (wfobj->private->face[bin_num++], &data);
+		//if (bin_num >= NUM_OF_FACE_BINS) {
+		//	bin_num = 0; // wrap
+		//}
+		dyn_array_push (wfobj->private->face, &data);
 	}
 	else if ((line_type == VT_DATA) && ((line_field == VALUE1) || (line_field == VALUE2))) {
 		data.f = (float) atof (alpha_num);
