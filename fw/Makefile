@@ -40,7 +40,7 @@ TARGET_x86  = main_x86.a
 TARGET_MIPS = main_mips.a
 TARGET_ARC  = main_arc.a
 TARGET_ARC_HOST     = arc_host.elf
-TARGET_ARC_VSHADER  = arc_ushader.elf
+TARGET_ARC_USHADER  = arc_ushader.elf
 TARGET_ARC_VSHADER  = arc_vshader.elf
 TARGET_ARC_PSHADER  = arc_pshader.elf
 
@@ -55,13 +55,13 @@ OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard top/*.c) $(wildcard host/*.
 INCLUDES_ARC =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 
 OBJECTS_ARC_HOST  := $(patsubst %.c, %_host_arc.o,  $(wildcard host/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_ARC_HOST =                            $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
-OBJECTS_ARC_USHADER  := $(patsubst %.c, %_ushader_arc.o,  $(wildcard ushader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_ARC_USHADER =                           $(wildcard ushader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+INCLUDES_ARC_HOST =                                 $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_ARC_USHADER  := $(patsubst %.c, %_ushader_arc.o,  vshader/vshader_loop.c pshader/pshader_loop.c $(wildcard ushader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC_USHADER =                                    vshader/vshader_loop.h pshader/pshader_loop.h $(wildcard ushader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 OBJECTS_ARC_VSHADER  := $(patsubst %.c, %_vshader_arc.o,  $(wildcard vshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_ARC_VSHADER =                           $(wildcard vshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+INCLUDES_ARC_VSHADER =                                    $(wildcard vshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 OBJECTS_ARC_PSHADER  := $(patsubst %.c, %_vshader_arc.o,  $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_ARC_PSHADER =                            $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+INCLUDES_ARC_PSHADER =                                    $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 #OBJECTS_MIPS := $(patsubst %.c, %_mips.o, $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c))
 
 #all: x86 arc_single arc mips
@@ -72,9 +72,10 @@ arc_singlecore: $(DESTDIR)/$(TARGET_ARC)
 
 
 arc_host:    $(DESTDIR)/$(TARGET_ARC_HOST)
+arc_ushader: $(DESTDIR)/$(TARGET_ARC_USHADER)
 arc_vshader: $(DESTDIR)/$(TARGET_ARC_VSHADER)
 arc_pshader: $(DESTDIR)/$(TARGET_ARC_PSHADER)
-arc_ushader: $(DESTDIR)/$(TARGET_ARC_PSHADER)
+
 
 
 #mips: $(DESTDIR)/$(TARGET_MIPS)
