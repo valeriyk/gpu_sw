@@ -1,6 +1,7 @@
 # TCF is needed for ARC builds only
 TCF         ?= ../../hw/em7d_v1/build/tool_config/arc_no_stack_chk.tcf
 TCF_HOST    ?= tcf/host.tcf
+TCF_USHADER ?= tcf/ushader.tcf
 TCF_VSHADER ?= tcf/vshader.tcf
 TCF_PSHADER ?= tcf/pshader.tcf
 
@@ -16,14 +17,16 @@ CFLAGS_MIPS        = -DTARGET_MIPS -DSINGLEPROC_SINGLETHREAD
 CFLAGS_ARC_COMMON  = -DTARGET_ARC
 CFLAGS_ARC         = -tcf=$(TCF)         -DSINGLEPROC_SINGLETHREAD
 CFLAGS_ARC_HOST    = -tcf=$(TCF_HOST)    -DMULTIPROC
+CFLAGS_ARC_USHADER = -tcf=$(TCF_USHADER) -DMULTIPROC
 CFLAGS_ARC_VSHADER = -tcf=$(TCF_VSHADER) -DMULTIPROC
 CFLAGS_ARC_PSHADER = -tcf=$(TCF_PSHADER) -DMULTIPROC
 
-SYSCONF_LINK_x86  =          gcc $(CFLAGS_COMMON) $(CFLAGS_X86) -pthread -Ihost -Ivshader -Ipshader
+SYSCONF_LINK_x86  =          gcc $(CFLAGS_COMMON) $(CFLAGS_X86) -pthread -Ihost -Ivshader -Ipshader -Iushader
 #SYSCONF_LINK_MIPS = mips-mti-elf-gcc $(CFLAGS_COMMON) (CFLAGS_MIPS) -EL -msoft-float -march=m14kc
-SYSCONF_LINK_ARC          =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC)         -Ihost -Ivshader -Ipshader
+SYSCONF_LINK_ARC          =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC)         -Ihost -Ivshader -Ipshader -Iushader
 SYSCONF_LINK_ARC_HOST     =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_HOST)    -Ihost     
-SYSCONF_LINK_ARC_VSHADER  =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_VSHADER) -Ihost -Ivshader
+SYSCONF_LINK_ARC_USHADER  =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_USHADER) -Iushader -Ivshader -Ipshader
+SYSCONF_LINK_ARC_VSHADER  =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_VSHADER) -Ivshader
 SYSCONF_LINK_ARC_PSHADER  =  ccac $(CFLAGS_COMMON) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_PSHADER) -Ipshader
 
 LDFLAGS_x86  = -lm -pthread
@@ -37,6 +40,7 @@ TARGET_x86  = main_x86.a
 TARGET_MIPS = main_mips.a
 TARGET_ARC  = main_arc.a
 TARGET_ARC_HOST     = arc_host.elf
+TARGET_ARC_VSHADER  = arc_ushader.elf
 TARGET_ARC_VSHADER  = arc_vshader.elf
 TARGET_ARC_PSHADER  = arc_pshader.elf
 
@@ -44,14 +48,16 @@ TARGET_ARC_PSHADER  = arc_pshader.elf
 #VPATH=thirdparty/libtga
 
 #OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard *.c) )
-OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_x86 =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard ushader/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_x86 =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 
-OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_ARC =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_ARC  := $(patsubst %.c, %_arc.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard ushader/*.c) $(wildcard vshader/*.c) $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard vshader/*.h) $(wildcard pshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 
 OBJECTS_ARC_HOST  := $(patsubst %.c, %_host_arc.o,  $(wildcard host/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
 INCLUDES_ARC_HOST =                            $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+OBJECTS_ARC_USHADER  := $(patsubst %.c, %_ushader_arc.o,  $(wildcard ushader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
+INCLUDES_ARC_USHADER =                           $(wildcard ushader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 OBJECTS_ARC_VSHADER  := $(patsubst %.c, %_vshader_arc.o,  $(wildcard vshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
 INCLUDES_ARC_VSHADER =                           $(wildcard vshader/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
 OBJECTS_ARC_PSHADER  := $(patsubst %.c, %_vshader_arc.o,  $(wildcard pshader/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
@@ -60,12 +66,16 @@ INCLUDES_ARC_PSHADER =                            $(wildcard pshader/*.h) $(wild
 
 #all: x86 arc_single arc mips
 
-arc: arc_host arc_vshader arc_pshader
+arc: arc_host arc_ushader
+arc_nonunishader: arc_host arc_vshader arc_pshader
+arc_singlecore: $(DESTDIR)/$(TARGET_ARC)
+
+
 arc_host:    $(DESTDIR)/$(TARGET_ARC_HOST)
 arc_vshader: $(DESTDIR)/$(TARGET_ARC_VSHADER)
 arc_pshader: $(DESTDIR)/$(TARGET_ARC_PSHADER)
+arc_ushader: $(DESTDIR)/$(TARGET_ARC_PSHADER)
 
-arc_single: $(DESTDIR)/$(TARGET_ARC)
 
 #mips: $(DESTDIR)/$(TARGET_MIPS)
 
@@ -79,6 +89,9 @@ $(DESTDIR)/$(TARGET_ARC): $(OBJECTS_ARC) $(TCF)
 
 $(DESTDIR)/$(TARGET_ARC_HOST): $(OBJECTS_ARC_HOST) $(TCF_HOST)
 	$(SYSCONF_LINK_ARC_HOST) $(LDFLAGS_ARC) -o $(DESTDIR)/$(TARGET_ARC_HOST) $(OBJECTS_ARC_HOST) $(LIBS)
+
+$(DESTDIR)/$(TARGET_ARC_USHADER): $(OBJECTS_ARC_USHADER) $(TCF_USHADER)
+	$(SYSCONF_LINK_ARC_USHADER) $(LDFLAGS_ARC) -o $(DESTDIR)/$(TARGET_ARC_USHADER) $(OBJECTS_ARC_USHADER) $(LIBS)
 
 $(DESTDIR)/$(TARGET_ARC_VSHADER): $(OBJECTS_ARC_VSHADER) $(TCF_VSHADER)
 	$(SYSCONF_LINK_ARC_VSHADER) $(LDFLAGS_ARC) -o $(DESTDIR)/$(TARGET_ARC_VSHADER) $(OBJECTS_ARC_VSHADER) $(LIBS)
@@ -98,6 +111,9 @@ $(OBJECTS_ARC): %_arc.o: %.c $(INCLUDES_ARC)
 $(OBJECTS_ARC_HOST): %_host_arc.o: %.c $(INCLUDES_ARC_HOST)
 	$(SYSCONF_LINK_ARC_HOST) $(CPPFLAGS) -c $(CFLAGS) $< -o $@
 
+$(OBJECTS_ARC_USHADER): %_ushader_arc.o: %.c $(INCLUDES_ARC_USHADER)
+	$(SYSCONF_LINK_ARC_USHADER) $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+	
 $(OBJECTS_ARC_VSHADER): %_vshader_arc.o: %.c $(INCLUDES_ARC_VSHADER)
 	$(SYSCONF_LINK_ARC_VSHADER) $(CPPFLAGS) -c $(CFLAGS) $< -o $@
 
