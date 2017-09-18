@@ -34,19 +34,18 @@ typedef struct gpu_cfg_t {
 	volatile void* volatile obj_list_ptr;
 	
 	volatile void* volatile tri_ptr_list[NUM_OF_VSHADERS];
-	//volatile void* volatile tri_for_vshader[NUM_OF_VSHADERS]; // N arrays of TriangleVShaderData structs
-	volatile void* volatile tri_for_pshader[NUM_OF_VSHADERS]; // M arrays of TrianglePShaderData structs
+	volatile void* tri_for_pshader[NUM_OF_VSHADERS]; // M arrays of TrianglePShaderData structs
 	
 	volatile void* volatile active_fbuffer;
 	
-	void* fbuffer_ptr[MAX_NUM_OF_FRAMEBUFFERS];
-	void* zbuffer_ptr;
-	void* vshader_ptr;
-	void* pshader_ptr;
+	volatile void* fbuffer_ptr[MAX_NUM_OF_FRAMEBUFFERS];
+	volatile void* zbuffer_ptr;
+	volatile void* vshader_fptr;
+	volatile void* pshader_fptr;
 	
-	void* lights_table_ptr;
+	volatile void* lights_table_ptr;
 	
-	void* viewport_ptr;
+	volatile void* viewport_ptr;
 		
 	volatile bool vshaders_run_req;
 	volatile bool vshaders_stop_req;
@@ -66,13 +65,13 @@ typedef struct gpu_cfg_t {
 	uint32_t screen_height;
 	uint32_t screen_depth;
 	
-	uint32_t tile_width;
-	uint32_t tile_height;
+	volatile uint32_t tile_width;
+	volatile uint32_t tile_height;
 	
 } gpu_cfg_t;
 
 
 typedef struct shader_cfg_t {
-	volatile gpu_cfg_t* common_cfg;
+	volatile gpu_cfg_t *common_cfg;
 	uint32_t   shader_num;
 } shader_cfg_t;

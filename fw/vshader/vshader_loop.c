@@ -6,9 +6,9 @@
 
 
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TrianglePShaderData ** volatile tri_ptr, volatile gpu_cfg_t *cfg);
+void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData *volatile *volatile tri_ptr, volatile gpu_cfg_t *cfg);
 
-void tiler (volatile TrianglePShaderData* volatile tri, volatile TrianglePShaderData ** volatile tri_ptr, volatile gpu_cfg_t *cfg) {
+void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData *volatile *volatile tri_ptr, volatile gpu_cfg_t *cfg) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
@@ -106,12 +106,10 @@ void tiler (volatile TrianglePShaderData* volatile tri, volatile TrianglePShader
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
 	
-	cfg->pshader_ptr = pshader;
-	cfg->zbuffer_ptr = zbuffer;
-	cfg->active_fbuffer = fbuffer;
-					
+	vertex_shader_fptr vshader_fptr = (vertex_shader_fptr) cfg->vshader_fptr;
+	
 	volatile ObjectListNode* volatile obj_list_head = cfg->obj_list_ptr;
 	volatile ObjectListNode* volatile obj_list_node;
 	
@@ -122,7 +120,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 		tln[i] = NULL;
 	}
 	*/
-	TrianglePShaderData **d = cfg->tri_ptr_list[vshader_idx];
+	volatile TrianglePShaderData *volatile *volatile d = cfg->tri_ptr_list[vshader_idx];
 	for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
 		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
 		d[i] = NULL;
@@ -161,7 +159,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 				//tri_data_array[tri_num].varying[j].num_of_words = 0;
 				d.varying[j].num_of_words_written = 0;
 				d.varying[j].num_of_words_read    = 0;
-				clip.vtx[j] = vshader (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
+				clip.vtx[j] = vshader_fptr (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
 												
 				// Clip & normalize (clip -> NDC):
 				// Clip.w contains Eye.z, so first check that it is greater than zero
@@ -217,7 +215,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx, vertex_shader
 				
 				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
 				//tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tile_idx_table_ptr, cfg);
-				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tri_ptr_list[vshader_idx], cfg);
+				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData *volatile *volatile) cfg->tri_ptr_list[vshader_idx], cfg);
 				//tiler (&d, cfg->tri_ptr_list[vshader_idx], cfg);
 				
 				tri_num++;

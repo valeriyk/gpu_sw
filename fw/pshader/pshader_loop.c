@@ -11,7 +11,7 @@ Varying   interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *
  dfixpt_t interpolate_w       (                fixpt_t w_reciprocal[3], FixPt3 *bar);
 screenz_t interpolate_z       (                fixpt_t            z[3], FixPt3 *bar);
 
-void draw_triangle (volatile TrianglePShaderData* volatile tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg);
+void draw_triangle (TrianglePShaderData* tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg);
  
 
 void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
@@ -240,7 +240,7 @@ Varying interpolate_varying3 (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *b
 }
 
 
-void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
+void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
 	
 	size_t tiles_in_row = cfg->screen_width / cfg->tile_width;
 	size_t tile_row = tile_num / tiles_in_row;
@@ -273,7 +273,7 @@ void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile s
 //      *can get rid of bar0
 //      **(z1-z0)/sum_of_bar is constant for a triangle
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
-void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, volatile gpu_cfg_t *cfg) {    
+void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, volatile gpu_cfg_t *cfg) {    
 	
 	if (GL_DEBUG_0 == 1) {
 		printf("\tcall draw_triangle()\n");
@@ -285,14 +285,14 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 	
 	
 	//memcpy (&local_tpd, tri, sizeof (TrianglePShaderData));
-	TrianglePShaderData local_tpd = *tri_data;
+	//TrianglePShaderData local_tpd = *tri_data;
 	
 		
 	// re-pack X, Y, Z coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x[i] = local_tpd.screen_coords[i].as_struct.x;
-		y[i] = local_tpd.screen_coords[i].as_struct.y;
-		z[i] = local_tpd.screen_coords[i].as_struct.z;
+		x[i] = local_tpd_ptr->screen_coords[i].as_struct.x;
+		y[i] = local_tpd_ptr->screen_coords[i].as_struct.y;
+		z[i] = local_tpd_ptr->screen_coords[i].as_struct.z;
 		
 		assert (z[i] >= 0);
 	}
@@ -347,22 +347,20 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
 				size_t pix_num = tile_x + tile_y * TILE_WIDTH;
 				
 				
-				if (zi > zbuffer[pix_num]) {
-					
-					//cfg->num_of_pix_after_ztest++;
+				if (zi > local_zbuf[pix_num]) {
 						
-					zbuffer[pix_num] = zi;
+					local_zbuf[pix_num] = zi;
 
-					Varying vry_interp = interpolate_varying (local_tpd.varying, local_tpd.w_reciprocal, &bar);
+					Varying vry_interp = interpolate_varying (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar);
 					
-					if (fbuffer != NULL) {
-						//cfg->num_of_pshader_runs++;
+					if (cfg->active_fbuffer != NULL) {
+						
 						pixel_color_t color;
 						
-						pixel_shader pshader_ptr = cfg->pshader_ptr;
-						if (pshader_ptr (local_tpd.obj, &vry_interp, &color, cfg)) {
+						pixel_shader_fptr pshader_fptr = (pixel_shader_fptr) cfg->pshader_fptr;
+						if (pshader_fptr (local_tpd_ptr->obj, &vry_interp, &color, cfg)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
-							fbuffer[pix_num] = color;
+							local_fbuf[pix_num] = color;
 							
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = set_color (200, 0, 0, 0);
 						}
@@ -375,7 +373,7 @@ void draw_triangle (volatile TrianglePShaderData* volatile tri_data, size_t tile
     }
 }
 
-void pshader_loop (volatile gpu_cfg_t* common_cfg, const uint32_t shader_num) {
+void pshader_loop (volatile gpu_cfg_t *common_cfg, const uint32_t shader_num) {
 	
 	//uint32_t shader_num = shader_cfg->shader_num;
 	
@@ -421,12 +419,18 @@ void pshader_loop (volatile gpu_cfg_t* common_cfg, const uint32_t shader_num) {
 		
 		for (int j = 0; j < common_cfg->num_of_vshaders; j++) {
 			for (int i = 0; i < 2000; i++) {
-				TrianglePShaderData *local_tri_data_ptr;
 				//TrianglePShaderData **a = common_cfg->tile_idx_table_ptr;
-				TrianglePShaderData **tpl = common_cfg->tri_ptr_list[j];
-				local_tri_data_ptr = tpl[tile_num*2000 + i];
-				if (local_tri_data_ptr == NULL) break;
-				draw_triangle (local_tri_data_ptr, tile_num, local_zbuf, local_fbuf, common_cfg);
+				volatile TrianglePShaderData *volatile *volatile tpl = common_cfg->tri_ptr_list[j];
+				
+				volatile TrianglePShaderData *volatile local_tpd_ptr = tpl[tile_num*2000 + i];
+				
+				if (local_tpd_ptr == NULL) break;
+				
+				TrianglePShaderData local_tpd = *tpl[tile_num*2000 + i];
+				
+				
+				//draw_triangle (local_tri_data_ptr, tile_num, local_zbuf, local_fbuf, common_cfg);
+				draw_triangle (&local_tpd, tile_num, local_zbuf, local_fbuf, common_cfg);
 			}
 		}
 		

@@ -38,7 +38,7 @@
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_run_req detected\n", shader_num);
 		
-		vshader_loop (common_cfg, shader_num, common_cfg->vshader_ptr, common_cfg->pshader_ptr, common_cfg->zbuffer_ptr, (pixel_color_t *) common_cfg->active_fbuffer);		
+		vshader_loop (common_cfg, shader_num);		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);
 		common_cfg->vshader_done[shader_num] = true;

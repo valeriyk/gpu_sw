@@ -19,7 +19,7 @@
 
 int main(int argc, char** argv) {
        
-   	gpu_cfg_t gpu_cfg;
+   	volatile gpu_cfg_t gpu_cfg;
 	
 	//gpu_cfg.tile_idx_table_ptr = NULL;
 	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
 	
 	gpu_cfg.viewport_ptr = NULL;
 	
-	gpu_cfg.vshader_ptr = NULL;
-	gpu_cfg.pshader_ptr = NULL;
+	gpu_cfg.vshader_fptr = NULL;
+	gpu_cfg.pshader_fptr = NULL;
 		
 	gpu_cfg.vshaders_run_req  = false;
 	gpu_cfg.vshaders_stop_req = false;

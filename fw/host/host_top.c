@@ -60,7 +60,7 @@ void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view)
 }
 */
 
-void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 
 
@@ -163,9 +163,9 @@ ObjectListNode* init_objects (void) {
 	}
 	else if (draw_head) {
 	
-		african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
-		african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
-		african_head_spec = new_bitmap_from_tga ("../../models/african_head_spec.tga");
+		//african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
+		//african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
+		//african_head_spec = new_bitmap_from_tga ("../../models/african_head_spec.tga");
 		african_head = wfobj_new ("../../models/african_head.obj");
 
 	
@@ -297,10 +297,10 @@ void save_host_results (volatile gpu_cfg_t *cfg) {
 }
 */
 
-void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
-	cfg->vshader_ptr = vshader;
-	cfg->pshader_ptr = pshader;
+	cfg->vshader_fptr = vshader;
+	cfg->pshader_fptr = pshader;
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 			

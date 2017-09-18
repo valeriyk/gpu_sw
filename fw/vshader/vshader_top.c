@@ -38,7 +38,7 @@
 		
 		// vshader_loop (shader_cfg);
 		//draw_frame (gpu_cfg_t *cfg, vertex_shader vshader, pixel_shader pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
-		vshader_loop (common_cfg, shader_num, common_cfg->vshader_ptr, common_cfg->pshader_ptr, common_cfg->zbuffer_ptr, (pixel_color_t *) common_cfg->active_fbuffer);		
+		vshader_loop (common_cfg, shader_num);		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);
 		common_cfg->vshader_done[shader_num] = true;
