@@ -365,6 +365,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 				screenxy_t tile_y_offset = (tile_num / (cfg->screen_width/TILE_WIDTH)) * TILE_HEIGHT;
 				screenxy_t tile_x = p.x - tile_x_offset;
 				screenxy_t tile_y = p.y - tile_y_offset;
+				
 				size_t pix_num = tile_x + tile_y * TILE_WIDTH;
 				
 				
@@ -418,11 +419,11 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
 		for (int j = 0; j < cfg->num_of_vshaders; j++) {
-			for (int i = 0; i < 2000; i++) {
+			for (int i = 0; i < MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
 		
 				volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[j];
 				
-				volatile TrianglePShaderData *local_tpd_ptr = tpl[tile_num*2000 + i];
+				volatile TrianglePShaderData *local_tpd_ptr = tpl[tile_num*MAX_NUM_OF_TRIANGLES_PER_TILE + i];
 				
 				if (local_tpd_ptr == NULL) break;
 				

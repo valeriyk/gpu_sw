@@ -472,7 +472,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	}
     
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
-		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles * 2000, sizeof(TrianglePShaderData *))) == NULL) {
+		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles * MAX_NUM_OF_TRIANGLES_PER_TILE, sizeof(TrianglePShaderData *))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 			goto error;
 		}

@@ -80,13 +80,13 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 					node->next->tri  = tri;
 					node->next->next = NULL;	
 				}*/
-				for (size_t i = 0; i < 2000; i++) {
-					/*volatile TrianglePShaderData *volatile p = ext_tri_ptr_arr[tile_num * 2000 + i];
+				for (size_t i = 0; i < MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
+					/*volatile TrianglePShaderData *volatile p = ext_tri_ptr_arr[tile_num * MAX_NUM_OF_TRIANGLES_PER_TILE + i];
 					if (p == NULL) {
 						p = &(ext_data_arr[tri_num]);
 						break;
 					}*/
-					size_t idx = tile_num * 2000 + i;
+					size_t idx = tile_num * MAX_NUM_OF_TRIANGLES_PER_TILE + i;
 					if (ext_tri_ptr_arr[idx] == NULL) {
 						ext_tri_ptr_arr[idx] = &(ext_data_arr[tri_num]);
 						break;
@@ -136,7 +136,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	}
 	*/
 	volatile TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
-	for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
+	for (int i = 0; i < cfg->num_of_tiles * MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
 		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
 		d[i] = NULL;
 	}
