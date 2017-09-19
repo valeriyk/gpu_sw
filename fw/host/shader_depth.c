@@ -71,8 +71,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 		
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		Light *l = cfg->lights_table_ptr;
-		if (l[i].enabled) {
+		if (cfg->lights_arr[i].enabled) {
 			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &model4d); // model -> world -> eye -> clip
 			
 			//Perspective divide is only needed when perspective projection is used for shadows
@@ -84,7 +83,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 			// 	shadow_clip.as_array[k] = shadow_clip.as_array[k] / shadow_clip.as_struct.w;
 			// }			
 			
-			Float4 shadow_screen = fmat4_Float4_mult (cfg->viewport_ptr, &shadow_clip);
+			Float4 shadow_screen = fmat4_Float4_mult (&(cfg->viewport), &shadow_clip);
 			Float3 shadow_screen3 = Float4_Float3_vect_conv (&shadow_screen); // don't need W for ortho projection
 			varying_fifo_push_Float3 (vry, &shadow_screen3);
 		}
@@ -123,8 +122,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		Light *l = cfg->lights_table_ptr;
-		diff_intensity[i] = (l[i].enabled) ? -Float3_Float3_smult (&normal, &(l[i].eye)) : 0;
+		diff_intensity[i] = (cfg->lights_arr[i].enabled) ? -Float3_Float3_smult (&normal, &(cfg->lights_arr[i].eye)) : 0;
 		if (diff_intensity[i] > 0) {
 			diff_int_total += diff_intensity[i];
 		}
@@ -175,11 +173,9 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 	int    shadows = 0;
 	float  z_fighting = 123; // [almost] arbitrary value
 	
-	Light *l = cfg->lights_table_ptr;
-	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
-		if (!l[i].enabled) continue;
+		if (!cfg->lights_arr[i].enabled) continue;
 		
 		
 		screenxy_t x;
@@ -228,9 +224,9 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
-		assert (l[i].shadow_buf != NULL);
+		assert (cfg->lights_arr[i].shadow_buf != NULL);
 		
-		screenz_t shadow_buf_z = l[i].shadow_buf[y * get_screen_width(cfg) + x];
+		screenz_t shadow_buf_z = cfg->lights_arr[i].shadow_buf[y * get_screen_width(cfg) + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
 	}

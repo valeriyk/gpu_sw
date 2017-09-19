@@ -1,6 +1,8 @@
 #pragma once
 
-#include <gpu_cfg.h>
+//#include <gpu_cfg.h>
+#include <gl.h>
+
 
 void pshader_loop (volatile gpu_cfg_t* common_cfg, uint32_t shader_num);
 

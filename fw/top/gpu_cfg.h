@@ -1,5 +1,7 @@
 #pragma once
 
+//#include <gl.h>
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -26,7 +28,7 @@
 
 
 
-
+/*
 typedef struct gpu_cfg_t {
 	
 	//volatile void* volatile tile_idx_table_ptr;
@@ -75,3 +77,4 @@ typedef struct shader_cfg_t {
 	volatile gpu_cfg_t *common_cfg;
 	uint32_t   shader_num;
 } shader_cfg_t;
+*/

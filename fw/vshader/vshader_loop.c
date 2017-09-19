@@ -190,7 +190,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
 				ndc.vtx[j].as_struct.w = 1.0f;
 
 				if (!is_clipped) {
-					screen.vtx[j] = fmat4_Float4_mult (cfg->viewport_ptr, &(ndc.vtx[j]));
+					screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler
 					d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
@@ -208,7 +208,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
 				// It is important that we first write local copy of TrianglePShaderData to memory and then pass its address to the tiler!				
 				
 				//volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
-				volatile TrianglePShaderData* volatile tpsd = cfg->tri_for_pshader[vshader_idx];
+				volatile TrianglePShaderData *volatile tpsd = cfg->tri_for_pshader[vshader_idx];
 				//cfg->tri_data_array[tri_num] = d;
 				
 				tpsd[tri_num] = d;

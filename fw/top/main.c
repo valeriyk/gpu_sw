@@ -1,5 +1,5 @@
 #include "main.h"
-#include "gpu_cfg.h"
+//#include "gpu_cfg.h"
 
 #include    <host_top.h>
 #include <ushader_top.h>
@@ -33,9 +33,9 @@ int main(int argc, char** argv) {
 	
 	gpu_cfg.zbuffer_ptr = NULL;
 	
-	gpu_cfg.lights_table_ptr = NULL;
+	//gpu_cfg.lights_arr = NULL; TBD
 	
-	gpu_cfg.viewport_ptr = NULL;
+	fmat4_identity (&(gpu_cfg.viewport));
 	
 	gpu_cfg.vshader_fptr = NULL;
 	gpu_cfg.pshader_fptr = NULL;

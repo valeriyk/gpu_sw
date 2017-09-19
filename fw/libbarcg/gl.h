@@ -28,6 +28,7 @@
 #define TILE_HEIGHT 32
 
 
+typedef struct gpu_cfg_t gpu_cfg_t;
 
 typedef enum {X = 0, Y, Z, W} axis;
 typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
@@ -132,9 +133,60 @@ typedef Float4 (*vertex_shader_fptr) (volatile Object *obj, size_t face_idx, siz
 typedef bool   (*pixel_shader_fptr)  (volatile Object *obj, volatile Varying *var, pixel_color_t *color, volatile gpu_cfg_t *cfg);
 
 
-void init_lights (volatile gpu_cfg_t *cfg);
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, volatile gpu_cfg_t *cfg);
-void free_light (int light_num, volatile gpu_cfg_t *cfg);
+struct gpu_cfg_t {
+	
+	//volatile void* volatile tile_idx_table_ptr;
+	//volatile void* volatile tri_data_array;
+	volatile ObjectListNode* volatile obj_list_ptr;
+	
+	volatile TrianglePShaderData *volatile *volatile tri_ptr_list[NUM_OF_VSHADERS];
+	volatile TrianglePShaderData *tri_for_pshader[NUM_OF_VSHADERS];
+	
+	volatile pixel_color_t *volatile active_fbuffer;
+	
+	volatile pixel_color_t *fbuffer_ptr[MAX_NUM_OF_FRAMEBUFFERS];
+	volatile screenz_t     *zbuffer_ptr;
+	
+	volatile vertex_shader_fptr vshader_fptr;
+	volatile  pixel_shader_fptr pshader_fptr;
+	
+	Light lights_arr[MAX_NUM_OF_LIGHTS];
+	
+	volatile fmat4 viewport;
+		
+	volatile bool vshaders_run_req;
+	volatile bool vshaders_stop_req;
+	volatile bool vshader_done[NUM_OF_VSHADERS];
+	
+	volatile bool pshaders_run_req;
+	volatile bool pshaders_stop_req;
+	volatile bool pshader_done[NUM_OF_PSHADERS];
+	
+	uint32_t num_of_vshaders;
+	uint32_t num_of_pshaders;
+	uint32_t num_of_ushaders;
+	uint32_t num_of_tiles;
+	uint32_t num_of_fbuffers;
+	
+	uint32_t screen_width;
+	uint32_t screen_height;
+	uint32_t screen_depth;
+	
+	volatile uint32_t tile_width;
+	volatile uint32_t tile_height;
+	
+};
+
+typedef struct shader_cfg_t {
+	volatile gpu_cfg_t *common_cfg;
+	uint32_t   shader_num;
+} shader_cfg_t;
+
+//void init_lights (volatile gpu_cfg_t *cfg);
+//void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, volatile gpu_cfg_t *cfg);
+//void free_light (int light_num, volatile gpu_cfg_t *cfg);
+Light light_turn_on  (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg);
+void  light_turn_off (Light *l);
 
 void   set_screen_size   (volatile gpu_cfg_t *cfg, size_t width, size_t height);
 size_t get_screen_width  (volatile gpu_cfg_t *cfg);
@@ -146,7 +198,7 @@ size_t get_tile_height   (volatile gpu_cfg_t *cfg);
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);
 void init_ortho_proj       (fmat4 *m, float left, float right, float top, float bot, float near, float far);
-void init_viewport   (volatile gpu_cfg_t *cfg, int x, int y, int w, int h, int d);
+void init_viewport         (fmat4 *m, int x, int y, int w, int h, int d);
 
 void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis axis);
 

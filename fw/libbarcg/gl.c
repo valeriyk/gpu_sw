@@ -93,20 +93,20 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	return pc;
 }
 
-void init_viewport (volatile gpu_cfg_t *cfg, int x, int y, int w, int h, int d) {
+void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 
 	// X: map [-1:1] to [0:(SCREEN_WIDTH+HEIGTH)/2]
 	// Y: map [-1:1] to [0:SCREEN_HEIGHT]
 	// Z: map [-1:1] to [SCREEN_DEPTH:0]				
 	// W: leave as is
 				
-	fmat4_identity (cfg->viewport_ptr);
-	fmat4_set (cfg->viewport_ptr, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
-	fmat4_set (cfg->viewport_ptr, 0, 3, x + w / 2.0f);
-	fmat4_set (cfg->viewport_ptr, 1, 1, h / 2.0f);
-	fmat4_set (cfg->viewport_ptr, 1, 3, y + h / 2.0f);
-	fmat4_set (cfg->viewport_ptr, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
-	fmat4_set (cfg->viewport_ptr, 2, 3,  d / 2.0f);
+	fmat4_identity (m);
+	fmat4_set (m, 0, 0, h / 2.0f); //(w/2.0) * (h/w) = h/2.0 - adjust for screen aspect ratio
+	fmat4_set (m, 0, 3, x + w / 2.0f);
+	fmat4_set (m, 1, 1, h / 2.0f);
+	fmat4_set (m, 1, 3, y + h / 2.0f);
+	fmat4_set (m, 2, 2, -d / 2.0f); // minus sign because Z points in opposite directions in NDC and screen/clip
+	fmat4_set (m, 2, 3,  d / 2.0f);
 }
 
 void set_screen_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
@@ -154,7 +154,7 @@ size_t get_tile_height (volatile gpu_cfg_t *cfg) {
 	return cfg->tile_height;
 }
 
-void init_lights (volatile gpu_cfg_t *cfg) {
+/*void init_lights (volatile gpu_cfg_t *cfg) {
 	Light *l = cfg->lights_table_ptr;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		l[i].enabled        = false;
@@ -180,6 +180,39 @@ void free_light (int light_num, volatile gpu_cfg_t *cfg) {
 	
     if (l[light_num].shadow_buf != NULL) {
 		free (l[light_num].shadow_buf);
+	}
+}
+*/
+
+Light light_turn_on (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg) { //TBD add light_src
+	Light l;
+	l.enabled = true;
+	l.dir = dir;
+	l.src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
+	
+	if (add_shadow_buf) {
+		//l.shadow_buf = calloc (get_screen_width(cfg) * get_screen_height(cfg), sizeof(screenz_t));
+		l.shadow_buf = calloc (get_screen_width(cfg) * get_screen_height(cfg), sizeof(screenz_t));
+		if (l.shadow_buf != NULL) {
+			l.has_shadow_buf = true;
+		}
+		else {
+			l.has_shadow_buf = false;
+		}
+	}
+	else {
+		l.shadow_buf = NULL;
+		l.has_shadow_buf = false;
+	}
+	return l;
+}
+
+void light_turn_off (Light *l) {
+	l->enabled        = false;
+	l->has_shadow_buf = false;
+	
+    if (l->shadow_buf != NULL) {
+		free ((void *) l->shadow_buf);
 	}
 }
 

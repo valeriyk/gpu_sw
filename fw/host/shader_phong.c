@@ -74,8 +74,7 @@ bool pshader_phong (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	
 	Float3_normalize (&normal);
 	
-	Light *l = cfg->lights_table_ptr;
-	float intensity = -Float3_Float3_smult (&normal, &(l[0].eye));
+	float intensity = -Float3_Float3_smult (&normal, &(cfg->lights_arr[0].eye));
 	
 					
 	//

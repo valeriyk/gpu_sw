@@ -3,7 +3,6 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include <gl.h>
 
 //#include "libbarcg.h"
 
