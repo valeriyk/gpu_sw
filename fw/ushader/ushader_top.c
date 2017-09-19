@@ -38,7 +38,7 @@
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_run_req detected\n", shader_num);
 		
-		vshader_loop (common_cfg, shader_num);		
+		vshader_loop ((gpu_cfg_t *) common_cfg, shader_num);		
 		
 		if (PTHREAD_DEBUG) printf("vshader%d: vshader_done=true\n", shader_num);
 		common_cfg->vshader_done[shader_num] = true;
@@ -61,7 +61,7 @@
 			printf("pshader%d: pshader_run_req detected\n", shader_num);
 		}
 		
-		pshader_loop (common_cfg, shader_num);
+		pshader_loop ((gpu_cfg_t *) common_cfg, shader_num);
 		
 		if (PTHREAD_DEBUG) {
 			printf("pshader%d: pshader_done=true\n", shader_num);

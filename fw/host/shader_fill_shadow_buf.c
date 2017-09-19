@@ -24,7 +24,7 @@ int count_shadows (Varying *vry);
 ////////////////////////////////////////////////////////////////////////
 
 
-Float4 vshader_fill_shadow_buf (volatile Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry, volatile gpu_cfg_t *cfg) {
+Float4 vshader_fill_shadow_buf (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry, gpu_cfg_t *cfg) {
 	// transform 3d coords of the vertex to homogenous clip coords
 	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	Float4 model4d = Float3_Float4_conv   (&model, 1);
@@ -32,6 +32,6 @@ Float4 vshader_fill_shadow_buf (volatile Object *obj, size_t face_idx, size_t vt
 	return clip;
 }
 
-bool pshader_fill_shadow_buf (volatile Object *obj, volatile Varying *vry, pixel_color_t *color, volatile gpu_cfg_t *cfg) {
+bool pshader_fill_shadow_buf (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *cfg) {
 	return false;
 }

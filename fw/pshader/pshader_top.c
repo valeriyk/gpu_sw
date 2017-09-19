@@ -65,7 +65,7 @@
 		//}
 		
 		//pthread_mutex_lock (common_cfg->mutex);
-		pshader_loop (common_cfg, shader_num);
+		pshader_loop ((gpu_cfg_t *) common_cfg, shader_num);
 		//pthread_mutex_unlock (common_cfg->mutex);
 		
 		

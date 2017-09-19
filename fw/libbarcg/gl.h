@@ -129,8 +129,8 @@ typedef struct Light {
 //extern Bitmap TEXTURES[MAX_NUM_OF_TEXTURES];
 
 
-typedef Float4 (*vertex_shader_fptr) (volatile Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, volatile gpu_cfg_t *cfg);
-typedef bool   (*pixel_shader_fptr)  (volatile Object *obj, volatile Varying *var, pixel_color_t *color, volatile gpu_cfg_t *cfg);
+typedef Float4 (*vertex_shader_fptr) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
+typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, pixel_color_t *color, gpu_cfg_t *cfg);
 
 
 struct gpu_cfg_t {

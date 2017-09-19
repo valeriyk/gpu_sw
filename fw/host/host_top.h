@@ -12,8 +12,8 @@
 #define ENABLE_PERF 0
 
 #define RECORD_VIDEO 1
-#define RECORD_FRAME_NUM NUM_OF_FRAMES-1
-//#define RECORD_FRAME_NUM 5
+//#define RECORD_FRAME_NUM NUM_OF_FRAMES-1
+#define RECORD_FRAME_NUM 5
 
 
 #include <gpu_cfg.h>
