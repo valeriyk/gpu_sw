@@ -26,7 +26,7 @@ size_t NUM_OF_TILES;
 
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
-void set_tile_size (volatile gpu_cfg_t *cfg, size_t width, size_t height);
+void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
 	
 	
 	
@@ -109,7 +109,7 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 	fmat4_set (m, 2, 3,  d / 2.0f);
 }
 
-void set_screen_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
+void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
 	//SCREEN_WIDTH  = width;
 	//SCREEN_HEIGHT = height;
 	//SCREEN_DEPTH  = (screenz_t) ~0; // all ones
@@ -129,60 +129,30 @@ void set_screen_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
 	set_tile_size (cfg, TILE_WIDTH, TILE_HEIGHT);
 }
 
-void set_tile_size (volatile gpu_cfg_t *cfg, size_t width, size_t height) {
+void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height) {
 	cfg->tile_width    = width;
 	cfg->tile_height   = height;
 }
 
-size_t get_screen_width  (volatile gpu_cfg_t *cfg) {
+size_t get_screen_width  (gpu_cfg_t *cfg) {
 	return cfg->screen_width;
 }
 
-size_t get_screen_height (volatile gpu_cfg_t *cfg) {
+size_t get_screen_height (gpu_cfg_t *cfg) {
 	return cfg->screen_height;
 }
 
-size_t get_screen_depth  (volatile gpu_cfg_t *cfg) {
+size_t get_screen_depth  (gpu_cfg_t *cfg) {
 	return cfg->screen_depth;
 }
 
-size_t get_tile_width  (volatile gpu_cfg_t *cfg) {
+size_t get_tile_width  (gpu_cfg_t *cfg) {
 	return cfg->tile_width;
 }
 
-size_t get_tile_height (volatile gpu_cfg_t *cfg) {
+size_t get_tile_height (gpu_cfg_t *cfg) {
 	return cfg->tile_height;
 }
-
-/*void init_lights (volatile gpu_cfg_t *cfg) {
-	Light *l = cfg->lights_table_ptr;
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		l[i].enabled        = false;
-		l[i].has_shadow_buf = false;
-		l[i].shadow_buf     = NULL;
-	}
-}
-
-void new_light (int light_num, Float3 dir, screenz_t *shadow_buf, volatile gpu_cfg_t *cfg) { //TBD add light_src,
-	Light *l = cfg->lights_table_ptr;
-	l[light_num].enabled = true;
-	l[light_num].dir = dir;
-	l[light_num].src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
-	
-	l[light_num].has_shadow_buf = (shadow_buf != NULL);
-	l[light_num].shadow_buf = shadow_buf;
-}
-
-void free_light (int light_num, volatile gpu_cfg_t *cfg) {
-	Light *l = cfg->lights_table_ptr;
-	l[light_num].enabled        = false;
-	l[light_num].has_shadow_buf = false;
-	
-    if (l[light_num].shadow_buf != NULL) {
-		free (l[light_num].shadow_buf);
-	}
-}
-*/
 
 Light light_turn_on (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg) { //TBD add light_src
 	Light l;
@@ -360,7 +330,7 @@ BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
     return bb;
 }
 
-BoundBox clip_boundbox_to_screen (BoundBox in, volatile gpu_cfg_t *cfg) {
+BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox out;
 	
@@ -372,7 +342,7 @@ BoundBox clip_boundbox_to_screen (BoundBox in, volatile gpu_cfg_t *cfg) {
 	return out;
 }
 
-BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, volatile gpu_cfg_t *cfg) {
+BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox tile;
 				
@@ -462,7 +432,7 @@ void varying_fifo_push_Float4 (Varying *vry, Float4 *data) {
 	}
 }
 
-static inline VaryingWord varying_fifo_pop (volatile Varying *vry, varying_type type) {
+static inline VaryingWord varying_fifo_pop (Varying *vry, varying_type type) {
 	
 	assert ((type == VARYING_FIXPT) || (type == VARYING_FLOAT));
 	assert (vry->num_of_words_written > 0);
@@ -480,12 +450,12 @@ static inline VaryingWord varying_fifo_pop (volatile Varying *vry, varying_type 
 	return data;
 }
 
-float  varying_fifo_pop_float (volatile Varying *vry) {
+float  varying_fifo_pop_float (Varying *vry) {
 	VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
 	return v.as_float;
 }
 
-Float2  varying_fifo_pop_Float2 (volatile Varying *vry) {
+Float2  varying_fifo_pop_Float2 (Varying *vry) {
 	Float2 data;
 	for (int i = 0; i < 2; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -494,7 +464,7 @@ Float2  varying_fifo_pop_Float2 (volatile Varying *vry) {
 	return data;
 }
 
-Float3  varying_fifo_pop_Float3 (volatile Varying *vry) {
+Float3  varying_fifo_pop_Float3 (Varying *vry) {
 	Float3 data;
 	for (int i = 0; i < 3; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -503,7 +473,7 @@ Float3  varying_fifo_pop_Float3 (volatile Varying *vry) {
 	return data;
 }
 
-Float4  varying_fifo_pop_Float4 (volatile Varying *vry) {
+Float4  varying_fifo_pop_Float4 (Varying *vry) {
 	Float4 data;
 	for (int i = 0; i < 4; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FLOAT);
@@ -513,12 +483,12 @@ Float4  varying_fifo_pop_Float4 (volatile Varying *vry) {
 }
 
 
-fixpt_t  varying_fifo_pop_fixpt (volatile Varying *vry) {
+fixpt_t  varying_fifo_pop_fixpt (Varying *vry) {
 	VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
 	return v.as_fixpt_t;
 }
 
-FixPt2  varying_fifo_pop_FixPt2 (volatile Varying *vry) {
+FixPt2  varying_fifo_pop_FixPt2 (Varying *vry) {
 	FixPt2 data;
 	for (int i = 0; i < 2; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
@@ -527,7 +497,7 @@ FixPt2  varying_fifo_pop_FixPt2 (volatile Varying *vry) {
 	return data;
 }
 
-FixPt3  varying_fifo_pop_FixPt3 (volatile Varying *vry) {
+FixPt3  varying_fifo_pop_FixPt3 (Varying *vry) {
 	FixPt3 data;
 	for (int i = 0; i < 3; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
@@ -536,7 +506,7 @@ FixPt3  varying_fifo_pop_FixPt3 (volatile Varying *vry) {
 	return data;
 }
 
-FixPt4  varying_fifo_pop_FixPt4 (volatile Varying *vry) {
+FixPt4  varying_fifo_pop_FixPt4 (Varying *vry) {
 	FixPt4 data;
 	for (int i = 0; i < 4; i++) {
 		VaryingWord v = varying_fifo_pop (vry, VARYING_FIXPT);
