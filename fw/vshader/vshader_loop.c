@@ -6,20 +6,28 @@
 
 
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg);
+//void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg);
+void tiler (TrianglePShaderData *local_data, uint32_t vshader_idx, uint32_t tri_num, gpu_cfg_t *cfg);
 
-void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg) {
+//void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg) {
+void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, gpu_cfg_t *cfg_ptr) {
+	
+	// save local data to memory first because I need its address later
+	volatile TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
+	ext_data_arr[tri_num] = *local_data_ptr;
+	
+	volatile TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
 	
 	// re-pack X, Y, Z, W coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x[i] = tri->screen_coords[i].as_struct.x;
-		y[i] = tri->screen_coords[i].as_struct.y;
+		x[i] = local_data_ptr->screen_coords[i].as_struct.x;
+		y[i] = local_data_ptr->screen_coords[i].as_struct.y;
 	}
 	
-	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg);
+	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
     bb.min.x &= ~(TILE_WIDTH-1);
     bb.min.y &= ~(TILE_HEIGHT-1);
     
@@ -53,7 +61,7 @@ void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShader
 			
 			if (tri_inside_tile) {
 				
-				size_t tile_num = (p.y >> (int) log2f(get_tile_height(cfg))) * (get_screen_width(cfg) / get_tile_width(cfg)) + (p.x >> (int) log2f(get_tile_width(cfg)));
+				size_t tile_num = (p.y >> (int) log2f(get_tile_height(cfg_ptr))) * (get_screen_width(cfg_ptr) / get_tile_width(cfg_ptr)) + (p.x >> (int) log2f(get_tile_width(cfg_ptr)));
 				
 				/*
 				volatile TriangleListNode* volatile node = tri_ptr[tile_num];
@@ -73,8 +81,8 @@ void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShader
 					node->next->next = NULL;	
 				}*/
 				for (int i = 0; i < 2000; i++) {
-					if (tri_ptr[tile_num*2000 + i] == NULL) {
-						tri_ptr[tile_num*2000 + i] = tri;
+					if (ext_tri_ptr_arr[tile_num * 2000 + i] == NULL) {
+						ext_tri_ptr_arr[tile_num * 2000 + i] = &(ext_data_arr[tri_num]);
 						break;
 					}
 				}
@@ -208,8 +216,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				// It is important that we first write local copy of TrianglePShaderData to memory and then pass its address to the tiler!				
 				
 				//volatile TrianglePShaderData* volatile tpsd = cfg->tri_data_array;
-				volatile TrianglePShaderData *volatile tpsd = cfg->tri_for_pshader[vshader_idx];
+				/*volatile TrianglePShaderData *volatile tpsd = cfg->tri_for_pshader[vshader_idx];
 				//cfg->tri_data_array[tri_num] = d;
+				
 				
 				tpsd[tri_num] = d;
 				
@@ -218,6 +227,10 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData **) cfg->tri_ptr_list[vshader_idx], cfg);
 				//tiler (&d, cfg->tri_ptr_list[vshader_idx], cfg);
 				
+				tri_num++;
+				*/
+				
+				tiler (&d, vshader_idx, tri_num, cfg);				
 				tri_num++;
 			}
 		}
