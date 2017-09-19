@@ -289,12 +289,6 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 	return (uint8_t) (128.f + rgb.r * 0.439f - rgb.g * 0.368f - rgb.b * 0.071f);
 }
 
-/*
-void save_host_results (volatile gpu_cfg_t *cfg) {
-	cfg->obj_list_ptr;
-	//Float3 model = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-}
-*/
 
 void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
@@ -353,11 +347,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 #else
 
 	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
-	//shader_cfg_t pshader_cfg[NUM_OF_PSHADERS];
 	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
-		//pshader_cfg[i].common_cfg       = cfg;
-		//pshader_cfg[i].shader_num       = i;
-		//pshader_loop (&(pshader_cfg[i]));
 		pshader_loop (cfg, i);
 	}	
 	
@@ -370,12 +360,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 #else
  int main (void) {
 	volatile gpu_cfg_t * volatile gpu_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
-#endif
-
-    volatile gpu_cfg_t * volatile cfg = gpu_cfg;
-    
-    
-    /*
+	/*
     cfg->tile_idx_table_ptr = NULL;
 	
 	for (int i = 0; i < MAX_NUM_OF_FRAMEBUFFERS; i++) {
@@ -404,6 +389,12 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		cfg->pshader_done[i] = false;
 	}
 	*/
+#endif
+
+    volatile gpu_cfg_t * volatile cfg = gpu_cfg;
+    
+    
+    
 	cfg->num_of_vshaders = NUM_OF_VSHADERS;
 	cfg->num_of_pshaders = NUM_OF_PSHADERS;
 	cfg->num_of_ushaders = NUM_OF_USHADERS;	
@@ -428,22 +419,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		}
 	}
 	
-	/*
-	//Light LIGHTS[MAX_NUM_OF_LIGHTS];
-	if ((cfg->lights_table_ptr = calloc (MAX_NUM_OF_LIGHTS, sizeof(Light))) == NULL) {
-		if (DEBUG_MALLOC) printf ("light table calloc failed\n");
-		goto error;
-	}
-    */
-    /*if ((cfg->viewport_ptr = calloc (1, sizeof(fmat4))) == NULL) {
-		if (DEBUG_MALLOC) printf ("viewport calloc failed\n");
-		goto error;
-	}*/	
-	
-    //pixel_color_t *active_fbuffer = NULL;
-    //cfg->active_fbuffer = NULL;
-    		
-	//ObjectListNode *obj_list_head = init_objects ();
 	cfg->obj_list_ptr = init_objects ();
 	
     // Projection Matrix - perspective correction
@@ -474,19 +449,8 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	Float3 center = Float3_set (-0.f,  -0.f,   0.0f);
 	Float3 up     = Float3_set ( 0.0f,   1.0f,   0.0f);
 	
-	
 	fmat4 view;	
-	//init_view (&view, &eye, &center, &up);
-    
-    /*
-    init_lights(cfg);
-    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), false);	
-    
-    screenz_t* shadow_buf_0 = calloc (get_screen_width(cfg)*get_screen_height(cfg), sizeof(screenz_t));
-    if (!shadow_buf_0) goto error;
-    //new_light (0, Float3_set ( 0.f,  -2.f, -10.f), shadow_buf_0, cfg);	
-    new_light (0, Float3_set ( 0.f,  -2.f, -10.f), NULL, cfg);	
-    */
+	
     cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
     for (int i = 1; i < MAX_NUM_OF_LIGHTS; i++) {
 		light_turn_off (&(cfg->lights_arr[i]));
@@ -508,17 +472,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		start_counters();
 	}
     
-    //////////////////
-	/*if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TriangleListNode*))) == NULL) {
-		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
-		goto error;
-	}*/
-	/*
-	if ((cfg->tile_idx_table_ptr = calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData*) * 2000)) == NULL) {
-		if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
-		goto error;
-	}
-	*/
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
 		if ((cfg->tri_ptr_list[i] = (TrianglePShaderData **) calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData *) * 2000)) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
@@ -538,7 +491,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		
 		// Clean up active framebuffer, zbuffer and all shadowbuffers
 		for (int i = 0; i < screen_size; i++) {
-			//((pixel_color_t*) cfg->active_fbuffer)[i] = set_color (0, 0, 0, 0);
 			active_fbuffer[i] = set_color (1, 0, 0, 0);
 			
 			if (cfg->zbuffer_ptr != NULL) {
@@ -624,26 +576,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
-		
-		// Clean-up moded to vshader main loop:
-		/*
-		for (int i = 0; i < cfg->num_of_tiles; i++) {
-			volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
-			
-			//TriangleListNode *node = (*cfg->tile_idx_table_ptr)[i];
-			volatile TriangleListNode* volatile node = tln[i];
-			TriangleListNode *tmp;
-			while (node != NULL) {
-				tmp = node->next;
-				free ((void*) node);
-				node = tmp;
-			}
-			tln[i] = NULL;		
-		}
-		*/	
-		
-		
-		//free ((void*) cfg->tri_data_array);
 		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
 			free ((void*) cfg->tri_for_pshader[i]);
 		}
@@ -735,17 +667,10 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		free ((void *) cfg->zbuffer_ptr);
 	}
 	
-	/*if (cfg->viewport_ptr != NULL) {
-		free (cfg->viewport_ptr);
-	}*/
-	
-	//free ((void*) cfg->tile_idx_table_ptr);
 	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
 		free ((void*) cfg->tri_ptr_list[i]);
 	}
-	
-
-	
+		
 	free_objects ((void*) cfg->obj_list_ptr);
 	
 	for (int i = 0; i < cfg->num_of_fbuffers; i++) {
@@ -754,14 +679,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		}
 	}
 	
-	/*
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		free_light (i, cfg);
-	}
-	if (cfg->lights_table_ptr != NULL) {
-		free (cfg->lights_table_ptr);
-	}
-	*/
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		light_turn_off (&(cfg->lights_arr[i]));
 	}
