@@ -21,12 +21,21 @@
 
 
 
-#define MAX_NUM_OF_LIGHTS	1
-#define NUM_OF_VARYING_WORDS 28 // must be multiple of 4
-#define MAX_NUM_OF_TRIANGLES_PER_TILE 2048
+#define GPU_MAX_LIGHTS	1
+#define GPU_MAX_VARYINGS 28 // must be multiple of 4
+#define GPU_MAX_TRIANGLES_PER_TILE_LOG2 11
+#define GPU_MAX_TRIANGLES_PER_TILE (1 << GPU_MAX_TRIANGLES_PER_TILE_LOG2)
+#define GPU_TILE_WIDTH_LOG2 5
+#define GPU_TILE_HEIGHT_LOG2 5
+#define GPU_TILE_WIDTH  (1 << GPU_TILE_WIDTH_LOG2)
+#define GPU_TILE_HEIGHT (1 << GPU_TILE_HEIGHT_LOG2)
+#define GPU_MAX_USHADERS 4
+#define GPU_MAX_VSHADERS GPU_MAX_USHADERS
+#define GPU_MAX_PSHADERS GPU_MAX_USHADERS
+#define GPU_MAX_FRAMEBUFFERS	100
+#define GPU_CFG_ABS_ADDRESS 0xFFFE0000
 
-#define TILE_WIDTH  32
-#define TILE_HEIGHT 32
+
 
 
 typedef struct gpu_cfg_t gpu_cfg_t;
@@ -73,7 +82,7 @@ typedef struct VaryingWord {
 } VaryingWord;
 
 
-typedef VaryingWord VaryingData [NUM_OF_VARYING_WORDS];
+typedef VaryingWord VaryingData [GPU_MAX_VARYINGS];
 
 typedef struct Varying {
 	uint16_t num_of_words_written;
@@ -92,7 +101,7 @@ typedef struct Object {
 	fmat4  model;
 	fmat4  mvp;  // pre-calculated ModelViewProjection matrix
 	fmat4  mvit; // inverted and transposed ModelView matrix
-	fmat4  shadow_mvp[MAX_NUM_OF_LIGHTS];
+	fmat4  shadow_mvp[GPU_MAX_LIGHTS];
 } Object;
 
 typedef struct ObjectListNode {
@@ -133,28 +142,28 @@ struct gpu_cfg_t {
 
 	volatile ObjectListNode* volatile obj_list_ptr;
 	
-	volatile TrianglePShaderData *volatile *tri_ptr_list[NUM_OF_VSHADERS];
-	volatile TrianglePShaderData *volatile tri_for_pshader[NUM_OF_VSHADERS];
+	volatile TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_VSHADERS];
+	volatile TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_VSHADERS];
 	
 	volatile pixel_color_t *volatile active_fbuffer;
 	
-	volatile pixel_color_t *fbuffer_ptr[MAX_NUM_OF_FRAMEBUFFERS];
+	volatile pixel_color_t *fbuffer_ptr[GPU_MAX_FRAMEBUFFERS];
 	volatile screenz_t     *zbuffer_ptr;
 	
 	volatile vertex_shader_fptr vshader_fptr;
 	volatile  pixel_shader_fptr pshader_fptr;
 	
-	volatile Light lights_arr[MAX_NUM_OF_LIGHTS];
+	volatile Light lights_arr[GPU_MAX_LIGHTS];
 	
 	volatile fmat4 viewport;
 		
 	volatile bool vshaders_run_req;
 	volatile bool vshaders_stop_req;
-	volatile bool vshader_done[NUM_OF_VSHADERS];
+	volatile bool vshader_done[GPU_MAX_VSHADERS];
 	
 	volatile bool pshaders_run_req;
 	volatile bool pshaders_stop_req;
-	volatile bool pshader_done[NUM_OF_PSHADERS];
+	volatile bool pshader_done[GPU_MAX_PSHADERS];
 	
 	volatile uint32_t num_of_vshaders;
 	volatile uint32_t num_of_pshaders;
@@ -166,8 +175,8 @@ struct gpu_cfg_t {
 	volatile uint32_t screen_height;
 	volatile uint32_t screen_depth;
 	
-	volatile uint32_t tile_width;
-	volatile uint32_t tile_height;
+	//volatile uint32_t tile_width;
+	//volatile uint32_t tile_height;
 	
 };
 
@@ -183,8 +192,8 @@ void   set_screen_size   (gpu_cfg_t *cfg, size_t width, size_t height);
 size_t get_screen_width  (gpu_cfg_t *cfg);
 size_t get_screen_height (gpu_cfg_t *cfg);
 size_t get_screen_depth  (gpu_cfg_t *cfg);
-size_t get_tile_width    (gpu_cfg_t *cfg);
-size_t get_tile_height   (gpu_cfg_t *cfg);
+//size_t get_tile_width    (gpu_cfg_t *cfg);
+//size_t get_tile_height   (gpu_cfg_t *cfg);
 
 void init_view             (fmat4 *m, Float3 *eye, Float3 *center, Float3 *up);
 void init_perspective_proj (fmat4 *m, float left, float right, float top, float bot, float near, float far);

@@ -70,7 +70,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 	}
 		
 	
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		if (cfg->lights_arr[i].enabled) {
 			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &model4d); // model -> world -> eye -> clip
 			
@@ -117,9 +117,9 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 		
-	float diff_intensity[MAX_NUM_OF_LIGHTS];
+	float diff_intensity[GPU_MAX_LIGHTS];
 	float diff_int_total = 0;
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		diff_intensity[i] = (lights_arr[i].enabled) ? -Float3_Float3_smult (&normal, &(lights_arr[i].eye)) : 0;
 		if (diff_intensity[i] > 0) {
 			diff_int_total += diff_intensity[i];
@@ -139,7 +139,7 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 	}*/
 	
 	
-	float shadow_factor = 1.0f - count_shadows(vry, lights_arr, screen_width, screen_height) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	float shadow_factor = 1.0f - count_shadows(vry, lights_arr, screen_width, screen_height) / GPU_MAX_LIGHTS; // 1 - not in shadow; 0 - in all shadows
 	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
 	//float intensity = diff_int_total;
 
@@ -171,7 +171,7 @@ int count_shadows (Varying *vry, Light *lights_arr, uint32_t screen_width, uint3
 	int    shadows = 0;
 	float  z_fighting = 123; // [almost] arbitrary value
 	
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		
 		if (!lights_arr[i].enabled) continue;
 		

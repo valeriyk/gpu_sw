@@ -278,19 +278,19 @@ Varying interpolate_varying4 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 
 void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
 	
-	size_t tiles_in_row = cfg->screen_width / cfg->tile_width;
+	size_t tiles_in_row = cfg->screen_width >> GPU_TILE_WIDTH_LOG2;
 	size_t tile_row = tile_num / tiles_in_row;
 	size_t tile_col = tile_num % tiles_in_row;
 	
-	size_t rows_in_tile = cfg->tile_height;
+	size_t rows_in_tile = GPU_TILE_HEIGHT;
 	
 	size_t first_tile_row_offset = (tile_row * tiles_in_row * rows_in_tile) + tile_col;
 	
-	size_t tile_row_byte_size = cfg->tile_width * elem_size;
+	size_t tile_row_byte_size = elem_size << GPU_TILE_WIDTH_LOG2;
 	
 	size_t next_tile_row_offset;
 	
-	for (int i = 0; i < cfg->tile_height; i++) {
+	for (int i = 0; i < GPU_TILE_HEIGHT; i++) {
 		next_tile_row_offset = i * tiles_in_row;
 		memcpy ((void*) dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), (void*) src + (i * tile_row_byte_size), tile_row_byte_size);
 	}
@@ -361,12 +361,12 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 				
 				screenz_t zi = interpolate_z (z, &bar);
 				
-				screenxy_t tile_x_offset = (tile_num % (cfg->screen_width/TILE_WIDTH)) * TILE_WIDTH;
-				screenxy_t tile_y_offset = (tile_num / (cfg->screen_width/TILE_WIDTH)) * TILE_HEIGHT;
+				screenxy_t tile_x_offset = (tile_num % (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
+				screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
 				screenxy_t tile_x = p.x - tile_x_offset;
 				screenxy_t tile_y = p.y - tile_y_offset;
 				
-				size_t pix_num = tile_x + tile_y * TILE_WIDTH;
+				size_t pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
 				
 				if (zi > local_zbuf[pix_num]) {
@@ -397,7 +397,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 
 void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
-	size_t elems_in_tile = TILE_WIDTH*TILE_HEIGHT;
+	size_t elems_in_tile = GPU_TILE_WIDTH * GPU_TILE_HEIGHT;
 				
 	screenz_t     local_zbuf[elems_in_tile];
 	pixel_color_t local_fbuf[elems_in_tile];
@@ -419,11 +419,11 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
 		for (int j = 0; j < cfg->num_of_vshaders; j++) {
-			for (int i = 0; i < MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
+			for (int i = 0; i < GPU_MAX_TRIANGLES_PER_TILE; i++) {
 		
 				volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[j];
 				
-				volatile TrianglePShaderData *local_tpd_ptr = tpl[tile_num*MAX_NUM_OF_TRIANGLES_PER_TILE + i];
+				volatile TrianglePShaderData *local_tpd_ptr = tpl[(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + i];
 				
 				if (local_tpd_ptr == NULL) break;
 				

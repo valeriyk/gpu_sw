@@ -33,9 +33,6 @@
 
 // POSITIVE Z TOWARDS ME
 
-//Light LIGHTS[MAX_NUM_OF_LIGHTS];
-
-
 
 
 /*
@@ -99,7 +96,7 @@ void setup_light_transform (volatile ObjectListNode* volatile obj_list_head, fma
 void light_transform (fmat4 *view, volatile gpu_cfg_t *cfg) {
 	Float4 light4_a;
 	Float4 light4_b;
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		if (!cfg->lights_arr[i].enabled) continue;
 		light4_a = Float3_Float4_conv (&(cfg->lights_arr[i].dir), 0);
 		// Light vector changes after View transformation only,
@@ -347,7 +344,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 #else
 
 	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
-	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_PSHADERS; i++) {
 		pshader_loop (cfg, i);
 	}	
 	
@@ -363,7 +360,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	/*
     cfg->tile_idx_table_ptr = NULL;
 	
-	for (int i = 0; i < MAX_NUM_OF_FRAMEBUFFERS; i++) {
+	for (int i = 0; i < GPU_MAX_FRAMEBUFFERS; i++) {
 		cfg->fbuffer_ptr[i] = NULL;
 	}
 	
@@ -382,10 +379,10 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	cfg->pshaders_stop_req = false;
 	
 	
-	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
 		cfg->vshader_done[i] = false;
 	}
-	for (int i = 0; i < NUM_OF_PSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_PSHADERS; i++) {
 		cfg->pshader_done[i] = false;
 	}
 	*/
@@ -395,11 +392,11 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
     
     
     
-	cfg->num_of_vshaders = NUM_OF_VSHADERS;
-	cfg->num_of_pshaders = NUM_OF_PSHADERS;
-	cfg->num_of_ushaders = NUM_OF_USHADERS;	
+	cfg->num_of_vshaders = GPU_MAX_VSHADERS;
+	cfg->num_of_pshaders = GPU_MAX_PSHADERS;
+	cfg->num_of_ushaders = GPU_MAX_USHADERS;	
 	cfg->num_of_tiles    = 0;
-	cfg->num_of_fbuffers = MAX_NUM_OF_FRAMEBUFFERS;
+	cfg->num_of_fbuffers = GPU_MAX_FRAMEBUFFERS;
 	
     
     size_t screen_size = WIDTH * HEIGHT;
@@ -451,7 +448,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	fmat4 view;	
 	
     cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
-    for (int i = 1; i < MAX_NUM_OF_LIGHTS; i++) {
+    for (int i = 1; i < GPU_MAX_LIGHTS; i++) {
 		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
     
@@ -472,7 +469,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	}
     
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
-		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles * MAX_NUM_OF_TRIANGLES_PER_TILE, sizeof(TrianglePShaderData *))) == NULL) {
+		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2, sizeof(TrianglePShaderData *))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 			goto error;
 		}
@@ -497,7 +494,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 				zb[i] = 0;
 			}
 			
-			for (int j = 0; j < MAX_NUM_OF_LIGHTS; j++) {
+			for (int j = 0; j < GPU_MAX_LIGHTS; j++) {
 				if (cfg->lights_arr[j].enabled && cfg->lights_arr[j].has_shadow_buf) {
 					cfg->lights_arr[j].shadow_buf[i] = 0;
 				}
@@ -529,7 +526,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		// + 1 needed because we do integer division and there may be remainder, we need space for it too.
 		// For simplicity I simply enlarge all arrays, although some of them don't need this extra space.
 		uint32_t num_of_faces_per_vshader = (num_of_faces / cfg->num_of_vshaders) + 1;
-		for (int i = 0; i < NUM_OF_VSHADERS; i++) {			
+		for (int i = 0; i < GPU_MAX_VSHADERS; i++) {			
 			if ((cfg->tri_for_pshader[i] = (TrianglePShaderData *) calloc (num_of_faces_per_vshader, sizeof (TrianglePShaderData))) == NULL) {
 				if (DEBUG_MALLOC) printf ("tri_for_pshader[%d] calloc failed\n", i);
 				goto error;
@@ -538,7 +535,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 			
 		
 		
-		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+		for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 			if (cfg->lights_arr[i].enabled && cfg->lights_arr[i].has_shadow_buf) {
 				
 				init_view             (&view, &(cfg->lights_arr[i].src), &center, &up);
@@ -574,7 +571,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
-		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+		for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
 			free ((void*) cfg->tri_for_pshader[i]);
 		}
 		
@@ -607,7 +604,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 				}
 				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
 			}
-			for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+			for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 				if (cfg->lights_arr[i].enabled && cfg->lights_arr[i].has_shadow_buf) {
 					sprintf(shadow_num, "%d", i);
 					strcpy (tga_file, "shadow_buffer_");
@@ -665,7 +662,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		free ((void *) cfg->zbuffer_ptr);
 	}
 	
-	for (int i = 0; i < NUM_OF_VSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
 		free ((void*) cfg->tri_ptr_list[i]);
 	}
 		
@@ -677,7 +674,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		}
 	}
 	
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
 	

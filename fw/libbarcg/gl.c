@@ -13,7 +13,7 @@
 
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
-void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
+//void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
 	
 	
 	
@@ -100,19 +100,10 @@ void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
 	
 	cfg->screen_width  = width;//SCREEN_WIDTH;
 	cfg->screen_height = height;//SCREEN_HEIGHT;
-	//cfg->tile_width    = TILE_WIDTH;
-	//cfg->tile_height   = TILE_HEIGHT;
-	cfg->num_of_tiles  = (width / TILE_WIDTH) * (height / TILE_HEIGHT);
+	cfg->num_of_tiles  = (width >> GPU_TILE_WIDTH_LOG2) * (height >> GPU_TILE_HEIGHT_LOG2);
 	
 	screenz_t depth = ~0; // all ones
 	cfg->screen_depth = (size_t) depth;
-	
-	set_tile_size (cfg, TILE_WIDTH, TILE_HEIGHT);
-}
-
-void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height) {
-	cfg->tile_width    = width;
-	cfg->tile_height   = height;
 }
 
 size_t get_screen_width  (gpu_cfg_t *cfg) {
@@ -125,14 +116,6 @@ size_t get_screen_height (gpu_cfg_t *cfg) {
 
 size_t get_screen_depth  (gpu_cfg_t *cfg) {
 	return cfg->screen_depth;
-}
-
-size_t get_tile_width  (gpu_cfg_t *cfg) {
-	return cfg->tile_width;
-}
-
-size_t get_tile_height (gpu_cfg_t *cfg) {
-	return cfg->tile_height;
 }
 
 Light light_turn_on (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg) { //TBD add light_src
@@ -242,7 +225,7 @@ Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap
 		obj->tran[i]   = 0.f;
 	}
 	fmat4_identity (&(obj->mvp));
-	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		fmat4_identity (&(obj->shadow_mvp[i]));
 	}
 	
@@ -326,10 +309,10 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox tile;
 				
-	tile.min.x = (tile_num % (get_screen_width(cfg) / TILE_WIDTH)) * TILE_WIDTH;
-    tile.min.y = (tile_num / (get_screen_width(cfg) / TILE_WIDTH)) * TILE_HEIGHT;
-    tile.max.x = tile.min.x + TILE_WIDTH  - 1; 
-    tile.max.y = tile.min.y + TILE_HEIGHT - 1;
+	tile.min.x = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
+    tile.min.y = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
+    tile.max.x = tile.min.x + GPU_TILE_WIDTH  - 1; 
+    tile.max.y = tile.min.y + GPU_TILE_HEIGHT - 1;
     
     BoundBox out;
 	

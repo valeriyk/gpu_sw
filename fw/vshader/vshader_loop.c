@@ -28,20 +28,20 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 	}
 	
 	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
-    bb.min.x &= ~(TILE_WIDTH-1);
-    bb.min.y &= ~(TILE_HEIGHT-1);
+    bb.min.x &= ~(GPU_TILE_WIDTH-1);
+    bb.min.y &= ~(GPU_TILE_HEIGHT-1);
     
     ScreenPt p;
     
     // Evaluate barycentric coords in all the four corners of each tile
-    for (p.y = bb.min.y; p.y <= bb.max.y; p.y += TILE_HEIGHT) {	
-		for (p.x = bb.min.x; p.x <= bb.max.x; p.x += TILE_WIDTH) {
+    for (p.y = bb.min.y; p.y <= bb.max.y; p.y += GPU_TILE_HEIGHT) {	
+		for (p.x = bb.min.x; p.x <= bb.max.x; p.x += GPU_TILE_WIDTH) {
 
 			// find corners of the tile:
 			fixpt_t x0 = fixpt_from_screenxy (p.x);
-			fixpt_t x1 = fixpt_from_screenxy (p.x + TILE_WIDTH - 1);
+			fixpt_t x1 = fixpt_from_screenxy (p.x + GPU_TILE_WIDTH - 1);
 			fixpt_t y0 = fixpt_from_screenxy (p.y);
-			fixpt_t y1 = fixpt_from_screenxy (p.y + TILE_HEIGHT - 1);
+			fixpt_t y1 = fixpt_from_screenxy (p.y + GPU_TILE_HEIGHT - 1);
 			
 			// get barycentric coords in each corner:
 			FixPt3 b0 = get_bar_coords (x, y, x0, y0);
@@ -61,7 +61,7 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 			
 			if (tri_inside_tile) {
 				
-				size_t tile_num = (p.y >> (int) log2f(get_tile_height(cfg_ptr))) * (get_screen_width(cfg_ptr) / get_tile_width(cfg_ptr)) + (p.x >> (int) log2f(get_tile_width(cfg_ptr)));
+				size_t tile_num = (p.y >> GPU_TILE_HEIGHT_LOG2) * (get_screen_width(cfg_ptr) >> GPU_TILE_WIDTH_LOG2) + (p.x >> GPU_TILE_WIDTH_LOG2);
 				
 				/*
 				volatile TriangleListNode* volatile node = tri_ptr[tile_num];
@@ -80,13 +80,13 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 					node->next->tri  = tri;
 					node->next->next = NULL;	
 				}*/
-				for (size_t i = 0; i < MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
+				for (size_t i = 0; i < GPU_MAX_TRIANGLES_PER_TILE; i++) {
 					/*volatile TrianglePShaderData *volatile p = ext_tri_ptr_arr[tile_num * MAX_NUM_OF_TRIANGLES_PER_TILE + i];
 					if (p == NULL) {
 						p = &(ext_data_arr[tri_num]);
 						break;
 					}*/
-					size_t idx = tile_num * MAX_NUM_OF_TRIANGLES_PER_TILE + i;
+					size_t idx = (tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + i;
 					if (ext_tri_ptr_arr[idx] == NULL) {
 						ext_tri_ptr_arr[idx] = &(ext_data_arr[tri_num]);
 						break;
@@ -136,7 +136,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	}
 	*/
 	volatile TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
-	for (int i = 0; i < cfg->num_of_tiles * MAX_NUM_OF_TRIANGLES_PER_TILE; i++) {
+	for (int i = 0; i < (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2); i++) {
 		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
 		d[i] = NULL;
 	}
