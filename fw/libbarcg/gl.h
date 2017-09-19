@@ -251,12 +251,6 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 	return (screenz_t) (a >> Z_FRACT_BITS);
 }
 
-/*
-pixel_color_t get_rgb_from_texture       (const Object *obj, const int u, const int v);
-Float3        get_normal_from_map        (const Object *obj, const int u, const int v);
-int           get_specularity_from_map   (const Object *obj, const int u, const int v);
-*/
-
 pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const int v);
 Float3        get_norm_Float3_from_bitmap (const Bitmap *bmp, const int u, const int v);
 int32_t       get_int32_from_bitmap       (const Bitmap *bmp, const int u, const int v);

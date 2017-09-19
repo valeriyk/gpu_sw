@@ -1,10 +1,7 @@
 #include "gl.h"
-//#include "geometry.h"
-//#include "geometry_fixpt.h"
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
-//#include <fixmath.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -13,16 +10,6 @@
 
 // POSITIVE Z TOWARDS ME
 
-
-/*
-size_t SCREEN_WIDTH;
-size_t SCREEN_HEIGHT;
-size_t SCREEN_DEPTH;
-
-size_t NUM_OF_TILES;
-*/
-
-//fmat4 VIEWPORT;
 
 
 fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
@@ -110,12 +97,6 @@ void init_viewport (fmat4 *m, int x, int y, int w, int h, int d) {
 }
 
 void set_screen_size (gpu_cfg_t *cfg, size_t width, size_t height) {
-	//SCREEN_WIDTH  = width;
-	//SCREEN_HEIGHT = height;
-	//SCREEN_DEPTH  = (screenz_t) ~0; // all ones
-	
-	//NUM_OF_TILES = (SCREEN_WIDTH / TILE_WIDTH) * (SCREEN_HEIGHT / TILE_HEIGHT);
-	
 	
 	cfg->screen_width  = width;//SCREEN_WIDTH;
 	cfg->screen_height = height;//SCREEN_HEIGHT;
@@ -161,7 +142,6 @@ Light light_turn_on (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg) { //TBD ad
 	l.src = Float3_set (-dir.as_struct.x, -dir.as_struct.y, -dir.as_struct.z);
 	
 	if (add_shadow_buf) {
-		//l.shadow_buf = calloc (get_screen_width(cfg) * get_screen_height(cfg), sizeof(screenz_t));
 		l.shadow_buf = calloc (get_screen_width(cfg) * get_screen_height(cfg), sizeof(screenz_t));
 		if (l.shadow_buf != NULL) {
 			l.has_shadow_buf = true;
@@ -357,15 +337,7 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
     out.max.x = min_of_two (tile.max.x, in.max.x);
     out.min.y = max_of_two (tile.min.y, in.min.y);
     out.max.y = min_of_two (tile.max.y, in.max.y);
-    
-    
-    /*
-    out.min.x = max_of_two (              0, in.min.x - tile.min.x);
-    out.max.x = min_of_two (TILE_WIDTH  - 1, in.max.x - tile.min.x);
-    out.min.y = max_of_two (              0, in.min.y - tile.min.y);
-    out.max.y = min_of_two (TILE_HEIGHT - 1, in.max.y - tile.min.y);
-    */
-    
+        
     return out;
 }
 
