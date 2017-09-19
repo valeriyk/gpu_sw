@@ -112,10 +112,8 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {	
-		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
-		
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 		
@@ -150,7 +148,7 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 		return false;
 	}
 	
-	float intensity_treshold = 1.0;//0.2;
+	float intensity_treshold = 0.2;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}

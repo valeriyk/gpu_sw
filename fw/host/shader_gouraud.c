@@ -58,7 +58,7 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
 	
 	float intensity = varying_fifo_pop_float (vry);
-	
+	//intensity = 0.9;
 	assert (intensity <=  1.0f);
 	assert (intensity >= -1.0f);
 	if ((intensity >  1.0f) || (intensity < -1.0f)) {
@@ -87,7 +87,7 @@ bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t scr
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 	
-	float intensity_treshold = 0;
+	float intensity_treshold = 0.2;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}

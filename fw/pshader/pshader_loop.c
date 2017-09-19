@@ -6,16 +6,16 @@
 
 //#include "libbarcg.h"
 
-Varying   interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar);
- dfixpt_t interpolate_w       (                fixpt_t w_reciprocal[3], FixPt3 *bar);
-screenz_t interpolate_z       (                fixpt_t            z[3], FixPt3 *bar);
+Varying   interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar);
+ dfixpt_t interpolate_w       (              fixpt_t *w_reciprocal, FixPt3 *bar);
+screenz_t interpolate_z       (              fixpt_t *z,            FixPt3 *bar);
 
 void draw_triangle (TrianglePShaderData* tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
-void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
+void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
 
-screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
+screenz_t interpolate_z (fixpt_t *z, FixPt3 *bar) {
 
 	// ZF = Z_FRACT_BITS
 	// ZM = 32-ZF
@@ -33,7 +33,7 @@ screenz_t interpolate_z (fixpt_t z[3], FixPt3 *bar) {
 	return fixpt_to_screenz ((fixpt_t) res);
 }
 
-dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
+dfixpt_t interpolate_w (fixpt_t *w_reciprocal, FixPt3 *bar) {
     	
 	// WF = W_RECIPR_FRACT_BITS
 	// WM = 32-WF
@@ -63,7 +63,7 @@ dfixpt_t interpolate_w (fixpt_t w_reciprocal[3], FixPt3 *bar) {
 			printf ("interpolate w mismatch: %f/%f\n", resf, dfixpt_to_float (res, OOWI_FRACT_BITS));
 	}
 	
-	return (dfixpt_t) res;		
+	return res;		
 }
 
 
@@ -238,8 +238,48 @@ Varying interpolate_varying3 (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *b
 	return vry_interp;					
 }
 
+Varying interpolate_varying4 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) {
 
-void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile src, volatile gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
+	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
+	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
+					
+	Varying vry_interp;					
+	vry_interp.num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
+	
+	if (vry_interp.num_of_words_written > 0) {
+		
+		dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar); // = (1).(OF)
+		
+		for (int i = 0; i < vry_interp.num_of_words_written; i++) {
+			
+			#define NNN 20
+			// VF = VARYING_FRACT_BITS
+			// VM = 32-VF
+			// WF = W_RECIPR_FRACT_BITS
+			// WM = 32-WF
+			// BF = BARC_FRACT_BITS
+			// BM = 32-BF
+			// OF = OOWI_FRACT_BITS
+			dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
+			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+
+			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
+			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN) 
+			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
+
+			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // = (VM+WM+BM+1).(VF+WF+BF-NNN)
+
+			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
+			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
+		}
+	}
+	
+	return vry_interp;					
+}
+
+
+void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size) {
 	
 	size_t tiles_in_row = cfg->screen_width / cfg->tile_width;
 	size_t tile_row = tile_num / tiles_in_row;
@@ -346,7 +386,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 						
 					local_zbuf[pix_num] = zi;
 
-					Varying vry_interp = interpolate_varying (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar);
+					Varying vry_interp = interpolate_varying4 (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar);
 					
 					if (cfg->active_fbuffer != NULL) {
 						

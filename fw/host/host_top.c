@@ -404,12 +404,11 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
     
     size_t screen_size = WIDTH * HEIGHT;
     
-    /*
+    
     if ((cfg->zbuffer_ptr = (screenz_t *) calloc (screen_size, sizeof(screenz_t))) == NULL) {
 		if (DEBUG_MALLOC) printf ("zbuffer calloc failed\n");
-		return NULL;
+		goto error;
 	}
-    */
     
     
     for (int i = 0; i < cfg->num_of_fbuffers; i++) {
@@ -451,9 +450,9 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	
 	fmat4 view;	
 	
-    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), true, cfg);
+    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
     for (int i = 1; i < MAX_NUM_OF_LIGHTS; i++) {
-		light_turn_off (&(cfg->lights_arr[i]));
+		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
     
     float eye_x = 0;
@@ -473,7 +472,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	}
     
 	for (int i = 0; i < cfg->num_of_vshaders; i++) {
-		if ((cfg->tri_ptr_list[i] = (TrianglePShaderData **) calloc (cfg->num_of_tiles, sizeof(TrianglePShaderData *) * 2000)) == NULL) {
+		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles * 2000, sizeof(TrianglePShaderData *))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 			goto error;
 		}
@@ -571,8 +570,8 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
-		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		for (int i = 0; i < NUM_OF_VSHADERS; i++) {
@@ -679,7 +678,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	}
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		light_turn_off (&(cfg->lights_arr[i]));
+		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
 	
 #ifndef MULTIPROC
