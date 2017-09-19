@@ -274,10 +274,6 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, volatile gpu_cfg_t *cfg) {    
 	
-	if (GL_DEBUG_0 == 1) {
-		printf("\tcall draw_triangle()\n");
-	}
-
 	fixpt_t    x[3];
 	fixpt_t    y[3];
 	fixpt_t    z[3];
@@ -372,7 +368,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
     }
 }
 
-void pshader_loop (volatile gpu_cfg_t *common_cfg, const uint32_t shader_num) {
+void pshader_loop (volatile gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
 	//uint32_t shader_num = shader_cfg->shader_num;
 	
@@ -384,14 +380,11 @@ void pshader_loop (volatile gpu_cfg_t *common_cfg, const uint32_t shader_num) {
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
-	int starting_tile  = shader_num % common_cfg->num_of_pshaders;
-	int     incr_tile  =              common_cfg->num_of_pshaders;
-	int   num_of_tiles =              common_cfg->num_of_tiles;
+	int starting_tile  = shader_num % cfg->num_of_pshaders;
+	int     incr_tile  =              cfg->num_of_pshaders;
+	int   num_of_tiles =              cfg->num_of_tiles;
 	
 	
-	if (PSHADER_DEBUG) {
-		printf ("\tpshader %d processes tiles: ", shader_num);
-	}
 	for (int tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
 		// initialize zbuffer tile in local memory
@@ -400,26 +393,25 @@ void pshader_loop (volatile gpu_cfg_t *common_cfg, const uint32_t shader_num) {
 		// initialize fbuffer tile in local memory
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
-		if (PSHADER_DEBUG) printf ("%d ", tile_num);
 		/*
-		volatile TriangleListNode* volatile* volatile tln = common_cfg->tile_idx_table_ptr;
+		volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
 		volatile TriangleListNode* volatile node = tln[tile_num];
 		
 		while (node != NULL) {
 			volatile TrianglePShaderData* volatile tri = node->tri;
 			TrianglePShaderData local_tri_data = *tri;
-			draw_triangle (&local_tri_data, tile_num, local_zbuf, local_fbuf, common_cfg);
+			draw_triangle (&local_tri_data, tile_num, local_zbuf, local_fbuf, cfg);
 			node = node->next;
 		}
 		*/
 		
-		//volatile TriangleListNode* volatile* volatile tln = common_cfg->tile_idx_table_ptr;
+		//volatile TriangleListNode* volatile* volatile tln = cfg->tile_idx_table_ptr;
 		//volatile TriangleListNode* volatile node = tln[tile_num];
 		
-		for (int j = 0; j < common_cfg->num_of_vshaders; j++) {
+		for (int j = 0; j < cfg->num_of_vshaders; j++) {
 			for (int i = 0; i < 2000; i++) {
-				//TrianglePShaderData **a = common_cfg->tile_idx_table_ptr;
-				volatile TrianglePShaderData *volatile *volatile tpl = common_cfg->tri_ptr_list[j];
+				//TrianglePShaderData **a = cfg->tile_idx_table_ptr;
+				volatile TrianglePShaderData *volatile *volatile tpl = cfg->tri_ptr_list[j];
 				
 				volatile TrianglePShaderData *volatile local_tpd_ptr = tpl[tile_num*2000 + i];
 				
@@ -428,21 +420,19 @@ void pshader_loop (volatile gpu_cfg_t *common_cfg, const uint32_t shader_num) {
 				TrianglePShaderData local_tpd = *tpl[tile_num*2000 + i];
 				
 				
-				//draw_triangle (local_tri_data_ptr, tile_num, local_zbuf, local_fbuf, common_cfg);
-				draw_triangle (&local_tpd, tile_num, local_zbuf, local_fbuf, common_cfg);
+				//draw_triangle (local_tri_data_ptr, tile_num, local_zbuf, local_fbuf, cfg);
+				draw_triangle (&local_tpd, tile_num, local_zbuf, local_fbuf, cfg);
 			}
 		}
 		
 		// flush local zbuffer tile
-		if (common_cfg->zbuffer_ptr != NULL) {
-			copy_tile_to_extmem (common_cfg->zbuffer_ptr, &local_zbuf, common_cfg, tile_num, sizeof (screenz_t));
+		if (cfg->zbuffer_ptr != NULL) {
+			copy_tile_to_extmem (cfg->zbuffer_ptr, &local_zbuf, cfg, tile_num, sizeof (screenz_t));
 		}
 		
 		// flush local fbuffer tile
-		if (common_cfg->active_fbuffer != NULL) {
-			copy_tile_to_extmem (common_cfg->active_fbuffer, &local_fbuf, common_cfg, tile_num, sizeof (pixel_color_t));
-		}
-		
+		if (cfg->active_fbuffer != NULL) {
+			copy_tile_to_extmem (cfg->active_fbuffer, &local_fbuf, cfg, tile_num, sizeof (pixel_color_t));
+		}		
 	}
-	if (PSHADER_DEBUG) printf ("\n");
 }
