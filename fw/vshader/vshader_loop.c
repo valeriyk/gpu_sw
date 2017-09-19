@@ -6,9 +6,9 @@
 
 
 //void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData *volatile *volatile tri_ptr, volatile gpu_cfg_t *cfg);
+void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg);
 
-void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData *volatile *volatile tri_ptr, volatile gpu_cfg_t *cfg) {
+void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
@@ -106,12 +106,12 @@ void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShader
 //         NDC to screen space
 //    - If at least one vertex is not clipped, call draw_triangle()
 //
-void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
+void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	
 	vertex_shader_fptr vshader_fptr = (vertex_shader_fptr) cfg->vshader_fptr;
 	
-	volatile ObjectListNode* volatile obj_list_head = cfg->obj_list_ptr;
-	volatile ObjectListNode* volatile obj_list_node;
+	volatile ObjectListNode *volatile obj_list_head = cfg->obj_list_ptr;
+	volatile ObjectListNode *volatile obj_list_node;
 	
 	/*
 	// Clean up data structures for each new frame:
@@ -120,7 +120,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
 		tln[i] = NULL;
 	}
 	*/
-	volatile TrianglePShaderData *volatile *volatile d = cfg->tri_ptr_list[vshader_idx];
+	volatile TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
 	for (int i = 0; i < cfg->num_of_tiles * 2000; i++) {
 		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
 		d[i] = NULL;
@@ -215,7 +215,7 @@ void vshader_loop (volatile gpu_cfg_t *cfg, const int vshader_idx) {
 				
 				//tiler(cfg->tri_data_array[tri_num], cfg->tile_idx_table_ptr);
 				//tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData**) cfg->tile_idx_table_ptr, cfg);
-				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData *volatile *volatile) cfg->tri_ptr_list[vshader_idx], cfg);
+				tiler (&(tpsd[tri_num]), (volatile TrianglePShaderData **) cfg->tri_ptr_list[vshader_idx], cfg);
 				//tiler (&d, cfg->tri_ptr_list[vshader_idx], cfg);
 				
 				tri_num++;

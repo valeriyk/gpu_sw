@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-int count_shadows (Varying *vry, gpu_cfg_t *cfg);
+int count_shadows (Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height);
 
 
 // Layout of Varying words for this pass:
@@ -92,7 +92,7 @@ Float4 vshader_depth (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 	return clip;		
 }
 
-bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *cfg) {
+bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
 	
 	Float3 normal = varying_fifo_pop_Float3 (vry);
 	Float3_normalize (&normal);
@@ -122,7 +122,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	float diff_intensity[MAX_NUM_OF_LIGHTS];
 	float diff_int_total = 0;
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-		diff_intensity[i] = (cfg->lights_arr[i].enabled) ? -Float3_Float3_smult (&normal, &(cfg->lights_arr[i].eye)) : 0;
+		diff_intensity[i] = (lights_arr[i].enabled) ? -Float3_Float3_smult (&normal, &(lights_arr[i].eye)) : 0;
 		if (diff_intensity[i] > 0) {
 			diff_int_total += diff_intensity[i];
 		}
@@ -141,7 +141,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	}*/
 	
 	
-	float shadow_factor = 1.0f - count_shadows(vry, cfg) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
+	float shadow_factor = 1.0f - count_shadows(vry, lights_arr, screen_width, screen_height) / MAX_NUM_OF_LIGHTS; // 1 - not in shadow; 0 - in all shadows
 	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
 	//float intensity = diff_int_total;
 
@@ -150,7 +150,7 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 		return false;
 	}
 	
-	float intensity_treshold = 0;
+	float intensity_treshold = 1.0;//0.2;
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
@@ -165,17 +165,17 @@ bool pshader_depth (Object *obj, Varying *vry, pixel_color_t *color, gpu_cfg_t *
 	if (b > 255) b = 255;
 	
 	*color = set_color (r, g, b, 0);
-	//*color = set_color (255, 0, 0, 0);
+	//*color = set_color (255, 0, 255, 0);
 	return true;
 }
 
-int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
+int count_shadows (Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height) {
 	int    shadows = 0;
 	float  z_fighting = 123; // [almost] arbitrary value
 	
 	for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
 		
-		if (!cfg->lights_arr[i].enabled) continue;
+		if (!lights_arr[i].enabled) continue;
 		
 		
 		screenxy_t x;
@@ -194,12 +194,12 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 		Float3 screen = varying_fifo_pop_Float3 (vry);
 			
 		assert (screen.as_struct.x >= 0);
-		assert (screen.as_struct.x < get_screen_width (cfg));
+		assert (screen.as_struct.x < screen_width);
 		x = (screenxy_t) screen.as_struct.x;
 		
 		assert (screen.as_struct.y >= 0);
 		//if (screen.as_struct.y >= get_screen_height()) printf ("screen.as_struct.y=%f, get_screen_height()=%zu\n", screen.as_struct.y, get_screen_height());	
-		assert (screen.as_struct.y < get_screen_height(cfg));	
+		assert (screen.as_struct.y < screen_height);	
 		//if (screen.as_struct.y >= get_screen_height()) screen.as_struct.y = get_screen_height() - 1; // TBD
 		y = (screenxy_t) screen.as_struct.y;
 		
@@ -224,12 +224,11 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
-		assert (cfg->lights_arr[i].shadow_buf != NULL);
+		assert (lights_arr[i].shadow_buf != NULL);
 		
-		screenz_t shadow_buf_z = cfg->lights_arr[i].shadow_buf[y * get_screen_width(cfg) + x];
+		screenz_t shadow_buf_z = lights_arr[i].shadow_buf[y * screen_width + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
 	}
 	return shadows;
 }
-

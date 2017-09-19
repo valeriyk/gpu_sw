@@ -353,7 +353,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 						pixel_color_t color;
 						
 						pixel_shader_fptr pshader_fptr = (pixel_shader_fptr) cfg->pshader_fptr;
-						if (pshader_fptr (local_tpd_ptr->obj, &vry_interp, &color, cfg)) {
+						if (pshader_fptr (local_tpd_ptr->obj, &vry_interp, cfg->lights_arr, cfg->screen_width, cfg->screen_depth, &color)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
 							local_fbuf[pix_num] = color;
 							
@@ -411,7 +411,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 		for (int j = 0; j < cfg->num_of_vshaders; j++) {
 			for (int i = 0; i < 2000; i++) {
 				//TrianglePShaderData **a = cfg->tile_idx_table_ptr;
-				volatile TrianglePShaderData **tpl = cfg->tri_ptr_list[j];
+				volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[j];
 				
 				volatile TrianglePShaderData *local_tpd_ptr = tpl[tile_num*2000 + i];
 				

@@ -162,7 +162,7 @@ ObjectListNode* init_objects (void) {
 	}
 	else if (draw_head) {
 	
-		//african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
+		african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
 		//african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
 		//african_head_spec = new_bitmap_from_tga ("../../models/african_head_spec.tga");
 		african_head = wfobj_new ("../../models/african_head.obj");
@@ -173,9 +173,9 @@ ObjectListNode* init_objects (void) {
 			return NULL;
 		}
 		head = node;
-		//node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
 		//node->obj = obj_new (african_head, african_head_diff, NULL, NULL);
-		node->obj = obj_new (african_head, NULL, NULL, NULL);
+		//node->obj = obj_new (african_head, NULL, NULL, NULL);
 		node->next = NULL;
 		obj_set_scale       (node->obj, 7, 7, 7);
 		//obj_set_rotation    (node->obj, 45, 45, 0);
@@ -188,8 +188,8 @@ ObjectListNode* init_objects (void) {
 				return NULL;
 			}
 			node       = node->next;
-			//node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
-			node->obj = obj_new (african_head, NULL, NULL, NULL);
+			node->obj  = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+			//node->obj = obj_new (african_head, NULL, NULL, NULL);
 			node->next = NULL;
 			//obj_set_rotation    (object[obj_idx], 90.f, 0.f, 0.f);
 			obj_set_translation (node->obj, 1.f, 0.f, -10.0f);
@@ -359,7 +359,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
  void * host_top (void *gpu_cfg) {
 #else
  int main (void) {
-	volatile gpu_cfg_t * volatile gpu_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+	gpu_cfg_t * const gpu_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
 	/*
     cfg->tile_idx_table_ptr = NULL;
 	
@@ -451,7 +451,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	
 	fmat4 view;	
 	
-    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
+    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), true, cfg);
     for (int i = 1; i < MAX_NUM_OF_LIGHTS; i++) {
 		light_turn_off (&(cfg->lights_arr[i]));
 	}
@@ -538,17 +538,16 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		}
 			
 		
-		/*
+		
 		for (int i = 0; i < MAX_NUM_OF_LIGHTS; i++) {
-			Light *l = cfg->lights_table_ptr;
-			if (l[i].enabled && l[i].has_shadow_buf) {
+			if (cfg->lights_arr[i].enabled && cfg->lights_arr[i].has_shadow_buf) {
 				
-				init_view             (&view, &(l[i].src), &center, &up);
+				init_view             (&view, &(cfg->lights_arr[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, l[i].shadow_buf, NULL);	
+				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, cfg->lights_arr[i].shadow_buf, NULL);	
 			}
 		}			
-		*/
+		
 		
 		// move the camera
 		eye_x = center.as_struct.x + eye_distance * cosf(eye_angle);
@@ -572,8 +571,8 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
-		launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		for (int i = 0; i < NUM_OF_VSHADERS; i++) {

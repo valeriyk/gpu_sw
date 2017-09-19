@@ -5,4 +5,4 @@
 
 
 
-void vshader_loop (volatile gpu_cfg_t *cfg, const int shader_num);
+void vshader_loop (gpu_cfg_t *cfg, const int shader_num);

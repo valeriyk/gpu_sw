@@ -125,15 +125,15 @@ typedef struct Light {
 
 
 typedef Float4 (*vertex_shader_fptr) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
-typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, pixel_color_t *color, gpu_cfg_t *cfg);
+typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color);
 
 
 struct gpu_cfg_t {
 
 	volatile ObjectListNode* volatile obj_list_ptr;
 	
-	volatile TrianglePShaderData *volatile *volatile tri_ptr_list[NUM_OF_VSHADERS];
-	volatile TrianglePShaderData *tri_for_pshader[NUM_OF_VSHADERS];
+	volatile TrianglePShaderData *volatile *tri_ptr_list[NUM_OF_VSHADERS];
+	volatile TrianglePShaderData *volatile tri_for_pshader[NUM_OF_VSHADERS];
 	
 	volatile pixel_color_t *volatile active_fbuffer;
 	
@@ -143,7 +143,7 @@ struct gpu_cfg_t {
 	volatile vertex_shader_fptr vshader_fptr;
 	volatile  pixel_shader_fptr pshader_fptr;
 	
-	Light lights_arr[MAX_NUM_OF_LIGHTS];
+	volatile Light lights_arr[MAX_NUM_OF_LIGHTS];
 	
 	volatile fmat4 viewport;
 		
@@ -155,15 +155,15 @@ struct gpu_cfg_t {
 	volatile bool pshaders_stop_req;
 	volatile bool pshader_done[NUM_OF_PSHADERS];
 	
-	uint32_t num_of_vshaders;
-	uint32_t num_of_pshaders;
-	uint32_t num_of_ushaders;
-	uint32_t num_of_tiles;
-	uint32_t num_of_fbuffers;
+	volatile uint32_t num_of_vshaders;
+	volatile uint32_t num_of_pshaders;
+	volatile uint32_t num_of_ushaders;
+	volatile uint32_t num_of_tiles;
+	volatile uint32_t num_of_fbuffers;
 	
-	uint32_t screen_width;
-	uint32_t screen_height;
-	uint32_t screen_depth;
+	volatile uint32_t screen_width;
+	volatile uint32_t screen_height;
+	volatile uint32_t screen_depth;
 	
 	volatile uint32_t tile_width;
 	volatile uint32_t tile_height;
@@ -171,7 +171,7 @@ struct gpu_cfg_t {
 };
 
 typedef struct shader_cfg_t {
-	volatile gpu_cfg_t *common_cfg;
+	gpu_cfg_t *common_cfg;
 	uint32_t   shader_num;
 } shader_cfg_t;
 
