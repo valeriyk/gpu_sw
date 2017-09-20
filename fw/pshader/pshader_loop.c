@@ -4,14 +4,15 @@
 #include <string.h>
 
 Varying   interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar);
- dfixpt_t interpolate_w       (              fixpt_t *w_reciprocal, FixPt3 *bar);
-screenz_t interpolate_z       (              fixpt_t *z,            FixPt3 *bar);
+ //dfixpt_t interpolate_w       (              fixpt_t *w_reciprocal, FixPt3 *bar);
+//screenz_t interpolate_z       (              fixpt_t *z,            FixPt3 *bar);
 
 void draw_triangle (TrianglePShaderData* tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
 void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
 
+/*
 screenz_t interpolate_z (fixpt_t *z, FixPt3 *bar) {
 
 	// ZF = Z_FRACT_BITS
@@ -62,8 +63,9 @@ dfixpt_t interpolate_w (fixpt_t *w_reciprocal, FixPt3 *bar) {
 	
 	return res;		
 }
+*/
 
-
+/*
 Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *bar) {
 
 	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
@@ -99,12 +101,12 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
 			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
 			
-			/*
-			if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
-				printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
-			if (vry_interp.data[i].as_fixpt_t > max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
-				printf ("interp var %" PRId32 " > max of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
-			*/
+			
+			//~ if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				//~ printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			//~ if (vry_interp.data[i].as_fixpt_t > max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				//~ printf ("interp var %" PRId32 " > max of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			
 			//assert (vry_interp.data[i].as_fixpt_t >= min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			//assert (vry_interp.data[i].as_fixpt_t <= max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			
@@ -120,16 +122,16 @@ Varying interpolate_varying (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *ba
 				float acc = mpy0 + mpy1 + mpy2;
 				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
 				
-				/*
-				printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
-				*/
+				
+				//printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+				
 				if (fabsf (vry_interp.data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1)
 					printf ("\nvry interp mismatch: %f/%f\n", vry_interp.data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));
 				//if (fabs (vry_interp.data[i].as_float - dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS)) > 0.001)
@@ -174,14 +176,14 @@ Varying interpolate_varying3 (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *b
 			// BF = BARC_FRACT_BITS
 			// BM = 32-BF
 			// OF = OOWI_FRACT_BITS
-			/*dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
-			dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
-			dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			//~ dfixpt_t vtx0_norm_fixpt = (dfixpt_t) vry[0].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[0];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			//~ dfixpt_t vtx1_norm_fixpt = (dfixpt_t) vry[1].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[1];  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
+			//~ dfixpt_t vtx2_norm_fixpt = (dfixpt_t) vry[2].data[i].as_fixpt_t * (dfixpt_t) w_reciprocal[2];  // VM.VF * WM.WF = (VM+WM).(VF+WF)
 
-			dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
-			dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN) 
-			dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
-			*/
+			//~ dfixpt_t mpy0_fixpt = (vtx0_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[0]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
+			//~ dfixpt_t mpy1_fixpt = (vtx1_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[1]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN) 
+			//~ dfixpt_t mpy2_fixpt = (vtx2_norm_fixpt >> NNN) * (dfixpt_t) bar->as_array[2]; // ((VM+WM).(VF+WF) >> NNN) * BM.BF = (VM+WM+BM).(VF+WF+BF-NNN)
+			
 			dfixpt_t mpy0_fixpt = ((dfixpt_t) vry[0].data[i].as_fixpt_t >> 7) * (mul_0 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
 			dfixpt_t mpy1_fixpt = ((dfixpt_t) vry[1].data[i].as_fixpt_t >> 7) * (mul_1 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
 			dfixpt_t mpy2_fixpt = ((dfixpt_t) vry[2].data[i].as_fixpt_t >> 7) * (mul_2 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
@@ -191,12 +193,12 @@ Varying interpolate_varying3 (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *b
 			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
 			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
 			
-			/*
-			if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
-				printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
-			if (vry_interp.data[i].as_fixpt_t > max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
-				printf ("interp var %" PRId32 " > max of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
-			*/
+			
+			//~ if (vry_interp.data[i].as_fixpt_t < min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				//~ printf ("interp var %" PRId32 " < min of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			//~ if (vry_interp.data[i].as_fixpt_t > max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t))
+				//~ printf ("interp var %" PRId32 " > max of %" PRId32 " %" PRId32 " %" PRId32 "\n", vry_interp.data[i].as_fixpt_t, vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
+			
 			//assert (vry_interp.data[i].as_fixpt_t >= min_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			//assert (vry_interp.data[i].as_fixpt_t <= max_of_three (vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t));
 			
@@ -212,16 +214,16 @@ Varying interpolate_varying3 (Varying vry[3], fixpt_t w_reciprocal[3], FixPt3 *b
 				float acc = mpy0 + mpy1 + mpy2;
 				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
 				
-				/*
-				printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
-				printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
-				printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
-				*/
+				
+				//~ printf ("vtx0_norm: %f/%f\t", vtx0_norm, dfixpt_to_float(vtx0_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//~ printf ("vtx1_norm: %f/%f\t", vtx1_norm, dfixpt_to_float(vtx1_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//~ printf ("vtx2_norm: %f/%f\n", vtx2_norm, dfixpt_to_float(vtx2_norm_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS));
+				//~ printf ("mpy0: %f/%f\t", mpy0, dfixpt_to_float(mpy0_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//~ printf ("mpy1: %f/%f\t", mpy1, dfixpt_to_float(mpy1_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//~ printf ("mpy2: %f/%f\n", mpy2, dfixpt_to_float(mpy2_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//~ printf ("acc: %f/%f\n", acc, dfixpt_to_float (acc_fixpt, VARYING_FRACT_BITS + W_RECIPR_FRACT_BITS + BARC_FRACT_BITS - NNN));
+				//~ printf ("vry interp: %f/%f\n", vry_interp.data[i].as_float, dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS));
+				
 				if (fabsf (vry_interp.data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1)
 					printf ("\nvry interp mismatch: %f/%f\n", vry_interp.data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));
 				//if (fabs (vry_interp.data[i].as_float - dfixpt_to_float (vry_interp.data[i].as_fixpt_t, VARYING_FRACT_BITS)) > 0.001)
@@ -274,6 +276,7 @@ Varying interpolate_varying4 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 	
 	return vry_interp;					
 }
+*/
 
 Varying interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) {
 
