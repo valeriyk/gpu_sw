@@ -9,9 +9,9 @@
 
 
 
-#define FLOAT_NORM   1
-#define FLOAT_TEXT   1
-#define FLOAT_SHADOW 1
+//~ #define FLOAT_NORM   1
+//~ #define FLOAT_TEXT   1
+//~ #define FLOAT_SHADOW 1
 
 
 
@@ -128,28 +128,25 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 	
 	
 	float spec_intensity = 0;	
-	/*if (obj->specularmap != NULL) {
-		float nl = diff_intensity[0]; //TBD, this is computed above
-		Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
-		Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
-		Float3_normalize (&r);
+	//~ if (obj->specularmap != NULL) {
+		//~ float nl = diff_intensity[0]; //TBD, this is computed above
+		//~ Float3 nnl2 = Float3_float_mult (&normal, nl * 2.0f);
+		//~ Float3 r    = Float3_Float3_add (&nnl2, &(LIGHTS[0].eye));
+		//~ Float3_normalize (&r);
 		
-		int32_t spec_factor = get_int32_from_bitmap (obj->specularmap, uu, vv);
-		spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
-	}*/
+		//~ int32_t spec_factor = get_int32_from_bitmap (obj->specularmap, uu, vv);
+		//~ spec_intensity = (r.as_struct.z < 0) ? 0 : powf (r.as_struct.z, spec_factor);
+	//~ }
 	
 	
 	float shadow_factor = 1.0f - count_shadows(vry, lights_arr, screen_width, screen_height) / GPU_MAX_LIGHTS; // 1 - not in shadow; 0 - in all shadows
 	float intensity = shadow_factor * (1.f * diff_int_total + 0.6f * spec_intensity);
-	//float intensity = diff_int_total;
-
-	//if ((intensity > 1.0f) || (intensity < -1.0f)) {
-	if (intensity < -0.f) {
-		return false;
-	}
 	
 	float intensity_treshold = 0.2;
-	if (intensity < intensity_treshold) {
+	if (intensity < 0.f) {
+		return false;
+	}	
+	else if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
 	
