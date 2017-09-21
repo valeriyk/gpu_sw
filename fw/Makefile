@@ -13,10 +13,11 @@ CFLAGS_COMMON      = -std=c99 $(OPT) -Wall -Itop -Ilibbarcg -Ilibtga-1.0.1/src -
 
 CFLAGS_X86         = -DTARGET_x86  -DSINGLEPROC_MULTITHREAD
 CFLAGS_MIPS        = -DTARGET_MIPS -DSINGLEPROC_SINGLETHREAD
-CFLAGS_ARC_COMMON  = -DTARGET_ARC
+CFLAGS_ARC_COMMON  = -DTARGET_ARC -Hnocopyr
 CFLAGS_ARC         = -tcf=$(TCF)         -DSINGLEPROC_SINGLETHREAD
 CFLAGS_ARC_HOST    = -tcf=$(TCF_HOST)    -DMULTIPROC
-CFLAGS_ARC_USHADER = -tcf=$(TCF_USHADER) -DMULTIPROC
+CFLAGS_ARC_USHADER = -tcf=$(TCF_USHADER) -DMULTIPROC -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset -Hccm -Hall_sdata -Hunroll=30 -Hnoxcheck -Hnoxcheck_obj -Hmemcpy_threshold=16 -Hon=long_enums -Hhostlib= -Hpurge -Hheap=0
+#-Hcrt_reginit
 CFLAGS_ARC_VSHADER = -tcf=$(TCF_VSHADER) -DMULTIPROC
 CFLAGS_ARC_PSHADER = -tcf=$(TCF_PSHADER) -DMULTIPROC
 

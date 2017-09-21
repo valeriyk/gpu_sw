@@ -5,17 +5,14 @@
 #include <stdlib.h>
 
 
-//void tiler (volatile TrianglePShaderData * volatile tri, TriangleListNode *tri_ptr[]);
-//void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg);
-void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, gpu_cfg_t *cfg);
+void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, gpu_cfg_t *cfg_ptr);
 
-//void tiler (volatile TrianglePShaderData *volatile tri, volatile TrianglePShaderData **tri_ptr, volatile gpu_cfg_t *cfg) {
 void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, gpu_cfg_t *cfg_ptr) {
 	
 	fixpt_t x[3];
 	fixpt_t y[3];
 	
-	// re-pack X, Y coords of the three vertices
+	// re-pack X, Y coords of the three vertices, hopefully this will be optimized away by the compiler
 	for (int i = 0; i < 3; i++) {
 		x[i] = local_data_ptr->screen_coords[i].as_struct.x;
 		y[i] = local_data_ptr->screen_coords[i].as_struct.y;
@@ -123,16 +120,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	volatile ObjectListNode *volatile obj_list_head = cfg->obj_list_ptr;
 	volatile ObjectListNode *volatile obj_list_node;
 	
-	/*
 	// Clean up data structures for each new frame:
-	for (int i = 0; i < cfg->num_of_tiles; i++) {
-		volatile TriangleListNode * volatile *tln = cfg->tile_idx_table_ptr;
-		tln[i] = NULL;
-	}
-	*/
 	volatile TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
 	for (int i = 0; i < (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2); i++) {
-		//TrianglePShaderData **d = cfg->tile_idx_table_ptr;
 		d[i] = NULL;
 	}
 	
@@ -144,10 +134,6 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	while (obj_list_node != NULL) {
 		
 		uint32_t num_of_faces = wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
-		//uint32_t num_of_faces = num_of_faces_in_obj / cfg->num_of_vshaders;
-		//uint32_t remainder    = num_of_faces_in_obj % cfg->num_of_vshaders;
-		//if (vshader_idx < remainder) num_of_faces++;
-		
 		uint32_t face_num_init = vshader_idx;
 		uint32_t face_num_incr = cfg->num_of_vshaders;
 		for (size_t i = face_num_init; i < num_of_faces; i += face_num_incr) {
@@ -158,7 +144,6 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 			Triangle screen;
 			
 			TrianglePShaderData d;
-			//tri_data_array[tri_num].obj = obj_list_node->obj;
 			d.obj = obj_list_node->obj;
 			
 			bool is_clipped = false; // sticky bit
@@ -196,7 +181,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				}
 				
 				// Typically W shouldn't be part of NDC, but I need it here to do correct matrix multiplication below (VIEWPORT is 4x4)
-				// as_struct.w == as_array[3]
+				// Remember that as_struct.w == as_array[3]
 				ndc.vtx[j].as_struct.w = 1.0f;
 
 				if (!is_clipped) {
@@ -207,7 +192,8 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 					d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
 					d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
 					// We don't need W anymore, but we will need 1/W later:
-					d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
+					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
+					d.w_reciprocal [j]             =  fixpt_from_float (reciprocal_w, W_RECIPR_FRACT_BITS);
 					
 				}
 				else break;

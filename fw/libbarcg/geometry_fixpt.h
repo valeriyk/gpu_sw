@@ -77,16 +77,17 @@ static inline fixpt_t fixpt_get_max (void) {
 }
 
 static inline fixpt_t fixpt_from_float (float a, uint8_t fract_bits) {
-	//fixpt_t c = (fixpt_t) roundf (a * (1 << fract_bits));
-	fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits));
+	//~ //fixpt_t c = (fixpt_t) roundf (a * (1 << fract_bits));
+	//~ fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits)); // TBD - this is too slow
+	fixpt_t c = (fixpt_t) (a * (1 << fract_bits)); // TBD
 	return c;
 }
 	
 	
-static inline fixpt_t fixpt_from_float_no_rnd (float a, uint8_t fract_bits) {
-	fixpt_t c = (fixpt_t) (a * (1 << fract_bits));
-	return c;
-}
+//~ static inline fixpt_t fixpt_from_float_no_rnd (float a, uint8_t fract_bits) {
+	//~ fixpt_t c = (fixpt_t) (a * (1 << fract_bits));
+	//~ return c;
+//~ }
 
 static inline float fixpt_to_float (fixpt_t a, uint8_t fract_bits) {
 	assert (fract_bits < 32);
