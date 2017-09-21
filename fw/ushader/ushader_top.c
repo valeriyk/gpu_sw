@@ -1,7 +1,6 @@
 #include "ushader_top.h"
-
-#include <vshader_loop.h>
-#include <pshader_loop.h>
+#include "vshader_loop.h"
+#include "pshader_loop.h"
 
 #include <inttypes.h>
 #include <string.h>

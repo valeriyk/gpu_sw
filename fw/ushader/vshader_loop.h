@@ -1,7 +1,8 @@
 #pragma once
 
-#include <gl.h>
-#include <gpu_cfg.h>
+#include "ushader_public.h"
+//#include <gl.h>
+//#include <gpu_cfg.h>
 
 
 
