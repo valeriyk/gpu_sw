@@ -360,7 +360,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
 void varying_fifo_push_float  (Varying *vry, float data) {
 	size_t idx = vry->num_of_words_written;
 
-	vry->data[idx].as_fixpt_t = fixpt_from_float_no_rnd (data, VARYING_FRACT_BITS);
+	vry->data[idx].as_fixpt_t = fixpt_from_float (data, VARYING_FRACT_BITS); // no rounding
 	if (DEBUG_FIXPT_VARYING) {
 		vry->data[idx].as_float = data;
 	}
