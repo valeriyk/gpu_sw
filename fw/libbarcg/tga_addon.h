@@ -1,6 +1,7 @@
 #pragma once
 
-#include "bitmap.h"
+#include "gl.h"
+
 #include <tga.h>
 
 #include <stdbool.h>

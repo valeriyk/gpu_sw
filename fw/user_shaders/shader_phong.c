@@ -1,9 +1,9 @@
 #include "shader_phong.h"
-#include "gl.h"
+//#include "gl.h"
 
-#include "geometry_fixpt.h"
+//#include "geometry_fixpt.h"
 
-#include <math.h>
+//#include <math.h>
 
 
 

@@ -1,5 +1,8 @@
 #include "gl.h"
 
+
+#include <tga.h>
+
 #include "wavefront_obj.h"
 #include "dynarray.h"
 
@@ -223,3 +226,12 @@ void obj_init_model (Object *obj) {
 }
 
 
+Bitmap * bitmap_new () {
+	Bitmap *bmp = (Bitmap*) malloc (sizeof(Bitmap));
+	return bmp;
+}
+
+void bitmap_free (Bitmap *bmp) {
+	if (bmp->data != NULL) free (bmp->data);
+	if (bmp       != NULL) free (bmp);
+}

@@ -133,9 +133,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 		
 	while (obj_list_node != NULL) {
 		
-		uint32_t num_of_faces = wfobj_get_num_of_faces(obj_list_node->obj->wfobj);
+		uint32_t num_of_faces = obj_list_node->obj->wfobj->num_of_faces;
 		uint32_t face_num_init = vshader_idx;
-		uint32_t face_num_incr = cfg->num_of_vshaders;
+		uint32_t face_num_incr = GPU_MAX_USHADERS;
 		for (size_t i = face_num_init; i < num_of_faces; i += face_num_incr) {
 			
 			

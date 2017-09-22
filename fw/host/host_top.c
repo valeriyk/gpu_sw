@@ -1,20 +1,20 @@
 #include "host_top.h"
 
-#include <wavefront_obj.h>
-#include <geometry.h>
+//#include <wavefront_obj.h>
+//#include <geometry.h>
 
-#ifdef SINGLEPROC_SINGLETHREAD
-	#include <vshader_loop.h>
-	#include <pshader_loop.h>
-#endif
+//~ #ifdef SINGLEPROC_SINGLETHREAD
+	//~ #include <vshader_loop.h>
+	//~ #include <pshader_loop.h>
+//~ #endif
 
-//#include "shader_normalmap.h"
-#include "shader_phong.h"
-#include "shader_gouraud.h"
-#include "shader_depth.h"
-#include "shader_fill_shadow_buf.h"
-#include "bitmap.h"
-#include "tga_addon.h"
+#include <shader_normalmap.h>
+#include <shader_phong.h>
+#include <shader_gouraud.h>
+#include <shader_depth.h>
+#include <shader_fill_shadow_buf.h>
+//#include "bitmap.h"
+#include <tga_addon.h>
 
 
 #include "profiling.h"
@@ -297,7 +297,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 #ifndef SINGLEPROC_SINGLETHREAD
 
 	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
-	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		while (cfg->vshader_done[i]);
 	}
 	if (PTHREAD_DEBUG) printf("host: all vshader_done signals are false\n");
@@ -309,7 +309,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	
 		
 	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are true\n");
-	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		while (!cfg->vshader_done[i]);
 	}
 	
@@ -321,7 +321,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	////////////////////
 	
 	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are false\n");
-	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		while (cfg->pshader_done[i]);
 	}		
 	if (PTHREAD_DEBUG) printf("host: all pshader_done signals are false\n");
@@ -332,7 +332,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	cfg->pshaders_run_req = true;
 	
 	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are true\n");
-	for (int i = 0; i < cfg->num_of_pshaders; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		while (!cfg->pshader_done[i]);
 	}
 	
@@ -344,7 +344,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 #else
 
 	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
-	for (int i = 0; i < GPU_MAX_PSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		pshader_loop (cfg, i);
 	}	
 	
@@ -379,10 +379,10 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	cfg->pshaders_stop_req = false;
 	
 	
-	for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		cfg->vshader_done[i] = false;
 	}
-	for (int i = 0; i < GPU_MAX_PSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		cfg->pshader_done[i] = false;
 	}
 	*/
@@ -392,8 +392,6 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
     
     
     
-	cfg->num_of_vshaders = GPU_MAX_VSHADERS;
-	cfg->num_of_pshaders = GPU_MAX_PSHADERS;
 	cfg->num_of_ushaders = GPU_MAX_USHADERS;	
 	cfg->num_of_tiles    = 0;
 	cfg->num_of_fbuffers = GPU_MAX_FRAMEBUFFERS;
@@ -468,7 +466,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		start_counters();
 	}
     
-	for (int i = 0; i < cfg->num_of_vshaders; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2, sizeof(TrianglePShaderData *))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 			goto error;
@@ -508,7 +506,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;		
 		int num_of_faces = 0;
 		while (obj_list_node != NULL) {
-			num_of_faces += wfobj_get_num_of_faces (obj_list_node->obj->wfobj, 0);
+			num_of_faces += obj_list_node->obj->wfobj->num_of_faces;
 			obj_list_node = obj_list_node->next;
 		}
 		if ((cfg->tri_data_array = calloc (num_of_faces, sizeof (TrianglePShaderData))) == NULL) {
@@ -520,13 +518,13 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		volatile ObjectListNode* volatile obj_list_node = cfg->obj_list_ptr;	
 		uint32_t num_of_faces = 0;
 		while (obj_list_node != NULL) {
-			num_of_faces += wfobj_get_num_of_faces (obj_list_node->obj->wfobj);
+			num_of_faces += obj_list_node->obj->wfobj->num_of_faces;
 			obj_list_node = obj_list_node->next;
 		}
 		// + 1 needed because we do integer division and there may be remainder, we need space for it too.
 		// For simplicity I simply enlarge all arrays, although some of them don't need this extra space.
-		uint32_t num_of_faces_per_vshader = (num_of_faces / cfg->num_of_vshaders) + 1;
-		for (int i = 0; i < GPU_MAX_VSHADERS; i++) {			
+		uint32_t num_of_faces_per_vshader = (num_of_faces / GPU_MAX_USHADERS) + 1;
+		for (int i = 0; i < GPU_MAX_USHADERS; i++) {			
 			if ((cfg->tri_for_pshader[i] = (TrianglePShaderData *) calloc (num_of_faces_per_vshader, sizeof (TrianglePShaderData))) == NULL) {
 				if (DEBUG_MALLOC) printf ("tri_for_pshader[%d] calloc failed\n", i);
 				goto error;
@@ -571,7 +569,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		//launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
-		for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
+		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 			free ((void*) cfg->tri_for_pshader[i]);
 		}
 		
@@ -662,7 +660,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 		free ((void *) cfg->zbuffer_ptr);
 	}
 	
-	for (int i = 0; i < GPU_MAX_VSHADERS; i++) {
+	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		free ((void*) cfg->tri_ptr_list[i]);
 	}
 		

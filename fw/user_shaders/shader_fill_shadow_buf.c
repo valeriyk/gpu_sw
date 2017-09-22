@@ -1,9 +1,9 @@
 #include "shader_fill_shadow_buf.h"
-#include "gl.h"
-#include "geometry_fixpt.h"
+//#include "gl.h"
+//#include "geometry_fixpt.h"
 
 
-#include <math.h>
+//#include <math.h>
 
 
 

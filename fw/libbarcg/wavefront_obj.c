@@ -13,7 +13,6 @@ typedef struct WFO_Private {
 	DynArray *norm;
 	DynArray *text;
 	DynArray *face;
-	//DynArray *face[NUM_OF_FACE_BINS];
 	//int face_offset;
 	//int vtx_offset;
 } WFO_Private;
@@ -25,6 +24,9 @@ typedef enum {VERTEX_IDX = 0, TEXTURE_IDX, NORMAL_IDX} wfobj_face_elem;
 
 
 int  read_wfobj_file (const char *filename, WaveFrontObj *wfobj);
+int  wfobj_get_num_of_faces           (const WaveFrontObj *wfobj);
+
+
 
 
 WaveFrontObj * wfobj_new (const char *wfobj_file) {
@@ -44,8 +46,10 @@ WaveFrontObj * wfobj_new (const char *wfobj_file) {
 	//wfobj->private->face_offset = 0;
     //wfobj->private->vtx_offset  = 0;
     
-	read_wfobj_file (wfobj_file, wfobj);	        
+    read_wfobj_file (wfobj_file, wfobj);	        
 
+	wfobj->num_of_faces = wfobj_get_num_of_faces(wfobj);
+	
     return wfobj;
 }
 
@@ -141,8 +145,6 @@ int read_wfobj_file (const char *filename, WaveFrontObj *wfobj) {
     int ch;
     while ((ch = fgetc(fp)) != EOF) {
     	char c = (char) ch;
-		
-		//putchar (c);
 		
 		switch (line_type) {
 			case EMPTY:

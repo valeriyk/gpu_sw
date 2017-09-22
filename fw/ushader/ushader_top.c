@@ -1,3 +1,4 @@
+#include "ushader_public.h"
 #include "ushader_top.h"
 #include "vshader_loop.h"
 #include "pshader_loop.h"

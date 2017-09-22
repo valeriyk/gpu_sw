@@ -474,8 +474,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
-	int starting_tile  = shader_num % cfg->num_of_pshaders;
-	int     incr_tile  =              cfg->num_of_pshaders;
+	int starting_tile  = shader_num % GPU_MAX_USHADERS;
+	int     incr_tile  =              GPU_MAX_USHADERS;
 	int   num_of_tiles =              cfg->num_of_tiles;
 	
 	
@@ -487,7 +487,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 		// initialize fbuffer tile in local memory
 		memset (&local_fbuf, 0, fbuf_tile_byte_size);
 		
-		for (int j = 0; j < cfg->num_of_vshaders; j++) {
+		for (int j = 0; j < GPU_MAX_USHADERS; j++) {
 			for (int i = 0; i < GPU_MAX_TRIANGLES_PER_TILE; i++) {
 		
 				volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[j];

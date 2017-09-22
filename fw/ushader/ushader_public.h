@@ -1,8 +1,8 @@
 #pragma once
 
-#include "bitmap.h"
-#include "geometry.h"
-#include "wavefront_obj.h"
+//#include "bitmap.h"
+#include <geometry.h>
+#include <wavefront_obj.h>
 
 //#include <gpu_cfg.h>
 
@@ -25,8 +25,6 @@
 #define GPU_TILE_WIDTH  (1 << GPU_TILE_WIDTH_LOG2)
 #define GPU_TILE_HEIGHT (1 << GPU_TILE_HEIGHT_LOG2)
 #define GPU_MAX_USHADERS 4
-#define GPU_MAX_VSHADERS GPU_MAX_USHADERS
-#define GPU_MAX_PSHADERS GPU_MAX_USHADERS
 #define GPU_MAX_FRAMEBUFFERS	64
 #define GPU_CFG_ABS_ADDRESS 0xFFFE0000
 
@@ -222,7 +220,12 @@ typedef uint16_t screenz_t;
 //typedef uint8_t screenz_t;
 
 
-
+typedef struct Bitmap {
+	uint8_t *data;
+	uint32_t w;
+	uint32_t h;
+	uint32_t bytespp;
+} Bitmap;
 
 typedef struct pixel_color_t {
 	uint8_t r, g, b;
@@ -301,8 +304,8 @@ struct gpu_cfg_t {
 
 	volatile ObjectListNode* volatile obj_list_ptr;
 	
-	volatile TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_VSHADERS];
-	volatile TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_VSHADERS];
+	volatile TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_USHADERS];
+	volatile TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_USHADERS];
 	
 	volatile pixel_color_t *volatile active_fbuffer;
 	
@@ -318,14 +321,14 @@ struct gpu_cfg_t {
 		
 	volatile bool vshaders_run_req;
 	volatile bool vshaders_stop_req;
-	volatile bool vshader_done[GPU_MAX_VSHADERS];
+	volatile bool vshader_done[GPU_MAX_USHADERS];
 	
 	volatile bool pshaders_run_req;
 	volatile bool pshaders_stop_req;
-	volatile bool pshader_done[GPU_MAX_PSHADERS];
+	volatile bool pshader_done[GPU_MAX_USHADERS];
 	
-	volatile uint32_t num_of_vshaders;
-	volatile uint32_t num_of_pshaders;
+//	volatile uint32_t num_of_vshaders;
+//	volatile uint32_t num_of_pshaders;
 	volatile uint32_t num_of_ushaders;
 	volatile uint32_t num_of_tiles;
 	volatile uint32_t num_of_fbuffers;

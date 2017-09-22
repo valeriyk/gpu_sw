@@ -2,12 +2,12 @@
 
 #include <ushader_public.h>
 
-#include "bitmap.h"
-#include "geometry.h"
+//#include "bitmap.h"
+//#include "geometry.h"
 //#include "geometry_fixpt.h"
-#include "wavefront_obj.h"
+//#include "wavefront_obj.h"
 
-#include <gpu_cfg.h>
+//#include <gpu_cfg.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -46,3 +46,5 @@ void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 
 
+Bitmap * bitmap_new  ();
+void     bitmap_free (Bitmap *bmp);

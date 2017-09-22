@@ -6,6 +6,7 @@
 
 typedef struct WaveFrontObj {
 	struct WFO_Private *private;
+	uint32_t num_of_faces;
 } WaveFrontObj;
 
 WaveFrontObj * wfobj_new (const char *obj_file);
@@ -17,4 +18,4 @@ Float3 wfobj_get_norm_coords          (const WaveFrontObj *wfobj, const int face
 Float2 wfobj_get_texture_coords       (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx);
 
 
-int  wfobj_get_num_of_faces           (const WaveFrontObj *wfobj);
+

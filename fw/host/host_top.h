@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <gl.h>
+
 #define WIDTH  320//1280
 #define HEIGHT 320//720
 
@@ -16,8 +18,8 @@
 //#define RECORD_FRAME_NUM 5
 
 
-#include <gpu_cfg.h>
-#include <gl.h>
+//#include <gpu_cfg.h>
+
 
 void * host_top (void *platform);
 

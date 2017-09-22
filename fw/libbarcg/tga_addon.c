@@ -1,6 +1,6 @@
-#include "inttypes.h"
-
 #include "tga_addon.h"
+
+#include <inttypes.h>
 
 void write_tga_file (char *tga_file, tbyte *buffer, int width, int height, int depth, bool lre) {
 	TGAData frame_data;	
