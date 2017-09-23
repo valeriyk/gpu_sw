@@ -24,6 +24,9 @@
 #define GPU_TILE_HEIGHT_LOG2 5
 #define GPU_TILE_WIDTH  (1 << GPU_TILE_WIDTH_LOG2)
 #define GPU_TILE_HEIGHT (1 << GPU_TILE_HEIGHT_LOG2)
+#define GPU_MAX_SCREEN_WIDTH  1024
+#define GPU_MAX_SCREEN_HEIGHT 1024
+#define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
 #define GPU_MAX_USHADERS 4
 #define GPU_MAX_FRAMEBUFFERS	64
 #define GPU_CFG_ABS_ADDRESS 0xFFFE0000
@@ -280,8 +283,7 @@ typedef struct TrianglePShaderData {
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
-//} __attribute__ ((aligned (1024))) TrianglePShaderData;
-} TrianglePShaderData;
+} __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
 
 

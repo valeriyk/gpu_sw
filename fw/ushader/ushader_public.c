@@ -1,7 +1,5 @@
 #include "gl.h"
 #include "wavefront_obj.h"
-#include "dynarray.h"
-
 
 #include <math.h>
 #include <stdlib.h>

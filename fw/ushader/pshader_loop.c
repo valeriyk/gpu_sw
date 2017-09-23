@@ -3,6 +3,8 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <math.h>
+
 Varying   interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar);
  //dfixpt_t interpolate_w       (              fixpt_t *w_reciprocal, FixPt3 *bar);
 //screenz_t interpolate_z       (              fixpt_t *z,            FixPt3 *bar);
