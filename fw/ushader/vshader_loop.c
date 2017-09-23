@@ -19,8 +19,8 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 	
 	// re-pack X, Y coords of the three vertices, hopefully this will be optimized away by the compiler
 	for (size_t i = 0; i < 3; i++) {
-		x[i] = local_data_ptr->screen_coords[i].as_struct.x;
-		y[i] = local_data_ptr->screen_coords[i].as_struct.y;
+		x[i] = local_data_ptr->screen_x[i];
+		y[i] = local_data_ptr->screen_y[i];
 	}
 	
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
@@ -177,9 +177,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 					screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler
-					d.screen_coords[j].as_struct.x =  hfixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
-					d.screen_coords[j].as_struct.y =  hfixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
-					d.screen_coords[j].as_struct.z =  hfixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					d.screen_x[j] =  hfixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
+					d.screen_y[j] =  hfixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+					d.screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
 					// We don't need W anymore, but we will need 1/W later:
 					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
 					d.w_reciprocal [j]             =  fixpt_from_float (reciprocal_w, W_RECIPR_FRACT_BITS);

@@ -378,13 +378,13 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	
 	hfixpt_t    x[3];
 	hfixpt_t    y[3];
-	hfixpt_t    z[3];
+	 fixpt_t    z[3];
 			
 	// re-pack X, Y, Z coords of the three vertices
 	for (int i = 0; i < 3; i++) {
-		x[i] = local_tpd_ptr->screen_coords[i].as_struct.x;
-		y[i] = local_tpd_ptr->screen_coords[i].as_struct.y;
-		z[i] = local_tpd_ptr->screen_coords[i].as_struct.z;
+		x[i] = local_tpd_ptr->screen_x[i];
+		y[i] = local_tpd_ptr->screen_y[i];
+		z[i] = local_tpd_ptr->screen_z[i];
 		
 		assert (z[i] >= 0);
 	}

@@ -293,10 +293,13 @@ typedef struct ObjectListNode {
 
 
 typedef struct TrianglePShaderData {
-	hFixPt3  screen_coords[3];
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
+	//hFixPt3  screen_coords[3];
+	hfixpt_t screen_x[3];
+	hfixpt_t screen_y[3];
+	 fixpt_t screen_z[3];
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
 
