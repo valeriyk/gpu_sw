@@ -12,7 +12,8 @@ Varying   interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar)
 void draw_triangle (TrianglePShaderData* tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
-void copy_tile_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
+void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
+void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg);
 
 /*
 screenz_t interpolate_z (fixpt_t *z, FixPt3 *bar) {
@@ -355,13 +356,35 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 	
 	size_t next_tile_row_offset;
 	
+#ifndef DMA
+
 	for (int i = 0; i < GPU_TILE_HEIGHT; i++) {
 		next_tile_row_offset = i * tiles_in_row;
 		memcpy ((void*) dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), (void*) src + (i * tile_row_byte_size), tile_row_byte_size);
 	}
+
+#else
+
+
+
+#endif
+
 }
 
-
+void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg) {
+	
+	// flush local zbuffer tile
+	if (cfg->zbuffer_ptr != NULL) {
+		copy_tile_to_extmem (cfg->zbuffer_ptr, local_zbuf, cfg, tile_num, sizeof (screenz_t));
+	}
+	
+	// flush local fbuffer tile
+	if (cfg->active_fbuffer != NULL) {
+		copy_tile_to_extmem (cfg->active_fbuffer, local_fbuf, cfg, tile_num, sizeof (pixel_color_t));
+	}
+}
+	
+		
 // Rasterize:
 // 1. compute barycentric coordinates (bar0,bar1,bar2), don't normalize them
 // 1.a. dumb method: just compute all the values for each pixel
@@ -469,9 +492,9 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
 	size_t elems_in_tile = GPU_TILE_WIDTH * GPU_TILE_HEIGHT;
-				
-	screenz_t     local_zbuf[elems_in_tile];
-	pixel_color_t local_fbuf[elems_in_tile];
+	
+	screenz_t     local_zbuf[2][elems_in_tile];
+	pixel_color_t local_fbuf[2][elems_in_tile];
 	
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
@@ -480,14 +503,14 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	size_t     incr_tile  =              GPU_MAX_USHADERS;
 	size_t   num_of_tiles =              cfg->num_of_tiles;
 	
-	
+	size_t active_local_buf_idx = 0;
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
 		// initialize zbuffer tile in local memory
-		memset (&local_zbuf, 0, zbuf_tile_byte_size);
+		memset (&local_zbuf[active_local_buf_idx], 0, zbuf_tile_byte_size);
 		
 		// initialize fbuffer tile in local memory
-		memset (&local_fbuf, 0, fbuf_tile_byte_size);
+		memset (&local_fbuf[active_local_buf_idx], 0, fbuf_tile_byte_size);
 		
 		for (int j = 0; j < GPU_MAX_USHADERS; j++) {
 			for (int i = 0; i < GPU_MAX_TRIANGLES_PER_TILE; i++) {
@@ -500,18 +523,12 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 				
 				TrianglePShaderData local_tpd = *local_tpd_ptr;
 		
-				draw_triangle (&local_tpd, tile_num, local_zbuf, local_fbuf, cfg);
+				draw_triangle (&local_tpd, tile_num, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
 			}
 		}
 		
-		// flush local zbuffer tile
-		if (cfg->zbuffer_ptr != NULL) {
-			copy_tile_to_extmem (cfg->zbuffer_ptr, &local_zbuf, cfg, tile_num, sizeof (screenz_t));
-		}
+		copy_local_bufs_to_extmem (local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], tile_num, cfg);
 		
-		// flush local fbuffer tile
-		if (cfg->active_fbuffer != NULL) {
-			copy_tile_to_extmem (cfg->active_fbuffer, &local_fbuf, cfg, tile_num, sizeof (pixel_color_t));
-		}		
+		active_local_buf_idx = (active_local_buf_idx == 0) ? 1 : 0;
 	}
 }

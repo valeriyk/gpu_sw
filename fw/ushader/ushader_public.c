@@ -20,8 +20,29 @@ hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c);
 
 
 
-
 fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfixpt_t cx, hfixpt_t cy) {
+    
+    hfixpt_t bx_ax = bx - ax;
+    hfixpt_t cy_ay = cy - ay;
+    hfixpt_t by_ay = by - ay;
+    hfixpt_t cx_ax = cx - ax;
+
+    fixpt_t mul_0 = bx_ax * cy_ay;
+    fixpt_t mul_1 = by_ay * cx_ax;
+    fixpt_t diff  = mul_0 - mul_1;
+    fixpt_t res = (diff >> (2*XY_FRACT_BITS - BARC_FRACT_BITS));
+    
+    // left-top fill rule:
+    bool downwards  = (by_ay  < 0);
+    bool horizontal = (by_ay == 0);
+    bool leftwards  = (bx_ax  < 0);
+    bool topleft    = downwards || (horizontal && leftwards);
+    
+    return topleft ? res + 1 : res;
+}
+
+
+fixpt_t edge_func_fixpt2 (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfixpt_t cx, hfixpt_t cy) {
     
     fixpt_t bx_ax = (fixpt_t) bx - (fixpt_t) ax;
     fixpt_t cy_ay = (fixpt_t) cy - (fixpt_t) ay;
