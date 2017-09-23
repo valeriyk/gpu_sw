@@ -376,9 +376,9 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	fixpt_t    x[3];
-	fixpt_t    y[3];
-	fixpt_t    z[3];
+	hfixpt_t    x[3];
+	hfixpt_t    y[3];
+	hfixpt_t    z[3];
 			
 	// re-pack X, Y, Z coords of the three vertices
 	for (int i = 0; i < 3; i++) {
@@ -391,8 +391,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	
 	BoundBox bb = clip_boundbox_to_tile (tile_num, get_tri_boundbox (x, y), cfg);
 	
-	fixpt_t px = fixpt_from_screenxy (bb.min.x);
-	fixpt_t py = fixpt_from_screenxy (bb.min.y);
+	hfixpt_t px = hfixpt_from_screenxy (bb.min.x);
+	hfixpt_t py = hfixpt_from_screenxy (bb.min.y);
 	
 	FixPt3 bar_initial = get_bar_coords (x, y, px, py);
 	
@@ -476,12 +476,12 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
-	int starting_tile  = shader_num % GPU_MAX_USHADERS;
-	int     incr_tile  =              GPU_MAX_USHADERS;
-	int   num_of_tiles =              cfg->num_of_tiles;
+	size_t starting_tile  = shader_num % GPU_MAX_USHADERS;
+	size_t     incr_tile  =              GPU_MAX_USHADERS;
+	size_t   num_of_tiles =              cfg->num_of_tiles;
 	
 	
-	for (int tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
+	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
 		// initialize zbuffer tile in local memory
 		memset (&local_zbuf, 0, zbuf_tile_byte_size);

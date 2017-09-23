@@ -14,11 +14,11 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 
 void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr) {
 	
-	fixpt_t x[3];
-	fixpt_t y[3];
+	hfixpt_t x[3];
+	hfixpt_t y[3];
 	
 	// re-pack X, Y coords of the three vertices, hopefully this will be optimized away by the compiler
-	for (int i = 0; i < 3; i++) {
+	for (size_t i = 0; i < 3; i++) {
 		x[i] = local_data_ptr->screen_coords[i].as_struct.x;
 		y[i] = local_data_ptr->screen_coords[i].as_struct.y;
 	}
@@ -42,10 +42,10 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 			// Evaluate barycentric coords in all the four corners of each tile:
 			
 			// find corners of the tile:
-			fixpt_t x0 = fixpt_from_screenxy (p.x);
-			fixpt_t x1 = fixpt_from_screenxy (p.x + GPU_TILE_WIDTH - 1);
-			fixpt_t y0 = fixpt_from_screenxy (p.y);
-			fixpt_t y1 = fixpt_from_screenxy (p.y + GPU_TILE_HEIGHT - 1);
+			hfixpt_t x0 = hfixpt_from_screenxy (p.x);
+			hfixpt_t x1 = hfixpt_from_screenxy (p.x + GPU_TILE_WIDTH - 1);
+			hfixpt_t y0 = hfixpt_from_screenxy (p.y);
+			hfixpt_t y1 = hfixpt_from_screenxy (p.y + GPU_TILE_HEIGHT - 1);
 			
 			// get barycentric coords in each corner:
 			FixPt3 b0 = get_bar_coords (x, y, x0, y0);
@@ -177,9 +177,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 					screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler
-					d.screen_coords[j].as_struct.x =  fixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
-					d.screen_coords[j].as_struct.y =  fixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
-					d.screen_coords[j].as_struct.z =  fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					d.screen_coords[j].as_struct.x =  hfixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
+					d.screen_coords[j].as_struct.y =  hfixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+					d.screen_coords[j].as_struct.z =  hfixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
 					// We don't need W anymore, but we will need 1/W later:
 					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
 					d.w_reciprocal [j]             =  fixpt_from_float (reciprocal_w, W_RECIPR_FRACT_BITS);

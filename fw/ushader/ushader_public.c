@@ -10,23 +10,23 @@
 
 
 
-fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy);
+fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfixpt_t cx, hfixpt_t cy);
 //void set_tile_size (gpu_cfg_t *cfg, size_t width, size_t height);
 	
 	
 	
-int32_t min_of_three (int32_t a, int32_t b, int32_t c);
-int32_t max_of_three (int32_t a, int32_t b, int32_t c);	
+hfixpt_t min_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c);
+hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c);	
 
 
 
 
-fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t cx, fixpt_t cy) {
+fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfixpt_t cx, hfixpt_t cy) {
     
-    dfixpt_t bx_ax = (dfixpt_t) bx - (dfixpt_t) ax;
-    dfixpt_t cy_ay = (dfixpt_t) cy - (dfixpt_t) ay;
-    dfixpt_t by_ay = (dfixpt_t) by - (dfixpt_t) ay;
-    dfixpt_t cx_ax = (dfixpt_t) cx - (dfixpt_t) ax;
+    fixpt_t bx_ax = (fixpt_t) bx - (fixpt_t) ax;
+    fixpt_t cy_ay = (fixpt_t) cy - (fixpt_t) ay;
+    fixpt_t by_ay = (fixpt_t) by - (fixpt_t) ay;
+    fixpt_t cx_ax = (fixpt_t) cx - (fixpt_t) ax;
 
     dfixpt_t mul_0 = bx_ax * cy_ay;
     dfixpt_t mul_1 = by_ay * cx_ax;
@@ -42,7 +42,7 @@ fixpt_t edge_func_fixpt (fixpt_t ax, fixpt_t ay, fixpt_t bx, fixpt_t by, fixpt_t
     return topleft ? res + 1 : res;
 }
 
-FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py) {
+FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
     
     FixPt3 barc;
     
@@ -53,19 +53,19 @@ FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py) {
 	return barc;
 }
 
-static inline int32_t min_of_two (int32_t a, int32_t b) {
+static inline hfixpt_t min_of_two (hfixpt_t a, hfixpt_t b) {
 	return (a < b) ? a : b;
 }
 
-static inline int32_t max_of_two (int32_t a, int32_t b) {
+static inline hfixpt_t max_of_two (hfixpt_t a, hfixpt_t b) {
 	return (a > b) ? a : b;
 }
 
-int32_t min_of_three (int32_t a, int32_t b, int32_t c) {
+hfixpt_t min_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
 	return min_of_two(a, min_of_two(b, c));
 }
 
-int32_t max_of_three (int32_t a, int32_t b, int32_t c) {
+hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
 	return max_of_two(a, max_of_two(b, c));
 }
 
@@ -92,14 +92,14 @@ size_t get_screen_depth  (gpu_cfg_t *cfg) {
 }
 
 
-BoundBox get_tri_boundbox (fixpt_t x[3], fixpt_t y[3]) {
+BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
 	
 	BoundBox bb;
     
-    bb.min.x = fixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
-    bb.max.x = fixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
-    bb.min.y = fixpt_to_screenxy (min_of_three (y[0], y[1], y[2]));
-    bb.max.y = fixpt_to_screenxy (max_of_three (y[0], y[1], y[2]));
+    bb.min.x = hfixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
+    bb.max.x = hfixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
+    bb.min.y = hfixpt_to_screenxy (min_of_three (y[0], y[1], y[2]));
+    bb.max.y = hfixpt_to_screenxy (max_of_three (y[0], y[1], y[2]));
     
     return bb;
 }

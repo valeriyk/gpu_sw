@@ -38,9 +38,11 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////////
+typedef  int16_t hfixpt_t;
 typedef  int32_t  fixpt_t;
 typedef  int64_t dfixpt_t;
 
+#define HFIXPT_BITS (sizeof(hfixpt_t) * 8)
 #define  FIXPT_BITS (sizeof( fixpt_t) * 8)
 #define DFIXPT_BITS (sizeof(dfixpt_t) * 8)
 
@@ -90,6 +92,14 @@ typedef union FixPt3 {
 	FixPtXYZ as_struct;
 } FixPt3;
 
+typedef hfixpt_t hfixpt_t3[3];
+typedef struct hFixPtXYZ {
+	hfixpt_t x, y, z;
+} hFixPtXYZ;
+typedef union hFixPt3 {
+	hfixpt_t3 as_array;
+	hFixPtXYZ as_struct;
+} hFixPt3;
 
 typedef fixpt_t fixpt_t4[4];
 typedef struct FixPtXYZW {
@@ -115,7 +125,11 @@ static inline fixpt_t fixpt_from_float (float a, uint8_t fract_bits) {
 	fixpt_t c = (fixpt_t) (a * (1 << fract_bits)); // TBD
 	return c;
 }
-	
+
+static inline hfixpt_t hfixpt_from_float (float a, uint8_t fract_bits) {
+	hfixpt_t c = (hfixpt_t) (a * (1 << fract_bits)); // TBD
+	return c;
+}	
 	
 //~ static inline fixpt_t fixpt_from_float_no_rnd (float a, uint8_t fract_bits) {
 	//~ fixpt_t c = (fixpt_t) (a * (1 << fract_bits));
@@ -279,7 +293,7 @@ typedef struct ObjectListNode {
 
 
 typedef struct TrianglePShaderData {
-	FixPt3  screen_coords[3];
+	hFixPt3  screen_coords[3];
 	fixpt_t w_reciprocal[3];
 	Varying varying[3];
 	Object  *obj;
@@ -396,6 +410,11 @@ static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
 	return c;
 }
 
+static inline hfixpt_t hfixpt_from_screenxy (screenxy_t a) {
+	hfixpt_t c = ((hfixpt_t) a) << XY_FRACT_BITS;
+	return c;
+}
+
 static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
 	/*bool round_up = (a >> (FRACT_BITS-1)) & 1;
 	
@@ -404,6 +423,9 @@ static inline screenxy_t fixpt_to_screenxy (fixpt_t a) {
 	return (screenxy_t) (a >> XY_FRACT_BITS);
 }
 
+static inline screenxy_t hfixpt_to_screenxy (hfixpt_t a) {
+	return (screenxy_t) (a >> XY_FRACT_BITS);
+}
 
 static inline fixpt_t fixpt_from_screenz (screenz_t a) {
 	fixpt_t c = ((fixpt_t) a) << Z_FRACT_BITS;
@@ -418,8 +440,8 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 	return (screenz_t) (a >> Z_FRACT_BITS);
 }
 
-BoundBox get_tri_boundbox        (fixpt_t x[3], fixpt_t y[3]);
+BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 
-FixPt3 get_bar_coords (fixpt_t x[3], fixpt_t y[3], fixpt_t px, fixpt_t py);
+FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
