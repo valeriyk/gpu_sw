@@ -20,8 +20,8 @@
 #define GPU_MAX_VARYINGS 28 // must be multiple of 4
 #define GPU_MAX_TRIANGLES_PER_TILE_LOG2 11
 #define GPU_MAX_TRIANGLES_PER_TILE (1 << GPU_MAX_TRIANGLES_PER_TILE_LOG2)
-#define GPU_TILE_WIDTH_LOG2 5
-#define GPU_TILE_HEIGHT_LOG2 5
+#define GPU_TILE_WIDTH_LOG2 6
+#define GPU_TILE_HEIGHT_LOG2 4
 #define GPU_TILE_WIDTH  (1 << GPU_TILE_WIDTH_LOG2)
 #define GPU_TILE_HEIGHT (1 << GPU_TILE_HEIGHT_LOG2)
 #define GPU_MAX_SCREEN_WIDTH  1024
@@ -33,7 +33,7 @@
 
 
 
-#define DEBUG_FIXPT_VARYING 0
+#define DEBUG_FIXPT_VARYING 1
 #define DEBUG_FIXPT_W       0
 
 
@@ -266,9 +266,9 @@ typedef struct VaryingWord {
 typedef VaryingWord VaryingData [GPU_MAX_VARYINGS];
 
 typedef struct Varying {
-	uint16_t num_of_words_written;
-	uint16_t num_of_words_read;
 	VaryingData data;
+	uint8_t num_of_words_written;
+	uint8_t num_of_words_read;
 } Varying;
 
 typedef struct Object {

@@ -5,6 +5,10 @@
 
 #include <math.h>
 
+#ifdef DMA
+	#include <arcem_microdma.h>
+#endif
+
 Varying   interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar);
  //dfixpt_t interpolate_w       (              fixpt_t *w_reciprocal, FixPt3 *bar);
 //screenz_t interpolate_z       (              fixpt_t *z,            FixPt3 *bar);
@@ -281,15 +285,16 @@ Varying interpolate_varying4 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 }
 */
 
-Varying interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) {
+void interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp) {
 
 	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
 	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
 					
-	Varying vry_interp;					
-	vry_interp.num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
+	//Varying vry_interp;					
+	vry_interp->num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
+	vry_interp->num_of_words_read = 0;
 	
-	if (vry_interp.num_of_words_written > 0) {
+	if (vry_interp->num_of_words_written > 0) {
 		
 		//dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar); // = (1).(OF)
 		dfixpt_t mul_0 = (dfixpt_t) bar->as_array[0] * (dfixpt_t) w_reciprocal[0]; // BM.BF * WM.WF = (BM+WM).(BF+WF)
@@ -299,9 +304,43 @@ Varying interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 		assert (acc != 0);
 		dfixpt_t one = (1LL << (OOWI_FRACT_BITS + BARC_FRACT_BITS + W_RECIPR_FRACT_BITS)); // 1.(OF+BF+WF)
 		dfixpt_t one_over_wi = one / acc; // 1.(OF+BF+WF) / (BM+WM+1).(BF+WF) = (1).(OF)
+		
+		//~ //another way of computing 1/x using Newton method:
+		//~ fixpt_t acc2 = (fixpt_t) (acc >> 21); // acc = 27.37 -> acc2 = 16.16
+		//~ fixpt_t xx = acc2; // 16.16
+		//~ bool neg = false;
+		//~ if (acc2 & 0x80000000) {
+			//~ // negative num
+			//~ neg = true;
+			//~ xx = (~acc2) + 1;
+		//~ }
+		//~ uint32_t mask = 0x40000000;
+		//~ for (int i = 1; i < 32; i++) {
+			//~ if (xx & mask) {
+				//~ xx = (1 << (i));
+				//~ break;
+			//~ }
+			//~ else {
+				//~ mask >>= 1;
+			//~ }
+		//~ }
+		//~ if (neg) xx = (~xx) + 1;
+		//~ //if      (acc2 & 0xfff80000) xx = 1 << 21; // x0 = 32
+		//~ //else if (acc2 & 0x00060000) xx = 1 << 17; // x0 = 2
+		//~ //else if (acc2 & 0x00018000) xx = 0; // x0 = 0
+		//~ //else                                xx = 1 << 13; // x0 = 0.125
+		
+		//~ //xx = 1 << 13;
+		//~ printf ("xx=%x\n", xx);
+		//~ for (int i = 0; i < 10; i++) {
+			//~ // x = x * (2 - b * x)
+			//~ xx = (xx * ((1 << 17) - ((acc2 * xx) >> 16))) >> 16;
+		//~ }
+		//~ dfixpt_t yy = one_over_wi - (dfixpt_t) xx;
+		//~ if (yy  > (1 << 13)) printf ("orig %f, newton %f\n", fixpt_to_float((fixpt_t) one_over_wi, 16), fixpt_to_float((fixpt_t) xx, 16)); //printf ("%d ", yy);
+		
 
-
-		for (int i = 0; i < vry_interp.num_of_words_written; i++) {
+		for (int i = 0; i < vry_interp->num_of_words_written; i++) {
 			
 			#define NNN 20
 			// VF = VARYING_FRACT_BITS
@@ -318,11 +357,11 @@ Varying interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 			dfixpt_t acc_fixpt = mpy0_fixpt + mpy1_fixpt + mpy2_fixpt; // = (VM+WM+BM+1).(VF+WF+BF-NNN)
 
 			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
-			vry_interp.data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
+			vry_interp->data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
 			
 			if (DEBUG_FIXPT_VARYING) {
-				fixpt_t vry_interp_fixpt_tmp = vry_interp.data[i].as_fixpt_t;
-				
+				fixpt_t vry_interp_fixpt_tmp = vry_interp->data[i].as_fixpt_t;
+				//~ fixpt_t vry_interp_newton = (fixpt_t) ((acc_fixpt * xx) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN));
 				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
 				float vtx1_norm = vry[1].data[i].as_float * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
 				float vtx2_norm = vry[2].data[i].as_float * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
@@ -330,15 +369,19 @@ Varying interpolate_varying5 (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar) 
 				float mpy1 = vtx1_norm * fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS);
 				float mpy2 = vtx2_norm * fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS);
 				float acc = mpy0 + mpy1 + mpy2;
-				vry_interp.data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
+				vry_interp->data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
 			
-				if (fabsf (vry_interp.data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1)
-					printf ("\nvry interp mismatch: %f/%f\n", vry_interp.data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));	
+				if (fabsf (vry_interp->data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1) {
+					printf ("\nvry interp mismatch: %f/%f\n", vry_interp->data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));	
+				}
+				//~ if (fabsf (vry_interp->data[i].as_float - fixpt_to_float (vry_interp_newton, VARYING_FRACT_BITS)) > 0.1) {
+					//~ printf ("\nnewton vry interp mismatch: %f/%f\n", vry_interp->data[i].as_float,  fixpt_to_float (vry_interp_newton, VARYING_FRACT_BITS));	
+				//~ }
 			}
 		}
 	}
 	
-	return vry_interp;					
+	//return vry_interp;					
 }
 
 
@@ -356,7 +399,7 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 	
 	size_t next_tile_row_offset;
 	
-#ifndef DMA
+#ifndef DMA_TILES
 
 	for (int i = 0; i < GPU_TILE_HEIGHT; i++) {
 		next_tile_row_offset = i * tiles_in_row;
@@ -365,8 +408,75 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 
 #else
 
+	_sr (0x1, AUXR_DMACTRL);
+	_sr (0x1, AUXR_DMACENB);
+	_sr (DMACTRLX_OP_SINGLE |
+	       DMACTRLX_RT_AUTO |
+	       DMACTRLX_DTT_MEM2MEM |
+	       DMACTRLX_DW4_INCR4 |
+	       DMACTRLX_BLOCK_SIZE(tile_row_byte_size) |
+	       DMACTRLX_ARB_DISABLE |
+	       DMACTRLX_IRQ_DISABLE |
+	       DMACTRLX_AM_INCR_ALL,
+	     AUXR_DMACTRL0);
+	 
+	for (int i = 0; i < GPU_TILE_HEIGHT; i++) {
+		next_tile_row_offset = i * tiles_in_row;
+		//memcpy ((void*) dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size), (void*) src + (i * tile_row_byte_size), tile_row_byte_size);
+		void *src_ptr = (void*) src + (i * tile_row_byte_size);
+		void *dst_ptr = (void*) dst + ((first_tile_row_offset + next_tile_row_offset) * tile_row_byte_size);
+	
+		_sr ((uint32_t) src_ptr + ((tile_row_byte_size - 1) & ~0x3) , AUXR_DMASAR0);
+		_sr ((uint32_t) dst_ptr + ((tile_row_byte_size - 1) & ~0x3) , AUXR_DMADAR0);
+		_sr (0x1, AUXR_DMACREQ);
+		while (_lr(AUXR_DMACSTAT0) & 0x1); // wait till completion    
+	}    
+	        
+    //~ bool sticky_error = false;
+    //~ for (int i = 0; i < BUF_SIZE / 4; i++) {
+        //~ if (*(iccm0_buf + i) != *(extmem_buf + i)) {
+            //~ printf ("Mismatch in word %d\n", i);
+            //~ sticky_error = true;
+        //~ }
+    //~ }
+    
+    //~ if (sticky_error == false) {
+        //~ printf ("SUCCESS!\n");
+    //~ }
+
+#endif
+
+}
 
 
+void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size) {
+	
+#ifndef DMA
+	
+	for (size_t i = 0; i < byte_size / 4; i++) {
+		*((uint32_t *) dst_ptr + i) = *((uint32_t *) src_ptr + i);
+	}
+		
+#else
+
+	while (_lr(AUXR_DMACSTAT0) & 0x1); // wait till completion    
+	
+	_sr (0x1, AUXR_DMACTRL);
+	_sr (0x1, AUXR_DMACENB);
+	_sr (DMACTRLX_OP_SINGLE |
+	       DMACTRLX_RT_AUTO |
+	       DMACTRLX_DTT_MEM2MEM |
+	       DMACTRLX_DW4_INCR4 |
+	       DMACTRLX_BLOCK_SIZE(byte_size) |
+	       DMACTRLX_ARB_DISABLE |
+	       DMACTRLX_IRQ_DISABLE |
+	       DMACTRLX_AM_INCR_ALL,
+	     AUXR_DMACTRL0);
+	 
+	_sr ((uint32_t) src_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMASAR0);
+	_sr ((uint32_t) dst_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMADAR0);
+	_sr (0x1, AUXR_DMACREQ);
+	
 #endif
 
 }
@@ -442,9 +552,30 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
 
 
-	fixpt_t z1z0 = fixpt_sub (z[1], z[0]) / sum_of_bars;
-	fixpt_t z2z0 = fixpt_sub (z[2], z[0]) / sum_of_bars;
+	dfixpt_t z1z0 = (((dfixpt_t) fixpt_sub (z[1], z[0])) << 12) / sum_of_bars; // ((28.4 - 28.4) << 12) / 24.8 = 28.16 / 24.8 = 24.8
+	dfixpt_t z2z0 = (((dfixpt_t) fixpt_sub (z[2], z[0])) << 12) / sum_of_bars;
 			
+	
+	// For Varying interpolation:
+	dfixpt_t v0b0;
+	dfixpt_t v1b1;
+	dfixpt_t v2b2;
+	 fixpt_t v1v0 [GPU_MAX_VARYINGS];
+	 fixpt_t v2v0 [GPU_MAX_VARYINGS];
+	dfixpt_t sum_of_vb = 0;
+
+	size_t 	num_of_vry = (local_tpd_ptr->varying[0].num_of_words_written + local_tpd_ptr->varying[1].num_of_words_written + local_tpd_ptr->varying[2].num_of_words_written) / 3;
+
+
+	v0b0 = bar_initial.as_array[0] * local_tpd_ptr->w_reciprocal[0]; // 24.8 * 3.29 = 27.37
+	v1b1 = bar_initial.as_array[1] * local_tpd_ptr->w_reciprocal[1];
+	v2b2 = bar_initial.as_array[2] * local_tpd_ptr->w_reciprocal[2];
+	sum_of_vb = v0b0 + v1b1 + v2b2; // 28.37 -> clipped to 27.37, overflow possible
+	
+	for (int i = 0; i < num_of_vry; i++) {
+		v1v0[i] = (local_tpd_ptr->varying[1].data[i].as_fixpt_t - local_tpd_ptr->varying[0].data[i].as_fixpt_t) * local_tpd_ptr->w_reciprocal[1] / sum_of_vb; //  (18.14 - 18.14) * 3.29 / 27.37 = 21.43 / 27.37 = 21.6
+		v2v0[i] = (local_tpd_ptr->varying[2].data[i].as_fixpt_t - local_tpd_ptr->varying[0].data[i].as_fixpt_t) * local_tpd_ptr->w_reciprocal[2] / sum_of_vb;	
+	}
 				
 	ScreenPt p;
     for (p.y = bb.min.y; p.y <= bb.max.y; p.y++) {	
@@ -461,13 +592,14 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 				size_t     pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
 				//screenz_t zi = interpolate_z (z, &bar);
-				screenz_t zi = fixpt_to_screenz (fixpt_add (z[0], fixpt_add (z1z0 * bar.as_array[1], z2z0 * bar.as_array[2])));
-				
+				//screenz_t zi = fixpt_to_screenz (fixpt_add (z[0], fixpt_add (z1z0 * bar.as_array[1], z2z0 * bar.as_array[2])));
+				screenz_t zi = fixpt_to_screenz (z[0] + ((z1z0 * bar.as_array[1]) >> 12) + ((z2z0 * bar.as_array[2]) >> 12)); // 28.4 + 24.8 * 24.8 + z2z0 * 24.8				
 				if (zi > local_zbuf[pix_num]) {
 						
 					local_zbuf[pix_num] = zi;
 
-					Varying vry_interp = interpolate_varying5 (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar);
+					Varying vry_interp;
+					interpolate_varying5 (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar, &vry_interp);
 					
 					if (cfg->active_fbuffer != NULL) {
 						
@@ -493,8 +625,9 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
 	size_t elems_in_tile = GPU_TILE_WIDTH * GPU_TILE_HEIGHT;
 	
-	screenz_t     local_zbuf[2][elems_in_tile];
-	pixel_color_t local_fbuf[2][elems_in_tile];
+	screenz_t           local_zbuf[2][elems_in_tile];
+	pixel_color_t       local_fbuf[2][elems_in_tile];
+	TrianglePShaderData local_tri_data[2];
 	
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
@@ -512,18 +645,41 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 		// initialize fbuffer tile in local memory
 		memset (&local_fbuf[active_local_buf_idx], 0, fbuf_tile_byte_size);
 		
-		for (int j = 0; j < GPU_MAX_USHADERS; j++) {
-			for (int i = 0; i < GPU_MAX_TRIANGLES_PER_TILE; i++) {
-		
-				volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[j];
+		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
+			
+			//volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[i];
+			volatile TrianglePShaderData *ext_tri_data_ptr = cfg->tri_ptr_list[i][tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2];
+			if (ext_tri_data_ptr == NULL) continue;
+			
+			size_t active_ltd = 0;
+			size_t inactive_ltd = 1;
+			local_tri_data[active_ltd] = *ext_tri_data_ptr; // making a local copy
+			//dma_ext_to_local (&local_tri_data[0], ext_tri_data_ptr, sizeof(TrianglePShaderData));
+			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData));
 				
-				volatile TrianglePShaderData *local_tpd_ptr = tpl[(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + i];
+			for (int j = 0; j < GPU_MAX_TRIANGLES_PER_TILE; j++) {
+				//volatile TrianglePShaderData *volatile *tpl = cfg->tri_ptr_list[i];
+				//volatile TrianglePShaderData *ext_tri_data_ptr = tpl[(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j];
 				
-				if (local_tpd_ptr == NULL) break;
+				// prefetch:
+				volatile TrianglePShaderData *ext_tri_data_nxt_ptr;
+				if (j < GPU_MAX_TRIANGLES_PER_TILE - 1) {
+					ext_tri_data_nxt_ptr = cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j + 1];
+					if (ext_tri_data_nxt_ptr != NULL) {
+						//local_tri_data[inactive_ltd] = *ext_tri_data_nxt_ptr;
+						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData));
+					}
+				}
+				else {
+					ext_tri_data_nxt_ptr = NULL;
+				}
+								
+				draw_triangle (&local_tri_data[active_ltd], tile_num, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
 				
-				TrianglePShaderData local_tpd = *local_tpd_ptr;
-		
-				draw_triangle (&local_tpd, tile_num, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
+				  active_ltd = (  active_ltd == 0) ? 1 : 0;
+				inactive_ltd = (inactive_ltd == 0) ? 1 : 0;
+				
+				if (ext_tri_data_nxt_ptr == NULL) break;
 			}
 		}
 		

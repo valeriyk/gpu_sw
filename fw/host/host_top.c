@@ -633,11 +633,13 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 	}
 	
 	if (RECORD_VIDEO) {		
+		printf ("Recording video");
 		FILE *fp = fopen ("video.y4m", "w");
 		if (!fp) goto error;
 		fprintf (fp, "YUV4MPEG2 W%d H%d F25:1 Ip A0:0 C444\n", WIDTH, HEIGHT);
 		
 		for (int i = 0; i < NUM_OF_FRAMES; i++) {
+			printf (".");
 			fprintf (fp, "FRAME\n");
 			pixel_color_t *fb = cfg->fbuffer_ptr[i];
 			for (int j = 0; j < screen_size; j++){
@@ -653,6 +655,7 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 				fwrite (&cr, sizeof (uint8_t), 1, fp);
 			}
 		}
+		printf ("\n");
 		fclose (fp);
 	}
 	
