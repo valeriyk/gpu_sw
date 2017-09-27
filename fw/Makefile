@@ -4,8 +4,7 @@ TCF_HOST    ?= tcf/host.tcf
 TCF_USHADER ?= tcf/ushader.tcf
 
 
-CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 -DNDEBUG -DDEBUG_FIXPT_VARYING=1
-
+CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 -DNDEBUG
 CFLAGS_X86         = $(CFLAGS_COMMON) -DSINGLEPROC_MULTITHREAD -Itop -Ilibbarcg -Ilibtga-1.0.1/src -Ihost -Iushader -Iuser_shaders -pthread 
 #CFLAGS_MIPS        = $(CFLAGS_COMMON) -DSINGLEPROC_SINGLETHREAD
 CFLAGS_ARC_COMMON  = $(CFLAGS_COMMON) -DMULTIPROC -Hnocopyr -Hpurge -Hccm -Iushader -Ilibbarcg -Idma
@@ -14,14 +13,14 @@ CFLAGS_ARC_COMPACTLIB =  -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset
 #-Hcrt_reginit
 CFLAGS_ARC_USHADER_COMMON = -tcf=$(TCF_USHADER) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_COMPACTLIB) -Hall_sdata -Hunroll=30 -Hnoxcheck -Hnoxcheck_obj -Hmemcpy_threshold=16 -Hon=long_enums -Hhostlib= -Hheap=0
 CFLAGS_ARC_USER_SHADERS = $(CFLAGS_ARC_USHADER_COMMON) -Iuser_shaders -Bsymout=symlist_host.txt
-CFLAGS_ARC_USHADER      = -DDMA $(CFLAGS_ARC_USHADER_COMMON)    -Bsymin=symlist_host_ext.txt
+CFLAGS_ARC_USHADER      = -DDMA -DARC_APEX $(CFLAGS_ARC_USHADER_COMMON) -I../../hw/em7d_v2/build/User   -Bsymin=symlist_host_ext.txt
 
 
 #SYSCONF_LINK_MIPS = mips-mti-elf-gcc $(CFLAGS_COMMON) (CFLAGS_MIPS) -EL -msoft-float -march=m14kc
 
 LDFLAGS_x86          = -lm -pthread
-LDFLAGS_ARC_HOST     = -tcf=$(TCF_HOST)
-LDFLAGS_ARC_USHADER  = -tcf=$(TCF_USHADER)
+LDFLAGS_ARC_HOST     = -tcf=$(TCF_HOST)    lcf/host.lcf
+LDFLAGS_ARC_USHADER  = -tcf=$(TCF_USHADER) lcf/ushader.lcf
 ##LDFLAGS_MIPS = -lc -lg -lm -EL -msoft-float -march=m14kc -mclib=newlib
 ##LDFLAGS_MIPS = -lg -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
 #LDFLAGS_MIPS = -lm -lc -EL -msoft-float -march=m14kc -mclib=newlib
@@ -42,7 +41,7 @@ OBJECTS_ARC_USER_SHADERS  := $(patsubst %.c, %_user_shaders_arc.o,  ushader/usha
 INCLUDES_ARC_USER_SHADERS =                                         ushader/ushader_public.h $(wildcard user_shaders/*.h)
 
 OBJECTS_ARC_USHADER  := $(patsubst %.c, %_ushader_arc.o,  $(wildcard ushader/*.c) $(wildcard dma/*.c) libbarcg/geometry.c)
-INCLUDES_ARC_USHADER =                                    $(wildcard ushader/*.h) $(wildcard dma/*.h) libbarcg/geometry.h
+INCLUDES_ARC_USHADER =                                    $(wildcard ushader/*.h) $(wildcard dma/*.h) libbarcg/geometry.h ../../hw/em7d_v2/build/User/apexextensions.h
 
 #OBJECTS_MIPS := $(patsubst %.c, %_mips.o, $(wildcard *.c) $(wildcard libtga-1.0.1/src/*.c))
 

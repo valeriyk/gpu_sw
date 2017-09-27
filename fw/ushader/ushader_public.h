@@ -33,7 +33,7 @@
 
 
 
-#define DEBUG_FIXPT_VARYING 1
+#define DEBUG_FIXPT_VARYING 0
 #define DEBUG_FIXPT_W       0
 
 
@@ -230,7 +230,7 @@ typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
 
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
-typedef int16_t screenxy_t;
+typedef uint16_t screenxy_t;
 
 typedef uint16_t screenz_t;
 //typedef fixpt_t screenz_t;
