@@ -42,12 +42,12 @@ fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfi
 }
 
 
-fixpt_t edge_func_fixpt2 (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfixpt_t cx, hfixpt_t cy) {
+fixpt_t edge_func_fixpt2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c) {
     
-    fixpt_t bx_ax = (fixpt_t) bx - (fixpt_t) ax;
-    fixpt_t cy_ay = (fixpt_t) cy - (fixpt_t) ay;
-    fixpt_t by_ay = (fixpt_t) by - (fixpt_t) ay;
-    fixpt_t cx_ax = (fixpt_t) cx - (fixpt_t) ax;
+    fixpt_t bx_ax = (fixpt_t) b.as_coord.x - (fixpt_t) a.as_coord.x;
+    fixpt_t cy_ay = (fixpt_t) c.as_coord.y - (fixpt_t) a.as_coord.y;
+    fixpt_t by_ay = (fixpt_t) b.as_coord.y - (fixpt_t) a.as_coord.y;
+    fixpt_t cx_ax = (fixpt_t) c.as_coord.x - (fixpt_t) a.as_coord.x;
 
     dfixpt_t mul_0 = bx_ax * cy_ay;
     dfixpt_t mul_1 = by_ay * cx_ax;
@@ -70,6 +70,17 @@ FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
     barc.as_array[0] = edge_func_fixpt (x[1], y[1], x[2], y[2], px, py); // not normalized
 	barc.as_array[1] = edge_func_fixpt (x[2], y[2], x[0], y[0], px, py); // not normalized
 	barc.as_array[2] = edge_func_fixpt (x[0], y[0], x[1], y[1], px, py); // not normalized
+	
+	return barc;
+}
+
+FixPt3 get_bar_coords2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c, xy_fixpt_pck_t p) {
+    
+    FixPt3 barc;
+    
+    barc.as_array[0] = edge_func_fixpt2 (b, c, p); // not normalized
+	barc.as_array[1] = edge_func_fixpt2 (c, a, p); // not normalized
+	barc.as_array[2] = edge_func_fixpt2 (a, b, p); // not normalized
 	
 	return barc;
 }

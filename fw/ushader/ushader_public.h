@@ -38,9 +38,10 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////////
-typedef  int16_t hfixpt_t;
-typedef  int32_t  fixpt_t;
-typedef  int64_t dfixpt_t;
+typedef   int16_t  hfixpt_t;
+typedef  uint16_t uhfixpt_t;
+typedef   int32_t   fixpt_t;
+typedef   int64_t  dfixpt_t;
 
 #define HFIXPT_BITS (sizeof(hfixpt_t) * 8)
 #define  FIXPT_BITS (sizeof( fixpt_t) * 8)
@@ -231,6 +232,16 @@ typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
 // If we clip only those triangles which are completely invisible, screenxy_t must be signed
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
 typedef uint16_t screenxy_t;
+
+typedef struct xy_fixpt_t {
+	uhfixpt_t x;
+	uhfixpt_t y;
+} xy_fixpt_t;
+
+typedef union xy_fixpt_pck_t {
+	uint32_t   as_word;
+	xy_fixpt_t as_coord;
+} xy_fixpt_pck_t;
 
 typedef uint16_t screenz_t;
 //typedef fixpt_t screenz_t;
@@ -477,3 +488,5 @@ BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
+fixpt_t edge_func_fixpt2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c);
+FixPt3 get_bar_coords2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c, xy_fixpt_pck_t p);

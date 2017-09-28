@@ -310,8 +310,18 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	
 	hfixpt_t px = hfixpt_from_screenxy (bb.min.x);
 	hfixpt_t py = hfixpt_from_screenxy (bb.min.y);
+	//~ FixPt3 bar_initial = get_bar_coords (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y, px, py);
 	
-	FixPt3 bar_initial = get_bar_coords (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y, px, py);
+	xy_fixpt_pck_t a, b, c, pi;
+	a.as_coord.x = local_tpd_ptr->screen_x[0];// << XY_FRACT_BITS;
+	a.as_coord.y = local_tpd_ptr->screen_y[0];// << XY_FRACT_BITS;
+	b.as_coord.x = local_tpd_ptr->screen_x[1];// << XY_FRACT_BITS;
+	b.as_coord.y = local_tpd_ptr->screen_y[1];// << XY_FRACT_BITS;
+	c.as_coord.x = local_tpd_ptr->screen_x[2];// << XY_FRACT_BITS;
+	c.as_coord.y = local_tpd_ptr->screen_y[2];// << XY_FRACT_BITS;
+	pi.as_coord.x = px;
+	pi.as_coord.y = py;
+	FixPt3 bar_initial = get_bar_coords2 (a, b, c, pi);
 	
 	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
 	for (int i = 0; i < 3; i++) {
