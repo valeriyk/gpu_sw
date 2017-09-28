@@ -62,23 +62,17 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 
 bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
 	
-//#ifdef ARC_APEX
-#if 0
-	
 	fixpt_t intensity = varying_fifo_pop_fixpt (vry);
 	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format
 	
-#else
+	//~ float intensity = varying_fifo_pop_float (vry);
+	//~ assert (intensity <=  1.0f);
+	//~ assert (intensity >= -1.0f);
+	//~ if ((intensity >  1.0f) || (intensity < -1.0f)) {
+		//~ return false;
+	//~ }
+	//~ float intensity_treshold = 0.2;
 	
-	float intensity = varying_fifo_pop_float (vry);
-	assert (intensity <=  1.0f);
-	assert (intensity >= -1.0f);
-	if ((intensity >  1.0f) || (intensity < -1.0f)) {
-		return false;
-	}
-	float intensity_treshold = 0.2;
-	
-#endif	
 	//
 	// If texture is not provided, use gray color
 	//
@@ -113,8 +107,8 @@ bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t scr
 	if (r > 255) r = 255;
 	if (g > 255) g = 255;
 	if (b > 255) b = 255;*/
-//#ifdef ARC_APEX
-#if 0
+	
+#ifdef ARC_APEX
 	*color = (pixel_color_t) ((uint32_t) rgba_vmul ((long) pix.as_word, (long) intensity));
 #else
 	*color = color_mult (pix, intensity);	

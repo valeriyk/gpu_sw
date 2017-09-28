@@ -127,26 +127,49 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	return pc;
 }
 
-pixel_color_t color_mult (pixel_color_t pix, float intensity) {
+pixel_color_t color_mult (pixel_color_t pix, fixpt_t intensity) {
 	pixel_color_t pc;
-	uint8_t int_int = (uint8_t) (intensity * 255);
-	uint16_t tmp_r = ((uint16_t) pix.as_byte.r) * ((uint16_t) int_int);
-	uint16_t tmp_g = ((uint16_t) pix.as_byte.g) * ((uint16_t) int_int);
-	uint16_t tmp_b = ((uint16_t) pix.as_byte.b) * ((uint16_t) int_int);
-	pc.as_byte.r = (uint8_t) (tmp_r >> 8);
-	pc.as_byte.g = (uint8_t) (tmp_g >> 8);
-	pc.as_byte.b = (uint8_t) (tmp_b >> 8);
-	pc.as_byte.a = 0;
 	
-	//~ int r = pix.r * intensity + 5;
-	//~ int g = pix.g * intensity + 5;
-	//~ int b = pix.b * intensity + 5;
+	if (intensity & 0x80000000) {
+		pc.as_word = 0; // multiply by a neg value - clamp to zero
+	}
+	else {
+	
+		uint8_t r = (uint8_t) ((pix.as_word & 0xff000000) >> 24);
+		uint8_t g = (uint8_t) ((pix.as_word & 0x00ff0000) >> 16);
+		uint8_t b = (uint8_t) ((pix.as_word & 0x0000ff00) >>  8);
+		uint8_t a = (uint8_t) ((pix.as_word & 0x000000ff) >>  0);
 		
-	//~ if (r > 255) r = 255;
-	//~ if (g > 255) g = 255;
-	//~ if (b > 255) b = 255;
-	
-	//~ pc = set_color (r, g, b, 0);
+		uint64_t tmp_r = (((uint64_t) intensity) * ((uint64_t) r)) >> 16;
+		uint64_t tmp_g = (((uint64_t) intensity) * ((uint64_t) g)) >> 16;
+		uint64_t tmp_b = (((uint64_t) intensity) * ((uint64_t) b)) >> 16;
+		uint64_t tmp_a = (((uint64_t) intensity) * ((uint64_t) a)) >> 16;
+		
+		if (tmp_r > 255) tmp_r = 255;
+		if (tmp_g > 255) tmp_g = 255;
+		if (tmp_b > 255) tmp_b = 255;
+		if (tmp_a > 255) tmp_a = 255;
+
+		pc.as_word = ((tmp_r << 24) | (tmp_g << 16) | (tmp_b << 8) | tmp_a);
+		//~ uint8_t int_int = (uint8_t) (intensity * 255);
+		//~ uint16_t tmp_r = ((uint16_t) pix.as_byte.r) * ((uint16_t) int_int);
+		//~ uint16_t tmp_g = ((uint16_t) pix.as_byte.g) * ((uint16_t) int_int);
+		//~ uint16_t tmp_b = ((uint16_t) pix.as_byte.b) * ((uint16_t) int_int);
+		//~ pc.as_byte.r = (uint8_t) (tmp_r >> 8);
+		//~ pc.as_byte.g = (uint8_t) (tmp_g >> 8);
+		//~ pc.as_byte.b = (uint8_t) (tmp_b >> 8);
+		//~ pc.as_byte.a = 0;
+		
+		//~ int r = pix.r * intensity + 5;
+		//~ int g = pix.g * intensity + 5;
+		//~ int b = pix.b * intensity + 5;
+			
+		//~ if (r > 255) r = 255;
+		//~ if (g > 255) g = 255;
+		//~ if (b > 255) b = 255;
+		
+		//~ pc = set_color (r, g, b, 0);
+	}
 	
 	return pc;
 }
