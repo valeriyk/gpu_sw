@@ -335,8 +335,11 @@ typedef struct TrianglePShaderData {
 	Varying varying[3];
 	Object  *obj;
 	//hFixPt3  screen_coords[3];
-	hfixpt_t screen_x[3];
-	hfixpt_t screen_y[3];
+	//hfixpt_t screen_x[3];
+	//hfixpt_t screen_y[3];
+	xy_hfixpt_pck_t vtx_a;
+	xy_hfixpt_pck_t vtx_b;
+	xy_hfixpt_pck_t vtx_c;
 	 fixpt_t screen_z[3];
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
@@ -488,7 +491,7 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 }
 
 BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
-bbox_hfixpt_t get_tri_bbox  (hfixpt_t x[3], hfixpt_t y[3]);
+bbox_hfixpt_t get_tri_bbox  (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);
 
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);

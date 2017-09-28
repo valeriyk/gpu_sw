@@ -18,10 +18,17 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 	hfixpt_t y[3];
 	
 	// re-pack X, Y coords of the three vertices, hopefully this will be optimized away by the compiler
-	for (size_t i = 0; i < 3; i++) {
-		x[i] = local_data_ptr->screen_x[i];
-		y[i] = local_data_ptr->screen_y[i];
-	}
+	//~ for (size_t i = 0; i < 3; i++) {
+		//~ x[i] = local_data_ptr->screen_x[i];
+		//~ y[i] = local_data_ptr->screen_y[i];
+	//~ }
+	
+	x[0] = local_data_ptr->vtx_a.as_coord.x;
+	x[1] = local_data_ptr->vtx_b.as_coord.x;
+	x[2] = local_data_ptr->vtx_c.as_coord.x;
+	y[0] = local_data_ptr->vtx_a.as_coord.y;
+	y[1] = local_data_ptr->vtx_b.as_coord.y;
+	y[2] = local_data_ptr->vtx_c.as_coord.y;
 	
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
 	volatile TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
@@ -175,10 +182,17 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 
 				if (!is_clipped) {
 					screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
+					
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler
-					d.screen_x[j] =  hfixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
-					d.screen_y[j] =  hfixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+					hfixpt_t x =  hfixpt_from_float        (screen.vtx[j].as_struct.x,       XY_FRACT_BITS);
+					hfixpt_t y =  hfixpt_from_float        (screen.vtx[j].as_struct.y,       XY_FRACT_BITS);
+					switch (j) {
+						case (0): d.vtx_a.as_coord.x = x; d.vtx_a.as_coord.y = y; break;
+						case (1): d.vtx_b.as_coord.x = x; d.vtx_b.as_coord.y = y; break;
+						case (2): d.vtx_c.as_coord.x = x; d.vtx_c.as_coord.y = y; break;
+					}
+					
 					d.screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
 					// We don't need W anymore, but we will need 1/W later:
 					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);

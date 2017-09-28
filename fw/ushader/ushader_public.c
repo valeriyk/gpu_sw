@@ -6,6 +6,10 @@
 #include <stdint.h>
 
 
+#ifdef ARC_APEX
+	#include <apexextensions.h>
+#endif
+
 // POSITIVE Z TOWARDS ME
 
 
@@ -66,22 +70,35 @@ fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
     
     FixPt3 barc;
-    
+
     barc.as_array[0] = edge_func_fixpt (x[1], y[1], x[2], y[2], px, py); // not normalized
 	barc.as_array[1] = edge_func_fixpt (x[2], y[2], x[0], y[0], px, py); // not normalized
 	barc.as_array[2] = edge_func_fixpt (x[0], y[0], x[1], y[1], px, py); // not normalized
-	
+
 	return barc;
 }
 
 FixPt3 get_bar_coords2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c, xy_hfixpt_pck_t p) {
     
     FixPt3 barc;
-    
+
+//#ifdef ARC_APEX
+#if 0
+
+	_core_write (p.as_word, CR_BAR_INIT_PT);
+	
+	barc.as_array[0] = edgefn (b.as_word, c.as_word); // not normalized
+	barc.as_array[1] = edgefn (c.as_word, a.as_word); // not normalized
+	barc.as_array[2] = edgefn (a.as_word, b.as_word); // not normalized
+
+#else
+        
     barc.as_array[0] = edge_func_fixpt2 (b, c, p); // not normalized
 	barc.as_array[1] = edge_func_fixpt2 (c, a, p); // not normalized
 	barc.as_array[2] = edge_func_fixpt2 (a, b, p); // not normalized
 	
+#endif
+
 	return barc;
 }
 
@@ -160,14 +177,14 @@ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
     return bb;
 }
 
-bbox_hfixpt_t get_tri_bbox (hfixpt_t x[3], hfixpt_t y[3]) {
+bbox_hfixpt_t get_tri_bbox (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
 	
 	bbox_hfixpt_t bb;
     
-    bb.min.as_coord.x = min_of_three (x[0], x[1], x[2]) & 0xfff0;
-    bb.max.as_coord.x = max_of_three (x[0], x[1], x[2]) & 0xfff0;
-    bb.min.as_coord.y = min_of_three (y[0], y[1], y[2]) & 0xfff0;
-    bb.max.as_coord.y = max_of_three (y[0], y[1], y[2]) & 0xfff0;
+    bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
+    bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
+    bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
+    bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
     
     return bb;
 }

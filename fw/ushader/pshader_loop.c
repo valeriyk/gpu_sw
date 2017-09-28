@@ -306,20 +306,17 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 		//~ assert (z[i] >= 0);
 	//~ }
 	
-	//BoundBox bb = clip_boundbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
-	//bbox_hfixpt_t bbb = clip_bbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
-	bbox_hfixpt_t bbb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
+	/*xy_hfixpt_pck_t a, b, c;
+	a.as_coord.x = local_tpd_ptr->screen_x[0];
+	a.as_coord.y = local_tpd_ptr->screen_y[0];
+	b.as_coord.x = local_tpd_ptr->screen_x[1];
+	b.as_coord.y = local_tpd_ptr->screen_y[1];
+	c.as_coord.x = local_tpd_ptr->screen_x[2];
+	c.as_coord.y = local_tpd_ptr->screen_y[2];
+	*/
+	bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
 	
-	//~ FixPt3 bar_initial = get_bar_coords (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y, px, py);
-	
-	xy_hfixpt_pck_t a, b, c;
-	a.as_coord.x = local_tpd_ptr->screen_x[0];// << XY_FRACT_BITS;
-	a.as_coord.y = local_tpd_ptr->screen_y[0];// << XY_FRACT_BITS;
-	b.as_coord.x = local_tpd_ptr->screen_x[1];// << XY_FRACT_BITS;
-	b.as_coord.y = local_tpd_ptr->screen_y[1];// << XY_FRACT_BITS;
-	c.as_coord.x = local_tpd_ptr->screen_x[2];// << XY_FRACT_BITS;
-	c.as_coord.y = local_tpd_ptr->screen_y[2];// << XY_FRACT_BITS;
-	FixPt3 bar_initial = get_bar_coords2 (a, b, c, bbb.min);
+	FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 	
 	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
 	for (int i = 0; i < 3; i++) {
@@ -329,15 +326,18 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 		
 	FixPt3 bar_row_incr;
 	// additional shift lift is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-	bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->screen_x[2], local_tpd_ptr->screen_x[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->screen_x[0], local_tpd_ptr->screen_x[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->screen_x[1], local_tpd_ptr->screen_x[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	//~ bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->screen_x[2], local_tpd_ptr->screen_x[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	//~ bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->screen_x[0], local_tpd_ptr->screen_x[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	//~ bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->screen_x[1], local_tpd_ptr->screen_x[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.x, local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.x, local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.x, local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	FixPt3 bar_col_incr;
 	// additional shift lift is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-    bar_col_incr.as_array[0] = fixpt_sub (local_tpd_ptr->screen_y[1], local_tpd_ptr->screen_y[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[1] = fixpt_sub (local_tpd_ptr->screen_y[2], local_tpd_ptr->screen_y[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[2] = fixpt_sub (local_tpd_ptr->screen_y[0], local_tpd_ptr->screen_y[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+    bar_col_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.y, local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.y, local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.y, local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	
 	FixPt3   bar;
@@ -351,16 +351,12 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	dfixpt_t z1z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[1], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars; // ((20.4 - 20.4) << 12) / 24.8 = 20.16 / 24.8 = 20.8
 	dfixpt_t z2z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[2], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars;
 				
-	//ScreenPt p;
 	xy_hfixpt_pck_t p;
-	//hfixpt_t pxmax = hfixpt_from_screenxy (bb.max.x);
-	//hfixpt_t pymax = hfixpt_from_screenxy (bb.max.y);
-    //for (p.y = bb.min.y; p.y <= bb.max.y; p.y++) {	
-    for (p.as_coord.y = bbb.min.as_coord.y; p.as_coord.y <= bbb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
+	for (p.as_coord.y = bb.min.as_coord.y; p.as_coord.y <= bb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
 		
 		bar = bar_row;
 		
-		for (p.as_coord.x = bbb.min.as_coord.x; p.as_coord.x <= bbb.max.as_coord.x; p.as_coord.x += (1 << XY_FRACT_BITS)) {
+		for (p.as_coord.x = bb.min.as_coord.x; p.as_coord.x <= bb.max.as_coord.x; p.as_coord.x += (1 << XY_FRACT_BITS)) {
 					
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
