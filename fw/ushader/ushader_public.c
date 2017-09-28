@@ -42,7 +42,7 @@ fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfi
 }
 
 
-fixpt_t edge_func_fixpt2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c) {
+fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
     
     fixpt_t bx_ax = (fixpt_t) b.as_coord.x - (fixpt_t) a.as_coord.x;
     fixpt_t cy_ay = (fixpt_t) c.as_coord.y - (fixpt_t) a.as_coord.y;
@@ -74,7 +74,7 @@ FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
 	return barc;
 }
 
-FixPt3 get_bar_coords2 (xy_fixpt_pck_t a, xy_fixpt_pck_t b, xy_fixpt_pck_t c, xy_fixpt_pck_t p) {
+FixPt3 get_bar_coords2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c, xy_hfixpt_pck_t p) {
     
     FixPt3 barc;
     

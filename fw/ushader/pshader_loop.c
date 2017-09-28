@@ -312,7 +312,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	hfixpt_t py = hfixpt_from_screenxy (bb.min.y);
 	//~ FixPt3 bar_initial = get_bar_coords (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y, px, py);
 	
-	xy_fixpt_pck_t a, b, c, pi;
+	xy_hfixpt_pck_t a, b, c, pi;
 	a.as_coord.x = local_tpd_ptr->screen_x[0];// << XY_FRACT_BITS;
 	a.as_coord.y = local_tpd_ptr->screen_y[0];// << XY_FRACT_BITS;
 	b.as_coord.x = local_tpd_ptr->screen_x[1];// << XY_FRACT_BITS;
