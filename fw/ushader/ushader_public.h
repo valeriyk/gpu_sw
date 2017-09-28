@@ -446,6 +446,11 @@ typedef struct BoundBox {
 	ScreenPt max;
 } BoundBox;
 
+typedef struct bbox_hfixpt_t {
+	xy_hfixpt_pck_t min;
+	xy_hfixpt_pck_t max;
+} bbox_hfixpt_t;
+
 
 static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
 	fixpt_t c = ((fixpt_t) a) << XY_FRACT_BITS;
@@ -485,6 +490,7 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
+bbox_hfixpt_t clip_bbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
 fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);

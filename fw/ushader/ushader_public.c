@@ -191,7 +191,26 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
     return out;
 }
 
-
+bbox_hfixpt_t clip_bbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
+	
+	bbox_hfixpt_t tile;
+	
+	uint16_t llx = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
+	uint16_t lly = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;			
+	tile.min.as_coord.x = llx << XY_FRACT_BITS;
+    tile.min.as_coord.y = lly << XY_FRACT_BITS;
+    tile.max.as_coord.x = (llx + GPU_TILE_WIDTH  - 1) << XY_FRACT_BITS; 
+    tile.max.as_coord.y = (lly + GPU_TILE_HEIGHT - 1) << XY_FRACT_BITS;
+    
+    bbox_hfixpt_t out;
+	
+	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, in.min.x << XY_FRACT_BITS);
+    out.max.as_coord.x = min_of_two (tile.max.as_coord.x, in.max.x << XY_FRACT_BITS);
+    out.min.as_coord.y = max_of_two (tile.min.as_coord.y, in.min.y << XY_FRACT_BITS);
+    out.max.as_coord.y = min_of_two (tile.max.as_coord.y, in.max.y << XY_FRACT_BITS);
+        
+    return out;
+}
 
 
 /*
