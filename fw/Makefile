@@ -12,7 +12,7 @@ CFLAGS_ARC_HOST    = -tcf=$(TCF_HOST) $(CFLAGS_ARC_COMMON) -Ihost -Ilibtga-1.0.1
 CFLAGS_ARC_COMPACTLIB =  -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset 
 #-Hcrt_reginit
 CFLAGS_ARC_USHADER_COMMON = -tcf=$(TCF_USHADER) $(CFLAGS_ARC_COMMON) $(CFLAGS_ARC_COMPACTLIB) -Hall_sdata -Hunroll=30 -Hnoxcheck -Hnoxcheck_obj -Hmemcpy_threshold=16 -Hon=long_enums -Hhostlib= -Hheap=0
-CFLAGS_ARC_USER_SHADERS = $(CFLAGS_ARC_USHADER_COMMON) -Iuser_shaders -Bsymout=symlist_host.txt
+CFLAGS_ARC_USER_SHADERS = $(CFLAGS_ARC_USHADER_COMMON) -DARC_APEX -Iuser_shaders -I../../hw/em7d_v2/build/User -Bsymout=symlist_host.txt
 CFLAGS_ARC_USHADER      = -DDMA -DARC_APEX $(CFLAGS_ARC_USHADER_COMMON) -I../../hw/em7d_v2/build/User   -Bsymin=symlist_host_ext.txt
 
 
