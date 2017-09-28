@@ -160,6 +160,18 @@ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
     return bb;
 }
 
+bbox_hfixpt_t get_tri_bbox (hfixpt_t x[3], hfixpt_t y[3]) {
+	
+	bbox_hfixpt_t bb;
+    
+    bb.min.as_coord.x = min_of_three (x[0], x[1], x[2]) & 0xfff0;
+    bb.max.as_coord.x = max_of_three (x[0], x[1], x[2]) & 0xfff0;
+    bb.min.as_coord.y = min_of_three (y[0], y[1], y[2]) & 0xfff0;
+    bb.max.as_coord.y = max_of_three (y[0], y[1], y[2]) & 0xfff0;
+    
+    return bb;
+}
+
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox out;
@@ -171,7 +183,7 @@ BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 
 	return out;
 }
-
+/*
 BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
 	
 	BoundBox tile;
@@ -190,8 +202,8 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
         
     return out;
 }
-
-bbox_hfixpt_t clip_bbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
+*/
+bbox_hfixpt_t clip_bbox_to_tile (size_t tile_num, bbox_hfixpt_t in, gpu_cfg_t *cfg) {
 	
 	bbox_hfixpt_t tile;
 	
@@ -204,10 +216,10 @@ bbox_hfixpt_t clip_bbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
     
     bbox_hfixpt_t out;
 	
-	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, in.min.x << XY_FRACT_BITS);
-    out.max.as_coord.x = min_of_two (tile.max.as_coord.x, in.max.x << XY_FRACT_BITS);
-    out.min.as_coord.y = max_of_two (tile.min.as_coord.y, in.min.y << XY_FRACT_BITS);
-    out.max.as_coord.y = min_of_two (tile.max.as_coord.y, in.max.y << XY_FRACT_BITS);
+	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, in.min.as_coord.x);
+    out.max.as_coord.x = min_of_two (tile.max.as_coord.x, in.max.as_coord.x);
+    out.min.as_coord.y = max_of_two (tile.min.as_coord.y, in.min.as_coord.y);
+    out.max.as_coord.y = min_of_two (tile.max.as_coord.y, in.max.as_coord.y);
         
     return out;
 }

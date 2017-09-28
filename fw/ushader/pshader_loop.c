@@ -306,22 +306,19 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 		//~ assert (z[i] >= 0);
 	//~ }
 	
-	BoundBox bb = clip_boundbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
-	bbox_hfixpt_t bbb = clip_bbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
+	//BoundBox bb = clip_boundbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
+	//bbox_hfixpt_t bbb = clip_bbox_to_tile (tile_num, get_tri_boundbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
+	bbox_hfixpt_t bbb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y), cfg);
 	
-	hfixpt_t px = hfixpt_from_screenxy (bb.min.x);
-	hfixpt_t py = hfixpt_from_screenxy (bb.min.y);
 	//~ FixPt3 bar_initial = get_bar_coords (local_tpd_ptr->screen_x, local_tpd_ptr->screen_y, px, py);
 	
-	xy_hfixpt_pck_t a, b, c, pi;
+	xy_hfixpt_pck_t a, b, c;
 	a.as_coord.x = local_tpd_ptr->screen_x[0];// << XY_FRACT_BITS;
 	a.as_coord.y = local_tpd_ptr->screen_y[0];// << XY_FRACT_BITS;
 	b.as_coord.x = local_tpd_ptr->screen_x[1];// << XY_FRACT_BITS;
 	b.as_coord.y = local_tpd_ptr->screen_y[1];// << XY_FRACT_BITS;
 	c.as_coord.x = local_tpd_ptr->screen_x[2];// << XY_FRACT_BITS;
 	c.as_coord.y = local_tpd_ptr->screen_y[2];// << XY_FRACT_BITS;
-	pi.as_coord.x = px;
-	pi.as_coord.y = py;
 	FixPt3 bar_initial = get_bar_coords2 (a, b, c, bbb.min);
 	
 	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
@@ -356,14 +353,14 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 				
 	//ScreenPt p;
 	xy_hfixpt_pck_t p;
-	hfixpt_t pxmax = hfixpt_from_screenxy (bb.max.x);
-	hfixpt_t pymax = hfixpt_from_screenxy (bb.max.y);
+	//hfixpt_t pxmax = hfixpt_from_screenxy (bb.max.x);
+	//hfixpt_t pymax = hfixpt_from_screenxy (bb.max.y);
     //for (p.y = bb.min.y; p.y <= bb.max.y; p.y++) {	
-    for (p.as_coord.y = py; p.as_coord.y <= pymax; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
+    for (p.as_coord.y = bbb.min.as_coord.y; p.as_coord.y <= bbb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
 		
 		bar = bar_row;
 		
-		for (p.as_coord.x = px; p.as_coord.x <= pxmax; p.as_coord.x += (1 << XY_FRACT_BITS)) {
+		for (p.as_coord.x = bbb.min.as_coord.x; p.as_coord.x <= bbb.max.as_coord.x; p.as_coord.x += (1 << XY_FRACT_BITS)) {
 					
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
