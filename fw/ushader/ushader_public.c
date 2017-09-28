@@ -92,10 +92,34 @@ hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	pixel_color_t pc;
-	pc.r = r;
-	pc.g = g;
-	pc.b = b;
-	//pc.a = a;
+	pc.as_byte.r = r;
+	pc.as_byte.g = g;
+	pc.as_byte.b = b;
+	pc.as_byte.a = a;
+	return pc;
+}
+
+pixel_color_t color_mult (pixel_color_t pix, float intensity) {
+	pixel_color_t pc;
+	uint8_t int_int = (uint8_t) (intensity * 255);
+	uint16_t tmp_r = ((uint16_t) pix.as_byte.r) * ((uint16_t) int_int);
+	uint16_t tmp_g = ((uint16_t) pix.as_byte.g) * ((uint16_t) int_int);
+	uint16_t tmp_b = ((uint16_t) pix.as_byte.b) * ((uint16_t) int_int);
+	pc.as_byte.r = (uint8_t) (tmp_r >> 8);
+	pc.as_byte.g = (uint8_t) (tmp_g >> 8);
+	pc.as_byte.b = (uint8_t) (tmp_b >> 8);
+	pc.as_byte.a = 0;
+	
+	//~ int r = pix.r * intensity + 5;
+	//~ int g = pix.g * intensity + 5;
+	//~ int b = pix.b * intensity + 5;
+		
+	//~ if (r > 255) r = 255;
+	//~ if (g > 255) g = 255;
+	//~ if (b > 255) b = 255;
+	
+	//~ pc = set_color (r, g, b, 0);
+	
 	return pc;
 }
 
@@ -306,18 +330,38 @@ FixPt4  varying_fifo_pop_FixPt4 (Varying *vry) {
 pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 	pixel_color_t pix;
 	if (bmp->data != NULL) {
-		size_t offset = (u + bmp->w * v) * (bmp->bytespp);
-		pix.r = *(bmp->data + offset + 0);
-		pix.g = *(bmp->data + offset + 1);
-		pix.b = *(bmp->data + offset + 2);
+		pixel_color_t *p = (pixel_color_t *) bmp->data;
+		//~ size_t offset = (u + bmp->w * v) * (bmp->bytespp);
+		//~ pix.r = *(bmp->data + offset + 0);
+		//~ pix.g = *(bmp->data + offset + 1);
+		//~ pix.b = *(bmp->data + offset + 2);
+		pix = p[u + bmp->w * v];
 	}
 	else {
-		pix.r = 0;
-		pix.g = 0;
-		pix.b = 0;
-	}
+		pix.as_word = 0;
+	}	
+	
 	return pix;
 }
+
+
+//~ pixel_color_t get_pixel_color_from_rgb32_bitmap (const Bitmap *bmp, const int u, const int v) {
+	//~ pixel_color_t pix;
+	//~ if (bmp->data != NULL) {
+		//~ size_t offset = (u + bmp->w * v) * (bmp->bytespp);
+		//~ pix.r = *(bmp->data + offset + 0);
+		//~ pix.g = *(bmp->data + offset + 1);
+		//~ pix.b = *(bmp->data + offset + 2);
+		//~ //pix.a = *(bmp->data + offset + 3);
+	//~ }
+	//~ else {
+		//~ pix.r = 0;
+		//~ pix.g = 0;
+		//~ pix.b = 0;
+		//~ //pix.a = 0;
+	//~ }
+	//~ return pix;
+//~ }
 
 Float3 get_norm_Float3_from_bitmap (const Bitmap *bmp, const int u, const int v) {
 	Float3 val;

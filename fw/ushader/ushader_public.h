@@ -51,7 +51,7 @@ typedef  int64_t dfixpt_t;
 #define     BARC_FRACT_BITS (XY_FRACT_BITS*2)
 #define W_RECIPR_FRACT_BITS 29
 #define     OOWI_FRACT_BITS 16
-#define  VARYING_FRACT_BITS 14
+#define  VARYING_FRACT_BITS 16
 
 
 
@@ -244,10 +244,38 @@ typedef struct Bitmap {
 	uint32_t bytespp;
 } Bitmap;
 
-typedef struct pixel_color_t {
-	uint8_t r, g, b;
-} pixel_color_t;
+/*
+typedef struct Bitmap32 {
+	uint32_t *data;
+	uint32_t w;
+	uint32_t h;
+} Bitmap32;
+*/
 
+/*
+typedef struct rgb24_t {
+	uint8_t r, g, b;
+} rgb24_t;
+
+typedef struct rgb32_t {
+	uint8_t r, g, b, a;
+} rgb32_t;
+*/
+//typedef rgb32_t pixel_color_t;
+
+typedef struct rgba8888 {
+	uint8_t r, g, b, a;
+} rgba8888;
+
+typedef union pixel_color_t {
+	rgba8888 as_byte;
+	uint32_t as_word;
+}  __attribute__ ((aligned (4))) pixel_color_t;
+
+/*typedef struct pixel_color32_t {
+	uint8_t r, g, b, a;
+} pixel_color32_t;
+*/
 typedef struct Triangle {
 	Float4 vtx[3];
 } Triangle;
@@ -371,6 +399,7 @@ size_t get_screen_height (gpu_cfg_t *cfg);
 size_t get_screen_depth  (gpu_cfg_t *cfg);
 
 pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+pixel_color_t color_mult (pixel_color_t pix, float intensity);
 
 extern void varying_fifo_push_float  (Varying *vry, float   data);
 extern void varying_fifo_push_Float2 (Varying *vry, Float2 *data);

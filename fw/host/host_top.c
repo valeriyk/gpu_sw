@@ -275,15 +275,15 @@ void free_objects (ObjectListNode *obj_list_head) {
 
 
 uint8_t rgb_to_y (pixel_color_t rgb) {
-	return (uint8_t) (16.f + rgb.r * 0.257f + rgb.g * 0.504f + rgb.b * 0.098f);
+	return (uint8_t) (16.f + rgb.as_byte.r * 0.257f + rgb.as_byte.g * 0.504f + rgb.as_byte.b * 0.098f);
 }
 
 uint8_t rgb_to_cb (pixel_color_t rgb) {
-	return (uint8_t) (128.f - rgb.r * 0.148f - rgb.g * 0.291f + rgb.b * 0.439f);
+	return (uint8_t) (128.f - rgb.as_byte.r * 0.148f - rgb.as_byte.g * 0.291f + rgb.as_byte.b * 0.439f);
 }
 
 uint8_t rgb_to_cr (pixel_color_t rgb) {
-	return (uint8_t) (128.f + rgb.r * 0.439f - rgb.g * 0.368f - rgb.b * 0.071f);
+	return (uint8_t) (128.f + rgb.as_byte.r * 0.439f - rgb.as_byte.g * 0.368f - rgb.as_byte.b * 0.071f);
 }
 
 
@@ -586,9 +586,26 @@ void launch_shaders (volatile gpu_cfg_t* cfg, vertex_shader_fptr vshader, pixel_
 			sprintf(frame_num, "%d", m);
 			strcpy (tga_file, "frame_buffer_");
 			strcat (tga_file, frame_num);
-			strcat (tga_file, ".tga");	
-			write_tga_file (tga_file, (tbyte *) cfg->fbuffer_ptr[m], WIDTH, HEIGHT, 24, 1);
+			strcat (tga_file, ".tga");
 			
+			
+			tbyte *rgb24 = calloc (screen_size * 3, sizeof (tbyte));
+			if (rgb24 == NULL) goto error;
+			
+			for (int i = 0; i < HEIGHT; i++) {
+				for (int j = 0; j < WIDTH; j++) {
+					size_t word_offset = (j + WIDTH * i);	
+					size_t byte_offset = word_offset * 3;
+					pixel_color_t *p = cfg->fbuffer_ptr[m];
+					//pixel_color32_t pix;
+					*(rgb24 + byte_offset + 0) = p[word_offset].as_byte.r;
+					*(rgb24 + byte_offset + 1) = p[word_offset].as_byte.g;
+					*(rgb24 + byte_offset + 2) = p[word_offset].as_byte.b;
+				}
+			}			
+			//write_tga_file (tga_file, (tbyte *) cfg->fbuffer_ptr[m], WIDTH, HEIGHT, 24, 1);
+			write_tga_file (tga_file, rgb24, WIDTH, HEIGHT, 24, 1);
+			free (rgb24);
 			
 			tbyte *tmp;
 			if ((tmp = (tbyte*) calloc (screen_size, sizeof(tbyte))) == NULL) {

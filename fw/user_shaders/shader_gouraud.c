@@ -1,4 +1,9 @@
 #include "shader_gouraud.h"
+
+#ifdef ARC_APEX
+	#include <apexextensions.h>
+#endif
+
 //#include "gl.h"
 
 //#include "geometry_fixpt.h"
@@ -57,14 +62,22 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 
 bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
 	
+#ifdef ARC_APEX
+	
+	fixpt_t intensity = varying_fifo_pop_fixpt (vry);
+	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format
+	
+#else
+	
 	float intensity = varying_fifo_pop_float (vry);
-	//intensity = 0.9;
 	assert (intensity <=  1.0f);
 	assert (intensity >= -1.0f);
 	if ((intensity >  1.0f) || (intensity < -1.0f)) {
 		return false;
 	}
-		
+	float intensity_treshold = 0.2;
+	
+#endif	
 	//
 	// If texture is not provided, use gray color
 	//
@@ -87,20 +100,25 @@ bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t scr
 		pix = get_pixel_color_from_bitmap (obj->texture, uu, vv);
 	}
 	
-	float intensity_treshold = 0.2;
+	
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
-		
-	int r = pix.r * intensity + 5;
+	
+	/*int r = pix.r * intensity + 5;
 	int g = pix.g * intensity + 5;
 	int b = pix.b * intensity + 5;
 		
 	if (r > 255) r = 255;
 	if (g > 255) g = 255;
-	if (b > 255) b = 255;
+	if (b > 255) b = 255;*/
+#ifdef ARC_APEX
+	*color = (pixel_color_t) ((uint32_t) rgba_mul ((long) pix.as_word, (long) intensity));
+#else
+	*color = color_mult (pix, intensity);	
+#endif
 	
-	*color = set_color (r, g, b, 0);
+	//*color = set_color (r, g, b, 0);
 	//*color = set_color (128, 128, 0, 0);
 	return true;
 }

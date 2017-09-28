@@ -38,7 +38,7 @@ OBJECTS_ARC_HOST  := $(patsubst %.c, %_host_arc.o,  $(wildcard host/*.c) $(wildc
 INCLUDES_ARC_HOST =                                 $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h) $(wildcard ushader/*.h) $(wildcard user_shaders/*.h)
 
 OBJECTS_ARC_USER_SHADERS  := $(patsubst %.c, %_user_shaders_arc.o,  ushader/ushader_public.c $(wildcard user_shaders/*.c))
-INCLUDES_ARC_USER_SHADERS =                                         ushader/ushader_public.h $(wildcard user_shaders/*.h)
+INCLUDES_ARC_USER_SHADERS =                                         ushader/ushader_public.h $(wildcard user_shaders/*.h)  ../../hw/em7d_v2/build/User/apexextensions.h
 
 OBJECTS_ARC_USHADER  := $(patsubst %.c, %_ushader_arc.o,  $(wildcard ushader/*.c) $(wildcard dma/*.c) libbarcg/geometry.c)
 INCLUDES_ARC_USHADER =                                    $(wildcard ushader/*.h) $(wildcard dma/*.h) libbarcg/geometry.h ../../hw/em7d_v2/build/User/apexextensions.h
@@ -59,11 +59,13 @@ $(DESTDIR)/$(TARGET_x86): $(OBJECTS_x86)
 
 $(DESTDIR)/$(TARGET_ARC_HOST): $(OBJECTS_ARC_HOST) $(TCF_HOST) $(OBJECTS_ARC_USER_SHADERS) $(TCF_USHADER)
 	ccac $(LDFLAGS_ARC_HOST) -o $(DESTDIR)/$(TARGET_ARC_HOST) $(OBJECTS_ARC_HOST) $(OBJECTS_ARC_USER_SHADERS) $(LIBS)
+	elfdump -S $(TARGET_ARC_HOST) > $(TARGET_ARC_HOST).dump
 	echo "#version=1" > symlist_host_ext.txt 
 	grep shader symlist_host.txt >> symlist_host_ext.txt
 
 $(DESTDIR)/$(TARGET_ARC_USHADER): $(OBJECTS_ARC_USHADER) $(TCF_USHADER)
 	ccac $(LDFLAGS_ARC_USHADER) -o $(DESTDIR)/$(TARGET_ARC_USHADER) $(OBJECTS_ARC_USHADER) $(LIBS)
+	elfdump -S $(TARGET_ARC_USHADER) > $(TARGET_ARC_USHADER).dump
 
 #$(DESTDIR)/$(TARGET_MIPS): $(OBJECTS_MIPS)
 #	$(SYSCONF_LINK_MIPS) -o $(DESTDIR)/$(TARGET_MIPS) $(OBJECTS_MIPS) $(LIBS) $(LDFLAGS_MIPS)

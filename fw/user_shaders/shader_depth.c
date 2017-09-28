@@ -150,7 +150,7 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 		intensity = intensity_treshold;
 	}
 	
-		
+	/*	
 	int r = pix.r * intensity + 5;
 	int g = pix.g * intensity + 5;
 	int b = pix.b * intensity + 5;
@@ -160,7 +160,11 @@ bool pshader_depth (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 	if (b > 255) b = 255;
 	
 	*color = set_color (r, g, b, 0);
-	//*color = set_color (255, 0, 255, 0);
+	// *color = set_color (255, 0, 255, 0);
+	*/
+	
+	*color = color_mult (pix, intensity);
+	
 	return true;
 }
 
