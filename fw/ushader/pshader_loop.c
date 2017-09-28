@@ -353,18 +353,22 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	dfixpt_t z1z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[1], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars; // ((20.4 - 20.4) << 12) / 24.8 = 20.16 / 24.8 = 20.8
 	dfixpt_t z2z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[2], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars;
 				
-	ScreenPt p;
-    for (p.y = bb.min.y; p.y <= bb.max.y; p.y++) {	
+	//ScreenPt p;
+	xy_hfixpt_pck_t p;
+	hfixpt_t pxmax = hfixpt_from_screenxy (bb.max.x);
+	hfixpt_t pymax = hfixpt_from_screenxy (bb.max.y);
+    //for (p.y = bb.min.y; p.y <= bb.max.y; p.y++) {	
+    for (p.as_coord.y = py; p.as_coord.y <= pymax; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
 		
 		bar = bar_row;
 		
-		for (p.x = bb.min.x; p.x <= bb.max.x; p.x++) {
+		for (p.as_coord.x = px; p.as_coord.x <= pxmax; p.as_coord.x += (1 << XY_FRACT_BITS)) {
 					
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
-				screenxy_t tile_x  = p.x - tile_x_offset;
-				screenxy_t tile_y  = p.y - tile_y_offset;
+				screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
+				screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
 				size_t     pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
 				screenz_t zi = fixpt_to_screenz (
