@@ -326,8 +326,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 
 	// Left shift by 12: 4 bits to compensate for fractional width difference between Z (4 bits) and sum_of_bars (8 bits) plus
 	//  8 bits to compensate for division precision loss.
-	dfixpt_t z1z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[1], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars; // ((20.4 - 20.4) << 12) / 24.8 = 20.16 / 24.8 = 20.8
-	dfixpt_t z2z0 = (((dfixpt_t) fixpt_sub (local_tpd_ptr->screen_z[2], local_tpd_ptr->screen_z[0])) << 12) / sum_of_bars;
+	fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << 12) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
+	fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << 12) / sum_of_bars;
 				
 	xy_hfixpt_pck_t p;
 	for (p.as_coord.y = bb.min.as_coord.y; p.as_coord.y <= bb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
@@ -347,7 +347,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 					local_tpd_ptr->screen_z[0] +
 					((z1z0 * bar.as_array[1]) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
 					((z2z0 * bar.as_array[2]) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
-				); // 28.4 + (4.8 * 24.8 >> 12) + (4.8 * 24.8 >> 12) = 28.4
+				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
 				
 				if (zi > local_zbuf[pix_num]) {
 						
