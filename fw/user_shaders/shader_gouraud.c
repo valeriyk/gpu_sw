@@ -60,7 +60,7 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	return clip;		
 }
 
-bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
+bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *color) {
 	
 	fixpt_t intensity = varying_fifo_pop_fixpt (vry);
 	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format

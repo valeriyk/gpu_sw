@@ -31,10 +31,10 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 	y[2] = local_data_ptr->vtx_c.as_coord.y;
 	
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
-	volatile TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
+	TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
 	ext_data_arr[tri_num] = *local_data_ptr;
 	
-	volatile TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
+	TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
 	
 	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
     bb.min.x &= ~(GPU_TILE_WIDTH-1);
@@ -114,7 +114,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	uint16_t num_of_tris_in_tile_arr[GPU_MAX_TILES];
 	
 	// Clean up data structures for each new frame:
-	volatile TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
+	TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
 	for (int i = 0; i < (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2); i++) {
 		d[i] = NULL;
 	}

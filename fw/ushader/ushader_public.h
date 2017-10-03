@@ -359,37 +359,37 @@ typedef struct Light {
 
 
 typedef Float4 (*vertex_shader_fptr) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
-typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color);
+typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, gpu_cfg_t *cfg, pixel_color_t *color);
 
 
 struct gpu_cfg_t {
 
-	volatile ObjectListNode* volatile obj_list_ptr;
+	ObjectListNode* volatile obj_list_ptr;
 	
-	volatile TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_USHADERS];
-	volatile TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_USHADERS];
+	TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_USHADERS];
+	TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_USHADERS];
 	
-	volatile pixel_color_t *volatile active_fbuffer;
+	pixel_color_t *volatile active_fbuffer;
 	
-	volatile pixel_color_t *fbuffer_ptr[GPU_MAX_FRAMEBUFFERS];
-	volatile screenz_t     *zbuffer_ptr;
+	pixel_color_t *fbuffer_ptr[GPU_MAX_FRAMEBUFFERS];
+	screenz_t     *zbuffer_ptr;
 	
-	volatile vertex_shader_fptr vshader_fptr;
-	volatile  pixel_shader_fptr pshader_fptr;
+	vertex_shader_fptr vshader_fptr;
+	pixel_shader_fptr pshader_fptr;
 	
-	volatile Light lights_arr[GPU_MAX_LIGHTS];
+	Light lights_arr[GPU_MAX_LIGHTS];
 	
-	volatile fmat4 viewport;
+	fmat4 viewport;
 	
 //	volatile uint32_t num_of_vshaders;
 //	volatile uint32_t num_of_pshaders;
-	volatile uint32_t num_of_ushaders;
-	volatile uint32_t num_of_tiles;
-	volatile uint32_t num_of_fbuffers;
+	uint32_t num_of_ushaders;
+	uint32_t num_of_tiles;
+	uint32_t num_of_fbuffers;
 	
-	volatile uint32_t screen_width;
-	volatile uint32_t screen_height;
-	volatile uint32_t screen_depth;
+	uint32_t screen_width;
+	uint32_t screen_height;
+	uint32_t screen_depth;
 	
 	//volatile uint32_t tile_width;
 	//volatile uint32_t tile_height;

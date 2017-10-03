@@ -142,7 +142,8 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 				float mpy1 = vtx1_norm * fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS);
 				float mpy2 = vtx2_norm * fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS);
 				float acc = mpy0 + mpy1 + mpy2;
-				///vry_interp->data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
+				//vry_interp->data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
+				vry_interp->data[i].as_float = acc / dfixpt_to_float (bw_acc, BARC_FRACT_BITS);
 			
 				if (fabsf (vry_interp->data[i].as_float - fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS)) > 0.1) {
 					printf ("\nvry interp mismatch: %f/%f\n", vry_interp->data[i].as_float,  fixpt_to_float (vry_interp_fixpt_tmp, VARYING_FRACT_BITS));	
@@ -360,7 +361,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 						pixel_color_t color;
 						
 						pixel_shader_fptr pshader_fptr = (pixel_shader_fptr) cfg->pshader_fptr;
-						if (pshader_fptr (local_tpd_ptr->obj, &vry_interp, cfg->lights_arr, cfg->screen_width, cfg->screen_depth, &color)) {
+						if (pshader_fptr (local_tpd_ptr->obj, &vry_interp, cfg, &color)) {
 							//fbuffer[p.x + (cfg->screen_height - p.y - 1) * cfg->screen_width] = color;
 							local_fbuf[pix_num] = color;
 						}

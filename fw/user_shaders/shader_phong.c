@@ -65,7 +65,7 @@ Float4 vshader_phong (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry
 	return clip;		
 }
 
-bool pshader_phong (Object *obj, Varying *vry, Light *lights_arr, uint32_t screen_width, uint32_t screen_height, pixel_color_t *color) {
+bool pshader_phong (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *color) {
 	
 	
 	
@@ -74,7 +74,7 @@ bool pshader_phong (Object *obj, Varying *vry, Light *lights_arr, uint32_t scree
 	
 	Float3_normalize (&normal);
 	
-	float intensity = -Float3_Float3_smult (&normal, &(lights_arr[0].eye));
+	float intensity = -Float3_Float3_smult (&normal, &(cfg->lights_arr[0].eye));
 	
 					
 	//

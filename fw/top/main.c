@@ -17,8 +17,8 @@
 
 int main(int argc, char** argv) {
        
-   	volatile gpu_cfg_t      gpu_cfg;
-   	volatile gpu_run_halt_t gpu_run_halt; 
+   	gpu_cfg_t      gpu_cfg;
+   	gpu_run_halt_t gpu_run_halt; 
 	
 	//gpu_cfg.tile_idx_table_ptr = NULL;
 	for (int i = 0; i < GPU_MAX_USHADERS; i++) {

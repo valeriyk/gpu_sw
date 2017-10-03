@@ -93,7 +93,7 @@ void setup_light_transform (volatile ObjectListNode* volatile obj_list_head, fma
 }
 
 
-void light_transform (fmat4 *view, volatile gpu_cfg_t *cfg) {
+void light_transform (fmat4 *view, gpu_cfg_t *cfg) {
 	Float4 light4_a;
 	Float4 light4_b;
 	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
@@ -355,16 +355,16 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 #ifdef MULTIPROC
 
  int main (void) {
-	volatile gpu_cfg_t      *volatile cfg      = (gpu_cfg_t *)      GPU_CFG_ABS_ADDRESS;
-	volatile gpu_run_halt_t *volatile run_halt = (gpu_run_halt_t *) GPU_RUN_HALT_ABS_ADDRESS;
+	gpu_cfg_t      *cfg      = (gpu_cfg_t *)      GPU_CFG_ABS_ADDRESS;
+	gpu_run_halt_t *run_halt = (gpu_run_halt_t *) GPU_RUN_HALT_ABS_ADDRESS;
 
 #else
 
  void * host_top (void *host_cfg) { 	
 	
-	volatile pthread_cfg_t  *volatile pthread_cfg = host_cfg;
-    volatile gpu_cfg_t      *volatile cfg      = pthread_cfg->common_cfg;
-    volatile gpu_run_halt_t *volatile run_halt = pthread_cfg->gpu_run_halt;
+	pthread_cfg_t  *pthread_cfg = host_cfg;
+    gpu_cfg_t      *cfg      = pthread_cfg->common_cfg;
+    gpu_run_halt_t *run_halt = pthread_cfg->gpu_run_halt;
      
 #endif
 
@@ -447,7 +447,7 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	}
     
 	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		if ((cfg->tri_ptr_list[i] = (volatile TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2, sizeof(TrianglePShaderData *))) == NULL) {
+		if ((cfg->tri_ptr_list[i] = (TrianglePShaderData *volatile *) calloc (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2, sizeof(TrianglePShaderData *))) == NULL) {
 			if (DEBUG_MALLOC) printf ("tile_idx_table calloc failed\n");
 			goto error;
 		}
