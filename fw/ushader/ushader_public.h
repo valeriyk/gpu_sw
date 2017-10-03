@@ -29,7 +29,9 @@
 #define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
 #define GPU_MAX_USHADERS 4
 #define GPU_MAX_FRAMEBUFFERS	64
-#define GPU_CFG_ABS_ADDRESS 0xFFFE0000
+
+#define GPU_CFG_ABS_ADDRESS      0xFFFE0000
+#define GPU_RUN_HALT_ABS_ADDRESS 0xFFFF0000
 
 
 
@@ -378,14 +380,6 @@ struct gpu_cfg_t {
 	volatile Light lights_arr[GPU_MAX_LIGHTS];
 	
 	volatile fmat4 viewport;
-		
-	volatile bool vshaders_run_req;
-	volatile bool vshaders_stop_req;
-	volatile bool vshader_done[GPU_MAX_USHADERS];
-	
-	volatile bool pshaders_run_req;
-	volatile bool pshaders_stop_req;
-	volatile bool pshader_done[GPU_MAX_USHADERS];
 	
 //	volatile uint32_t num_of_vshaders;
 //	volatile uint32_t num_of_pshaders;
@@ -402,10 +396,23 @@ struct gpu_cfg_t {
 	
 };
 
-typedef struct shader_cfg_t {
-	gpu_cfg_t *common_cfg;
-	uint32_t   shader_num;
-} shader_cfg_t;
+typedef struct gpu_run_halt_t {
+
+	volatile bool vshaders_run_req;
+	volatile bool vshaders_stop_req;
+	volatile bool vshader_done[GPU_MAX_USHADERS];
+	
+	volatile bool pshaders_run_req;
+	volatile bool pshaders_stop_req;
+	volatile bool pshader_done[GPU_MAX_USHADERS];
+	
+} gpu_run_halt_t;
+
+typedef struct pthread_cfg_t {
+	gpu_cfg_t      *common_cfg;
+	gpu_run_halt_t *gpu_run_halt;
+	uint32_t        core_num;
+} pthread_cfg_t;
 
 size_t get_screen_width  (gpu_cfg_t *cfg);
 size_t get_screen_height (gpu_cfg_t *cfg);
