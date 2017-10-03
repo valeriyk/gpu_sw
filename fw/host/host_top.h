@@ -2,8 +2,8 @@
 
 #include <gl.h>
 
-#define WIDTH  320//1280
-#define HEIGHT 320//720
+#define WIDTH  640//1280
+#define HEIGHT 480//720
 
 #define NUM_OF_FRAMES 1
 

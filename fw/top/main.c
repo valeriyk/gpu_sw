@@ -13,6 +13,7 @@
 #define USE_PTHREAD
 #include <pthread.h>
 
+//gpu_cfg_t USHDR_CFG;
 
 int main(int argc, char** argv) {
        

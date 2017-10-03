@@ -27,12 +27,38 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
 	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
 					
-	//Varying vry_interp;					
 	vry_interp->num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
 	vry_interp->num_of_words_read = 0;
 	
+	//vry_interp->num_of_words_read = vry[0].num_of_words_written;
 	
-#ifndef ARC_APEX
+	
+#ifdef ARC_APEX
+
+	//Varying tmp;
+	// ARC APEX implementation
+	if (vry_interp->num_of_words_written > 0) {
+		
+		_core_write (w_reciprocal[0], CR_W_RCP0);
+		_core_write (w_reciprocal[1], CR_W_RCP1);
+		_core_write (w_reciprocal[2], CR_W_RCP2);
+		_core_write (bar->as_array[0], CR_BAR0);
+		_core_write (bar->as_array[1], CR_BAR1);
+		_core_write (bar->as_array[2], CR_BAR2);
+		for (int i = 0; i < vry_interp->num_of_words_written; i++) {
+			_core_write (vry[0].data[i].as_fixpt_t, CR_VRY0);
+			_core_write (vry[1].data[i].as_fixpt_t, CR_VRY1);
+			_core_write (vry[2].data[i].as_fixpt_t, CR_VRY2);
+			vry_interp->data[i].as_fixpt_t = vry_ip(0);
+			//tmp.data[i].as_fixpt_t = vry_ip(0);
+		}
+	}
+	
+#else
+	//~ dfixpt_t bw0, bw1, bw2;
+	//~ dfixpt_t vbw0, vbw1, vbw2;
+	//~ dfixpt_t bw_acc;
+	//~ dfixpt_t vbw_acc;
 	if (vry_interp->num_of_words_written > 0) {
 
 		dfixpt_t bw0, bw1, bw2;
@@ -106,9 +132,6 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 			// .31 / .37 = .14
 			vry_interp->data[i].as_fixpt_t = (fixpt_t) (vbw_acc / (bw_acc >> 22)); // = (VM+WM+BM+65-OF).VF
 
-			//printf ("GOLDEN:: bar: %x %x %x; w_rcp: %x %x %x; acc: %llx\n", bar->as_array[0], bar->as_array[1], bar->as_array[2], w_reciprocal[0], w_reciprocal[1], w_reciprocal[2], acc);
-			//printf ("GOLDEN:: vry: %x %x %x; acc: %llx; div: %x\n", vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t, acc_fixpt, vry_interp->data[i].as_fixpt_t);
-			
 			if (DEBUG_FIXPT_VARYING) {
 				fixpt_t vry_interp_fixpt_tmp = vry_interp->data[i].as_fixpt_t;
 				//~ fixpt_t vry_interp_newton = (fixpt_t) ((acc_fixpt * xx) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN));
@@ -130,29 +153,6 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 			}
 		}
 	}
-
-#else
-//#ifdef ARC_APEX
-
-	//Varying tmp;
-	
-	// ARC APEX implementation
-	if (vry_interp->num_of_words_written > 0) {
-		
-		_core_write (w_reciprocal[0], CR_W_RCP0);
-		_core_write (w_reciprocal[1], CR_W_RCP1);
-		_core_write (w_reciprocal[2], CR_W_RCP2);
-		_core_write (bar->as_array[0], CR_BAR0);
-		_core_write (bar->as_array[1], CR_BAR1);
-		_core_write (bar->as_array[2], CR_BAR2);
-		for (int i = 0; i < vry_interp->num_of_words_written; i++) {
-			_core_write (vry[0].data[i].as_fixpt_t, CR_VRY0);
-			_core_write (vry[1].data[i].as_fixpt_t, CR_VRY1);
-			_core_write (vry[2].data[i].as_fixpt_t, CR_VRY2);
-			vry_interp->data[i].as_fixpt_t = vry_ip(0);
-			//tmp.data[i].as_fixpt_t = vry_ip(0);
-		}
-	}
 	
 	//~ for (int i = 0; i < vry_interp->num_of_words_written; i++) {
 		//~ if (vry_interp->data[i].as_fixpt_t != tmp.data[i].as_fixpt_t) {
@@ -160,9 +160,11 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 			//~ printf ("\t\tGOLDEN:1: bar: %x %x %x; w_rcp: %x %x %x; vry: %x %x %x\n", bar->as_array[0], bar->as_array[1], bar->as_array[2], w_reciprocal[0], w_reciprocal[1], w_reciprocal[2], vry[0].data[i].as_fixpt_t, vry[1].data[i].as_fixpt_t, vry[2].data[i].as_fixpt_t);
 			//~ printf ("\t\tGOLDEN:2: bw: %llx %llx %llx; bw_acc: %llx\n", bw0, bw1, bw2, bw_acc);
 			//~ printf ("\t\tGOLDEN:3: vbw: %llx %llx %llx; vbw_acc: %llx\n", vbw0, vbw1, vbw2, vbw_acc);
-			//~ printf ("\t\tGOLDEN:4: bw_acc>>20: %llx; div %llx\n", (bw_acc >> 20), vry_interp->data[i].as_fixpt_t);
+			//~ printf ("\t\tGOLDEN:4: bw_acc>>22: %llx; div %llx\n", (bw_acc >> 22), vry_interp->data[i].as_fixpt_t);
 		//~ }
 	//~ }
+	
+
 #endif
 
 }
@@ -293,29 +295,7 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	//~ hfixpt_t    x[3];
-	//~ hfixpt_t    y[3];
-	 //~ fixpt_t    z[3];
-			
-	// re-pack X, Y, Z coords of the three vertices
-	//~ for (int i = 0; i < 3; i++) {
-		//~ //x[i] = local_tpd_ptr->screen_x[i];
-		//~ //y[i] = local_tpd_ptr->screen_y[i];
-		//~ z[i] = local_tpd_ptr->screen_z[i];
-		
-		//~ assert (z[i] >= 0);
-	//~ }
-	
-	/*xy_hfixpt_pck_t a, b, c;
-	a.as_coord.x = local_tpd_ptr->screen_x[0];
-	a.as_coord.y = local_tpd_ptr->screen_y[0];
-	b.as_coord.x = local_tpd_ptr->screen_x[1];
-	b.as_coord.y = local_tpd_ptr->screen_y[1];
-	c.as_coord.x = local_tpd_ptr->screen_x[2];
-	c.as_coord.y = local_tpd_ptr->screen_y[2];
-	*/
 	bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
-	
 	FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 	
 	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
@@ -325,16 +305,13 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	if (sum_of_bars == 0) return;
 		
 	FixPt3 bar_row_incr;
-	// additional shift lift is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-	//~ bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->screen_x[2], local_tpd_ptr->screen_x[1]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	//~ bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->screen_x[0], local_tpd_ptr->screen_x[2]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	//~ bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->screen_x[1], local_tpd_ptr->screen_x[0]) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
 	bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.x, local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.x, local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.x, local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	FixPt3 bar_col_incr;
-	// additional shift lift is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
+	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
     bar_col_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.y, local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_col_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.y, local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_col_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.y, local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);

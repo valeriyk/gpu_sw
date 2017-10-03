@@ -81,21 +81,33 @@ FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
 FixPt3 get_bar_coords2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c, xy_hfixpt_pck_t p) {
     
     FixPt3 barc;
-
-//#ifdef ARC_APEX
-#if 0
+	//FixPt3 barc2;
+#ifdef ARC_APEX
+//#if 1
+//#if 0
 
 	_core_write (p.as_word, CR_BAR_INIT_PT);
-	
 	barc.as_array[0] = edgefn (b.as_word, c.as_word); // not normalized
 	barc.as_array[1] = edgefn (c.as_word, a.as_word); // not normalized
 	barc.as_array[2] = edgefn (a.as_word, b.as_word); // not normalized
-
+	
 #else
         
     barc.as_array[0] = edge_func_fixpt2 (b, c, p); // not normalized
 	barc.as_array[1] = edge_func_fixpt2 (c, a, p); // not normalized
 	barc.as_array[2] = edge_func_fixpt2 (a, b, p); // not normalized
+	
+	//~ if ((barc.as_array[0] != barc2.as_array[0]) |
+	    //~ (barc.as_array[1] != barc2.as_array[1]) |
+	    //~ (barc.as_array[2] != barc2.as_array[2])) {
+			
+		//~ printf ("GOLDEN:0: ax %x, ay %x, bx %x, by %x, cx %x, cy %x\n", b.as_coord.x, b.as_coord.y, c.as_coord.x, c.as_coord.y, p.as_coord.x, p.as_coord.y);
+		//~ printf ("GOLDEN:0: res %x\n", barc.as_array[0]);
+		//~ printf ("GOLDEN:1: ax %x, ay %x, bx %x, by %x, cx %x, cy %x\n", c.as_coord.x, c.as_coord.y, a.as_coord.x, a.as_coord.y, p.as_coord.x, p.as_coord.y);
+		//~ printf ("GOLDEN:1: res %x\n", barc.as_array[1]);
+		//~ printf ("GOLDEN:2: ax %x, ay %x, bx %x, by %x, cx %x, cy %x\n", a.as_coord.x, a.as_coord.y, b.as_coord.x, b.as_coord.y, p.as_coord.x, p.as_coord.y);
+		//~ printf ("GOLDEN:2: res %x\n", barc.as_array[2]);
+	//~ }
 	
 #endif
 
@@ -130,6 +142,9 @@ pixel_color_t set_color (uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 pixel_color_t color_mult (pixel_color_t pix, fixpt_t intensity) {
 	pixel_color_t pc;
 	
+#ifdef ARC_APEX
+	pc.as_word = (uint32_t) rgba_vmul ((long) pix.as_word, (long) intensity);
+#else
 	if (intensity & 0x80000000) {
 		pc.as_word = 0; // multiply by a neg value - clamp to zero
 	}
@@ -151,25 +166,8 @@ pixel_color_t color_mult (pixel_color_t pix, fixpt_t intensity) {
 		if (tmp_a > 255) tmp_a = 255;
 
 		pc.as_word = ((tmp_r << 24) | (tmp_g << 16) | (tmp_b << 8) | tmp_a);
-		//~ uint8_t int_int = (uint8_t) (intensity * 255);
-		//~ uint16_t tmp_r = ((uint16_t) pix.as_byte.r) * ((uint16_t) int_int);
-		//~ uint16_t tmp_g = ((uint16_t) pix.as_byte.g) * ((uint16_t) int_int);
-		//~ uint16_t tmp_b = ((uint16_t) pix.as_byte.b) * ((uint16_t) int_int);
-		//~ pc.as_byte.r = (uint8_t) (tmp_r >> 8);
-		//~ pc.as_byte.g = (uint8_t) (tmp_g >> 8);
-		//~ pc.as_byte.b = (uint8_t) (tmp_b >> 8);
-		//~ pc.as_byte.a = 0;
-		
-		//~ int r = pix.r * intensity + 5;
-		//~ int g = pix.g * intensity + 5;
-		//~ int b = pix.b * intensity + 5;
-			
-		//~ if (r > 255) r = 255;
-		//~ if (g > 255) g = 255;
-		//~ if (b > 255) b = 255;
-		
-		//~ pc = set_color (r, g, b, 0);
 	}
+#endif
 	
 	return pc;
 }

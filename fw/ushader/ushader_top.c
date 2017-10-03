@@ -10,18 +10,24 @@
 
 
 
-#ifndef MULTIPROC
+#ifdef MULTIPROC
+
+// gpu_cfg_t GPU_CFG;
+ 
+ int main (void) {
+	uint32_t shader_num = (_lr(0x4) >> 8) & 0x000000ff; // ARC-specific code
+	//volatile gpu_cfg_t * volatile common_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+	gpu_cfg_t *const common_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+
+#else
+
  void * ushader_top (void *cfg) {
 	assert (cfg != NULL);
 	
 	shader_cfg_t *shader_cfg = cfg;
 	uint32_t shader_num = shader_cfg->shader_num;
 	gpu_cfg_t *common_cfg = shader_cfg->common_cfg; 
-#else
- int main (void) {
-	uint32_t shader_num = (_lr(0x4) >> 8) & 0x000000ff; // ARC-specific code
-	//volatile gpu_cfg_t * volatile common_cfg = (volatile gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
-	gpu_cfg_t *const common_cfg = (gpu_cfg_t *) GPU_CFG_ABS_ADDRESS;
+
 #endif
 	
 	

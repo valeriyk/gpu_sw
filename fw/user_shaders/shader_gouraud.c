@@ -82,13 +82,18 @@ bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t scr
 	}
 	else {	
 
-		Float2 text   = varying_fifo_pop_Float2 (vry);
+		//~ Float2 text   = varying_fifo_pop_Float2 (vry);
 		
-		assert (text.as_struct.u >= 0);
-		assert (text.as_struct.v >= 0);
+		//~ assert (text.as_struct.u >= 0);
+		//~ assert (text.as_struct.v >= 0);
 		
-		size_t uu = (size_t) text.as_struct.u;
-		size_t vv = (size_t) text.as_struct.v;
+		//~ size_t uu = (size_t) text.as_struct.u;
+		//~ size_t vv = (size_t) text.as_struct.v;
+		
+		FixPt2 text = varying_fifo_pop_FixPt2 (vry);
+		size_t uu = text.as_struct.u >> VARYING_FRACT_BITS;
+		size_t vv = text.as_struct.v >> VARYING_FRACT_BITS;
+		
 		assert (uu < obj->texture->w);
 		assert (vv < obj->texture->h);
 		
@@ -108,11 +113,8 @@ bool pshader_gouraud (Object *obj, Varying *vry, Light *lights_arr, uint32_t scr
 	if (g > 255) g = 255;
 	if (b > 255) b = 255;*/
 	
-#ifdef ARC_APEX
-	*color = (pixel_color_t) ((uint32_t) rgba_vmul ((long) pix.as_word, (long) intensity));
-#else
+
 	*color = color_mult (pix, intensity);	
-#endif
 	
 	//*color = set_color (r, g, b, 0);
 	//*color = set_color (128, 128, 0, 0);
