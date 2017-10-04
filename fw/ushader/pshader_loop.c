@@ -27,7 +27,8 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
 	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
 					
-	vry_interp->num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
+	//vry_interp->num_of_words_written = (vry[0].num_of_words_written + vry[1].num_of_words_written + vry[2].num_of_words_written) / 3;
+	vry_interp->num_of_words_written = (vry[0].num_of_words_written);
 	vry_interp->num_of_words_read = 0;
 	
 	//vry_interp->num_of_words_read = vry[0].num_of_words_written;
@@ -312,15 +313,15 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 		
 	FixPt3 bar_row_incr;
 	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-	bar_row_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.x, local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.x, local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.x, local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[0] = (local_tpd_ptr->vtx_c.as_coord.x - local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[1] = (local_tpd_ptr->vtx_a.as_coord.x - local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr.as_array[2] = (local_tpd_ptr->vtx_b.as_coord.x - local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	FixPt3 bar_col_incr;
 	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-    bar_col_incr.as_array[0] = fixpt_sub (local_tpd_ptr->vtx_b.as_coord.y, local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[1] = fixpt_sub (local_tpd_ptr->vtx_c.as_coord.y, local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[2] = fixpt_sub (local_tpd_ptr->vtx_a.as_coord.y, local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+    bar_col_incr.as_array[0] = (local_tpd_ptr->vtx_b.as_coord.y - local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[1] = (local_tpd_ptr->vtx_c.as_coord.y - local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr.as_array[2] = (local_tpd_ptr->vtx_a.as_coord.y - local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	
 	FixPt3   bar;
