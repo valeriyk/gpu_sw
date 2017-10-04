@@ -15,7 +15,7 @@
 
 void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp);
 
-void draw_triangle (TrianglePShaderData* tri, size_t tile_num, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
+void draw_triangle (TrianglePShaderData* tri, bbox_hfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
 void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
@@ -295,13 +295,13 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 //      See https://fgiesen.wordpress.com/2013/02/11/depth-buffers-done-quick-part/
 //
-void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
+void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_hfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
 	//bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
 	
 	bbox_hfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
-	bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
-	bbox_hfixpt_t bb = clip_bbox_to_tile (tri_bb, tile_bb, cfg);
+	//bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
+	bbox_hfixpt_t bb = clip_bbox_to_tile (tri_bb, *tile_bb, cfg);
 	
 	FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 	
@@ -347,8 +347,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 				
 				//screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
 				//screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
-				screenxy_t tile_x  = (p.as_coord.x - tile_bb.min.as_coord.x) >> XY_FRACT_BITS;
-				screenxy_t tile_y  = (p.as_coord.y - tile_bb.min.as_coord.y) >> XY_FRACT_BITS;
+				screenxy_t tile_x  = (p.as_coord.x - tile_bb->min.as_coord.x) >> XY_FRACT_BITS;
+				screenxy_t tile_y  = (p.as_coord.y - tile_bb->min.as_coord.y) >> XY_FRACT_BITS;
 				
 				size_t     pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
@@ -401,6 +401,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	size_t active_local_buf_idx = 0;
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
+		bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
+		
 		// initialize zbuffer tile in local memory
 		memset (&local_zbuf[active_local_buf_idx], 0, zbuf_tile_byte_size);
 		
@@ -431,7 +433,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 					ext_tri_data_nxt_ptr = NULL;
 				}
 								
-				draw_triangle (&local_tri_data[active_ltd], tile_num, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
+				draw_triangle (&local_tri_data[active_ltd], &tile_bb, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
 				
 				  active_ltd = (  active_ltd == 0) ? 1 : 0;
 				inactive_ltd = (inactive_ltd == 0) ? 1 : 0;
