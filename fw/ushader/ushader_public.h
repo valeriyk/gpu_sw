@@ -497,12 +497,65 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 	return (screenz_t) (a >> Z_FRACT_BITS);
 }
 
+
+static inline hfixpt_t min_of_two (hfixpt_t a, hfixpt_t b) {
+	return (a < b) ? a : b;
+}
+
+static inline hfixpt_t max_of_two (hfixpt_t a, hfixpt_t b) {
+	return (a > b) ? a : b;
+}
+
+static inline hfixpt_t min_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
+	return min_of_two(a, min_of_two(b, c));
+}
+
+static hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
+	return max_of_two(a, max_of_two(b, c));
+}
+
 BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
-bbox_hfixpt_t get_tri_bbox  (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);
+//bbox_hfixpt_t get_tri_bbox  (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);
+static inline bbox_hfixpt_t get_tri_bbox (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
+	
+	bbox_hfixpt_t bb;
+    
+    bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
+    bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
+    bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
+    bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
+    
+    return bb;
+}
+
+static inline bbox_hfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
+	
+	bbox_hfixpt_t tile;
+	
+	uint16_t llx = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
+	uint16_t lly = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;			
+	tile.min.as_coord.x = llx << XY_FRACT_BITS;
+    tile.min.as_coord.y = lly << XY_FRACT_BITS;
+    tile.max.as_coord.x = (llx + GPU_TILE_WIDTH  - 1) << XY_FRACT_BITS; 
+    tile.max.as_coord.y = (lly + GPU_TILE_HEIGHT - 1) << XY_FRACT_BITS;
+    
+    return tile;
+}
 
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
-bbox_hfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_hfixpt_t in, gpu_cfg_t *cfg);
+//bbox_hfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_hfixpt_t in, gpu_cfg_t *cfg);
+static inline bbox_hfixpt_t clip_bbox_to_tile (bbox_hfixpt_t tri, bbox_hfixpt_t tile, gpu_cfg_t *cfg) {
+	
+	bbox_hfixpt_t out;
+	
+	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, tri.min.as_coord.x);
+    out.max.as_coord.x = min_of_two (tile.max.as_coord.x, tri.max.as_coord.x);
+    out.min.as_coord.y = max_of_two (tile.min.as_coord.y, tri.min.as_coord.y);
+    out.max.as_coord.y = min_of_two (tile.max.as_coord.y, tri.max.as_coord.y);
+        
+    return out;
+}
 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
 fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);

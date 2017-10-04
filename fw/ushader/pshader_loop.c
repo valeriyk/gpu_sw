@@ -296,7 +296,12 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
+	//bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
+	
+	bbox_hfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
+	bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
+	bbox_hfixpt_t bb = clip_bbox_to_tile (tri_bb, tile_bb, cfg);
+	
 	FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 	
 	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
@@ -321,8 +326,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 	FixPt3   bar;
 	FixPt3   bar_row = bar_initial;
 	
-	screenxy_t tile_x_offset = (tile_num % (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
-	screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
+	//screenxy_t tile_x_offset = (tile_num % (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
+	//screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
 
 	// Left shift by 12: 4 bits to compensate for fractional width difference between Z (4 bits) and sum_of_bars (8 bits) plus
 	//  8 bits to compensate for division precision loss.
@@ -339,8 +344,11 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, size_t tile_num, screenz
 			// If p is on or inside all edges, render pixel.
 			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
 				
-				screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
-				screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
+				//screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
+				//screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
+				screenxy_t tile_x  = (p.as_coord.x - tile_bb.min.as_coord.x) >> XY_FRACT_BITS;
+				screenxy_t tile_y  = (p.as_coord.y - tile_bb.min.as_coord.y) >> XY_FRACT_BITS;
+				
 				size_t     pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
 				screenz_t zi = fixpt_to_screenz (
