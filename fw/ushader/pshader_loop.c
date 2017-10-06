@@ -13,16 +13,18 @@
 	#include <apexextensions.h>
 #endif
 
-void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp);
+//void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp);
+void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fixpt_t *bar1, fixpt_t *bar2, Varying *vry_interp);
 
-void draw_triangle (TrianglePShaderData* tri, bbox_hfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
+void draw_triangle (TrianglePShaderData* tri, bbox_uhfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
 void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
 void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg);
 
 
-void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp) {
+//void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp) {
+void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fixpt_t *bar1, fixpt_t *bar2, Varying *vry_interp) {
 
 	assert (vry[0].num_of_words_written == vry[1].num_of_words_written);
 	assert (vry[0].num_of_words_written == vry[2].num_of_words_written);
@@ -43,9 +45,9 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 		_core_write (w_reciprocal[0], CR_W_RCP0);
 		_core_write (w_reciprocal[1], CR_W_RCP1);
 		_core_write (w_reciprocal[2], CR_W_RCP2);
-		_core_write (bar->as_array[0], CR_BAR0);
-		_core_write (bar->as_array[1], CR_BAR1);
-		_core_write (bar->as_array[2], CR_BAR2);
+		//_core_write (bar->as_array[0], CR_BAR0);
+		//_core_write (bar->as_array[1], CR_BAR1);
+		//_core_write (bar->as_array[2], CR_BAR2);
 		for (int i = 0; i < vry_interp->num_of_words_written; i++) {
 			_core_write (vry[0].data[i].as_fixpt_t, CR_VRY0);
 			_core_write (vry[1].data[i].as_fixpt_t, CR_VRY1);
@@ -68,9 +70,9 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 		dfixpt_t vbw_acc;
 		
 		//dfixpt_t one_over_wi = interpolate_w (w_reciprocal, bar); // = (1).(OF)
-		bw0 = ((dfixpt_t) bar->as_array[0]) * ((dfixpt_t) w_reciprocal[0]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
-		bw1 = ((dfixpt_t) bar->as_array[1]) * ((dfixpt_t) w_reciprocal[1]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
-		bw2 = ((dfixpt_t) bar->as_array[2]) * ((dfixpt_t) w_reciprocal[2]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
+		bw0 = ((dfixpt_t) *bar0) * ((dfixpt_t) w_reciprocal[0]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
+		bw1 = ((dfixpt_t) *bar1) * ((dfixpt_t) w_reciprocal[1]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
+		bw2 = ((dfixpt_t) *bar2) * ((dfixpt_t) w_reciprocal[2]); // BM.BF * WM.WF = (BM+WM).(BF+WF)
 		bw_acc   = bw0 + bw1 + bw2; // (BM+WM).(BF+WF) + (BM+WM).(BF+WF) + (BM+WM).(BF+WF) = (BM+WM+1).(BF+WF)
 
 		///assert (acc != 0);
@@ -139,9 +141,9 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Vary
 				float vtx0_norm = vry[0].data[i].as_float * fixpt_to_float (w_reciprocal[0], W_RECIPR_FRACT_BITS);
 				float vtx1_norm = vry[1].data[i].as_float * fixpt_to_float (w_reciprocal[1], W_RECIPR_FRACT_BITS);
 				float vtx2_norm = vry[2].data[i].as_float * fixpt_to_float (w_reciprocal[2], W_RECIPR_FRACT_BITS);
-				float mpy0 = vtx0_norm * fixpt_to_float (bar->as_array[0], BARC_FRACT_BITS);
-				float mpy1 = vtx1_norm * fixpt_to_float (bar->as_array[1], BARC_FRACT_BITS);
-				float mpy2 = vtx2_norm * fixpt_to_float (bar->as_array[2], BARC_FRACT_BITS);
+				float mpy0 = vtx0_norm * fixpt_to_float (*bar0, BARC_FRACT_BITS);
+				float mpy1 = vtx1_norm * fixpt_to_float (*bar1, BARC_FRACT_BITS);
+				float mpy2 = vtx2_norm * fixpt_to_float (*bar2, BARC_FRACT_BITS);
 				float acc = mpy0 + mpy1 + mpy2;
 				//vry_interp->data[i].as_float = acc * dfixpt_to_float (one_over_wi, OOWI_FRACT_BITS);
 				vry_interp->data[i].as_float = acc / dfixpt_to_float (bw_acc, BARC_FRACT_BITS);
@@ -295,37 +297,97 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 //      See https://fgiesen.wordpress.com/2013/02/11/depth-buffers-done-quick-part/
 //
-void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_hfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
+void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	//bbox_hfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
+	//bbox_uhfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
 	
-	bbox_hfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
-	//bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
-	bbox_hfixpt_t bb = clip_bbox_to_tile (tri_bb, *tile_bb, cfg);
+	bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
+	//bbox_uhfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
+	bbox_uhfixpt_t bb = clip_bbox_to_tile (tri_bb, *tile_bb, cfg);
 	
-	FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
+	uint32_t bb_min_x = bb.min.as_coord.x >> XY_FRACT_BITS;
+	uint32_t bb_min_y = bb.min.as_coord.y >> XY_FRACT_BITS;
+	uint32_t bb_max_x = bb.max.as_coord.x >> XY_FRACT_BITS;
+	uint32_t bb_max_y = bb.max.as_coord.y >> XY_FRACT_BITS;
+
+	uint32_t tile_bb_min_x = tile_bb->min.as_coord.x >> XY_FRACT_BITS;
+	uint32_t tile_bb_min_y = tile_bb->min.as_coord.y >> XY_FRACT_BITS;
+
+	//FixPt3   bar;
+	//FixPt3   bar_row;
+	fixpt_t  sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
 	
-	fixpt_t sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
-	for (int i = 0; i < 3; i++) {
-		sum_of_bars += bar_initial.as_array[i];
-	}
+//~ #ifdef ARC_APEX
+	//~ _core_write (p.as_word, CR_BAR_INIT_PT);
+	//~ _core_write (edgefn (b.as_word, c.as_word), CR_BAR0); // not normalized
+	//~ _core_write (edgefn (c.as_word, a.as_word), CR_BAR1); // not normalized
+	//~ _core_write (edgefn (a.as_word, b.as_word), CR_BAR2); // not normalized
+	
+	//~ sum_of_bars = _core_read(CR_BAR0) + _core_read(CR_BAR1) + _core_read(CR_BAR2);
+//~ #else
+	
+	//FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
+
+	fixpt_t bar_initial0;
+	fixpt_t bar_initial1;
+	fixpt_t bar_initial2;
+	fixpt_t bar_row0;
+	fixpt_t bar_row1;
+	fixpt_t bar_row2;
+	
+	
+#ifdef ARC_APEX
+	fixpt_t bar0 == CR_BAR0;
+	fixpt_t bar1 == CR_BAR1;
+	fixpt_t bar2 == CR_BAR2;
+	_core_write (bb.min.as_word, CR_BAR_INIT_PT);
+	bar_initial0 = edgefn (local_tpd_ptr->vtx_b.as_word, local_tpd_ptr->vtx_c.as_word); // not normalized
+	bar_initial1 = edgefn (local_tpd_ptr->vtx_c.as_word, local_tpd_ptr->vtx_a.as_word); // not normalized
+	bar_initial2 = edgefn (local_tpd_ptr->vtx_a.as_word, local_tpd_ptr->vtx_b.as_word); // not normalized
+	
+#else
+    fixpt_t bar0;
+	fixpt_t bar1;
+	fixpt_t bar2;
+    bar_initial0 = edge_func_fixpt2 (local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min); // not normalized
+	bar_initial1 = edge_func_fixpt2 (local_tpd_ptr->vtx_c, local_tpd_ptr->vtx_a, bb.min); // not normalized
+	bar_initial2 = edge_func_fixpt2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, bb.min); // not normalized
+	
+#endif
+	
+	//~ for (int i = 0; i < 3; i++) {
+		//~ sum_of_bars += bar_initial.as_array[i];
+	//~ }
+	sum_of_bars = bar_initial0 + bar_initial1 + bar_initial2;
+	
+	//bar_row = bar_initial;
+	bar_row0 = bar_initial0;
+	bar_row1 = bar_initial1;
+	bar_row2 = bar_initial2;
+//~ #endif
+	
 	if (sum_of_bars == 0) return;
 		
-	FixPt3 bar_row_incr;
+	//FixPt3 bar_row_incr;
+	fixpt_t bar_row_incr0;
+	fixpt_t bar_row_incr1;
+	fixpt_t bar_row_incr2;
 	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-	bar_row_incr.as_array[0] = (local_tpd_ptr->vtx_c.as_coord.x - local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[1] = (local_tpd_ptr->vtx_a.as_coord.x - local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_row_incr.as_array[2] = (local_tpd_ptr->vtx_b.as_coord.x - local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr0 = (local_tpd_ptr->vtx_c.as_coord.x - local_tpd_ptr->vtx_b.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr1 = (local_tpd_ptr->vtx_a.as_coord.x - local_tpd_ptr->vtx_c.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_row_incr2 = (local_tpd_ptr->vtx_b.as_coord.x - local_tpd_ptr->vtx_a.as_coord.x) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
-	FixPt3 bar_col_incr;
+	//FixPt3 bar_col_incr;
+	fixpt_t bar_col_incr0;
+	fixpt_t bar_col_incr1;
+	fixpt_t bar_col_incr2;
 	// additional shift left is needed to align fractional width of barycentric coords (8 bits) and Z (4 bits)
-    bar_col_incr.as_array[0] = (local_tpd_ptr->vtx_b.as_coord.y - local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[1] = (local_tpd_ptr->vtx_c.as_coord.y - local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
-	bar_col_incr.as_array[2] = (local_tpd_ptr->vtx_a.as_coord.y - local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+    bar_col_incr0 = (local_tpd_ptr->vtx_b.as_coord.y - local_tpd_ptr->vtx_c.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr1 = (local_tpd_ptr->vtx_c.as_coord.y - local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
+	bar_col_incr2 = (local_tpd_ptr->vtx_a.as_coord.y - local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	
-	FixPt3   bar;
-	FixPt3   bar_row = bar_initial;
+	
 	
 	//screenxy_t tile_x_offset = (tile_num % (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
 	//screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
@@ -335,35 +397,65 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_hfixpt_t *tile_bb, 
 	fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << 12) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
 	fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << 12) / sum_of_bars;
 				
-	xy_hfixpt_pck_t p;
-	for (p.as_coord.y = bb.min.as_coord.y; p.as_coord.y <= bb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
+	//xy_uhfixpt_pck_t p;
+	uint32_t px;
+	uint32_t py;
+	//for (p.as_coord.y = bb.min.as_coord.y; p.as_coord.y <= bb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
+	for (py = bb_min_y; py <= bb_max_y; py++) {	
 		
-		bar = bar_row;
+//~ #ifdef ARC_APEX
+		//~ _core_write (bar_row.as_array[0], CR_BAR0);
+		//~ _core_write (bar_row.as_array[1], CR_BAR1);
+		//~ _core_write (bar_row.as_array[2], CR_BAR2);
+//~ #else
+		//bar = bar_row;
+		bar0 = bar_row0;
+		bar1 = bar_row1;
+		bar2 = bar_row2;
 		
-		for (p.as_coord.x = bb.min.as_coord.x; p.as_coord.x <= bb.max.as_coord.x; p.as_coord.x += (1 << XY_FRACT_BITS)) {
+//~ #endif
+	
+		for (px = bb_min_x; px <= bb_max_x; px++) {
 					
 			// If p is on or inside all edges, render pixel.
-			if ((bar.as_array[0] > 0) && (bar.as_array[1] > 0) && (bar.as_array[2] > 0)) { // left-top fill rule
+#ifdef ARC_APEX
+			//if ((_core_read(CR_BAR0) > 0) && (_core_read(CR_BAR1) > 0) && (_core_read(CR_BAR2) > 0)) { // left-top fill rule
+			if ((_core_read_bar0() > 0) && (_core_read_bar1() > 0) && (_core_read_bar2() > 0)) { // left-top fill rule
+			
+#else
+			if ((bar0 > 0) && (bar1 > 0) && (bar2 > 0)) { // left-top fill rule
+#endif
 				
 				//screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
 				//screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
-				screenxy_t tile_x  = (p.as_coord.x - tile_bb->min.as_coord.x) >> XY_FRACT_BITS;
-				screenxy_t tile_y  = (p.as_coord.y - tile_bb->min.as_coord.y) >> XY_FRACT_BITS;
+				//screenxy_t tile_x  = px - tile_bb_min_x;
+				//screenxy_t tile_y  = py - tile_bb_min_y;
+				uint32_t tile_x  = px - tile_bb_min_x;
+				uint32_t tile_y  = py - tile_bb_min_y;
+				uint32_t pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
 				
-				size_t     pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
-				
+//~ #ifdef ARC_APEX
+		
+				//~ screenz_t zi = fixpt_to_screenz (
+					//~ local_tpd_ptr->screen_z[0] +
+					//~ ((z1z0 * _core_read (CR_BAR1)) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					//~ ((z2z0 * _core_read (CR_BAR2)) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+				//~ ); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
+//~ #else
 				screenz_t zi = fixpt_to_screenz (
 					local_tpd_ptr->screen_z[0] +
-					((z1z0 * bar.as_array[1]) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					((z2z0 * bar.as_array[2]) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+					((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
 				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
+//~ #endif
+
 				
 				if (zi > local_zbuf[pix_num]) {
 						
 					local_zbuf[pix_num] = zi;
 
 					Varying vry_interp;
-					interpolate_varying (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar, &vry_interp);
+					interpolate_varying (local_tpd_ptr->varying, local_tpd_ptr->w_reciprocal, &bar0, &bar1, &bar2, &vry_interp);
 					
 					if (cfg->active_fbuffer != NULL) {
 						
@@ -376,10 +468,25 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_hfixpt_t *tile_bb, 
 						}
 					}
 				}				
-			}			
-			bar = FixPt3_FixPt3_add (bar, bar_col_incr);
+			}	
+					
+#ifdef ARC_APEX			
+
+			_core_write (_core_read(CR_BAR0) + bar_col_incr0, CR_BAR0);
+			_core_write (_core_read(CR_BAR1) + bar_col_incr1, CR_BAR1);
+			_core_write (_core_read(CR_BAR2) + bar_col_incr2, CR_BAR2);
+#else
+			//bar = FixPt3_FixPt3_add (bar, bar_col_incr);
+			bar0 += bar_col_incr0;
+			bar1 += bar_col_incr1;
+			bar2 += bar_col_incr2;
+			
+#endif
         }
-        bar_row = FixPt3_FixPt3_add (bar_row, bar_row_incr);
+        //bar_row = FixPt3_FixPt3_add (bar_row, bar_row_incr);
+        bar_row0 += bar_row_incr0;
+        bar_row1 += bar_row_incr1;
+        bar_row2 += bar_row_incr2;
     }
 }
 
@@ -401,7 +508,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	size_t active_local_buf_idx = 0;
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
-		bbox_hfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
+		bbox_uhfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
 		
 		// initialize zbuffer tile in local memory
 		memset (&local_zbuf[active_local_buf_idx], 0, zbuf_tile_byte_size);

@@ -12,7 +12,9 @@
 #include <assert.h>
 
 
-
+#ifdef ARC_APEX
+	#include <apexextensions.h>
+#endif
 
 
 
@@ -41,7 +43,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////////
 typedef   int16_t  hfixpt_t;
+typedef  uint16_t uhfixpt_t;
 typedef   int32_t   fixpt_t;
+typedef  uint32_t  ufixpt_t;
 typedef   int64_t  dfixpt_t;
 
 #define HFIXPT_BITS (sizeof(hfixpt_t) * 8)
@@ -234,15 +238,15 @@ typedef enum {VARYING_FLOAT = 0, VARYING_FIXPT} varying_type;
 // If we clip all the trianlges which are not completely visible, screenxy_t can be unsigned
 typedef uint16_t screenxy_t;
 
-typedef struct xy_hfixpt_t {
-	hfixpt_t x;
-	hfixpt_t y;
-} xy_hfixpt_t;
+typedef struct xy_uhfixpt_t {
+	uhfixpt_t x;
+	uhfixpt_t y;
+} xy_uhfixpt_t;
 
-typedef union xy_hfixpt_pck_t {
-	uint32_t   as_word;
-	xy_hfixpt_t as_coord;
-} xy_hfixpt_pck_t;
+typedef union xy_uhfixpt_pck_t {
+	uint32_t     as_word;
+	xy_uhfixpt_t as_coord;
+} xy_uhfixpt_pck_t;
 
 typedef uint16_t screenz_t;
 //typedef fixpt_t screenz_t;
@@ -339,9 +343,9 @@ typedef struct TrianglePShaderData {
 	//hFixPt3  screen_coords[3];
 	//hfixpt_t screen_x[3];
 	//hfixpt_t screen_y[3];
-	xy_hfixpt_pck_t vtx_a;
-	xy_hfixpt_pck_t vtx_b;
-	xy_hfixpt_pck_t vtx_c;
+	xy_uhfixpt_pck_t vtx_a;
+	xy_uhfixpt_pck_t vtx_b;
+	xy_uhfixpt_pck_t vtx_c;
 	 fixpt_t screen_z[3];
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
@@ -456,10 +460,10 @@ typedef struct BoundBox {
 	ScreenPt max;
 } BoundBox;
 
-typedef struct bbox_hfixpt_t {
-	xy_hfixpt_pck_t min;
-	xy_hfixpt_pck_t max;
-} bbox_hfixpt_t;
+typedef struct bbox_uhfixpt_t {
+	xy_uhfixpt_pck_t min;
+	xy_uhfixpt_pck_t max;
+} bbox_uhfixpt_t;
 
 
 static inline fixpt_t fixpt_from_screenxy (screenxy_t a) {
@@ -515,10 +519,10 @@ static hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
 }
 
 BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
-//bbox_hfixpt_t get_tri_bbox  (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);
-static inline bbox_hfixpt_t get_tri_bbox (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
+//bbox_uhfixpt_t get_tri_bbox  (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);
+static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
 	
-	bbox_hfixpt_t bb;
+	bbox_uhfixpt_t bb;
     
     bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
     bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
@@ -528,9 +532,9 @@ static inline bbox_hfixpt_t get_tri_bbox (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, 
     return bb;
 }
 
-static inline bbox_hfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
+static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 	
-	bbox_hfixpt_t tile;
+	bbox_uhfixpt_t tile;
 	
 	uint16_t llx = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
 	uint16_t lly = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;			
@@ -544,10 +548,10 @@ static inline bbox_hfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
-//bbox_hfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_hfixpt_t in, gpu_cfg_t *cfg);
-static inline bbox_hfixpt_t clip_bbox_to_tile (bbox_hfixpt_t tri, bbox_hfixpt_t tile, gpu_cfg_t *cfg) {
+//bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
+static inline bbox_uhfixpt_t clip_bbox_to_tile (bbox_uhfixpt_t tri, bbox_uhfixpt_t tile, gpu_cfg_t *cfg) {
 	
-	bbox_hfixpt_t out;
+	bbox_uhfixpt_t out;
 	
 	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, tri.min.as_coord.x);
     out.max.as_coord.x = min_of_two (tile.max.as_coord.x, tri.max.as_coord.x);
@@ -558,5 +562,50 @@ static inline bbox_hfixpt_t clip_bbox_to_tile (bbox_hfixpt_t tri, bbox_hfixpt_t 
 }
 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
-fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c);
-FixPt3 get_bar_coords2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c, xy_hfixpt_pck_t p);
+fixpt_t edge_func_fixpt2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);
+FixPt3 get_bar_coords2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c, xy_uhfixpt_pck_t p);
+
+#ifdef ARC_APEX
+	
+	typedef union apex_reg_32b {
+		uint32_t u;
+		 int32_t s;
+	} apex_reg_32b; 
+
+	static inline int32_t _core_read_bar0 () {
+		apex_reg_32b r;
+		r.u = _core_read (CR_BAR0);
+		return r.s;
+	}
+
+	static inline void _core_write_bar0 (int32_t val) {
+		apex_reg_32b r;
+		r.s = val;
+		_core_write (r.u, CR_BAR0);
+	}
+
+	static inline int32_t _core_read_bar1 () {
+		apex_reg_32b r;
+		r.u = _core_read (CR_BAR1);
+		return r.s;
+	}
+
+	static inline void _core_write_bar1 (int32_t val) {
+		apex_reg_32b r;
+		r.s = val;
+		_core_write (r.u, CR_BAR1);
+	}
+
+	static inline int32_t _core_read_bar2 () {
+		apex_reg_32b r;
+		r.u = _core_read (CR_BAR2);
+		return r.s;
+	}
+
+	static inline void _core_write_bar2 (int32_t val) {
+		apex_reg_32b r;
+		r.s = val;
+		_core_write (r.u, CR_BAR2);
+	}
+	
+#endif

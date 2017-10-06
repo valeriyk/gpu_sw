@@ -6,9 +6,7 @@
 #include <stdint.h>
 
 
-#ifdef ARC_APEX
-	#include <apexextensions.h>
-#endif
+
 
 // POSITIVE Z TOWARDS ME
 
@@ -46,7 +44,7 @@ fixpt_t edge_func_fixpt (hfixpt_t ax, hfixpt_t ay, hfixpt_t bx, hfixpt_t by, hfi
 }
 
 
-fixpt_t edge_func_fixpt2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
+fixpt_t edge_func_fixpt2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
     
     fixpt_t bx_ax = (fixpt_t) b.as_coord.x - (fixpt_t) a.as_coord.x;
     fixpt_t cy_ay = (fixpt_t) c.as_coord.y - (fixpt_t) a.as_coord.y;
@@ -78,7 +76,7 @@ FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py) {
 	return barc;
 }
 
-FixPt3 get_bar_coords2 (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c, xy_hfixpt_pck_t p) {
+FixPt3 get_bar_coords2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c, xy_uhfixpt_pck_t p) {
     
     FixPt3 barc;
 	//FixPt3 barc2;
@@ -198,9 +196,9 @@ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
     return bb;
 }
 
-//~ bbox_hfixpt_t get_tri_bbox (xy_hfixpt_pck_t a, xy_hfixpt_pck_t b, xy_hfixpt_pck_t c) {
+//~ bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
 	
-	//~ bbox_hfixpt_t bb;
+	//~ bbox_uhfixpt_t bb;
     
     //~ bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
     //~ bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
@@ -210,9 +208,9 @@ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
     //~ return bb;
 //~ }
 
-//~ bbox_hfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
+//~ bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 	
-	//~ bbox_hfixpt_t tile;
+	//~ bbox_uhfixpt_t tile;
 	
 	//~ uint16_t llx = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
 	//~ uint16_t lly = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;			
@@ -255,9 +253,9 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
     return out;
 }
 */
-//~ bbox_hfixpt_t clip_bbox_to_tile (bbox_hfixpt_t tri, bbox_hfixpt_t tile, gpu_cfg_t *cfg) {
+//~ bbox_uhfixpt_t clip_bbox_to_tile (bbox_uhfixpt_t tri, bbox_uhfixpt_t tile, gpu_cfg_t *cfg) {
 	
-	//~ bbox_hfixpt_t tile;
+	//~ bbox_uhfixpt_t tile;
 	
 	//~ uint16_t llx = (tile_num % (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
 	//~ uint16_t lly = (tile_num / (get_screen_width(cfg) >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;			
@@ -266,7 +264,7 @@ BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
     //~ tile.max.as_coord.x = (llx + GPU_TILE_WIDTH  - 1) << XY_FRACT_BITS; 
     //~ tile.max.as_coord.y = (lly + GPU_TILE_HEIGHT - 1) << XY_FRACT_BITS;
     
-    //~ bbox_hfixpt_t out;
+    //~ bbox_uhfixpt_t out;
 	
 	//~ out.min.as_coord.x = max_of_two (tile.min.as_coord.x, tri.min.as_coord.x);
     //~ out.max.as_coord.x = min_of_two (tile.max.as_coord.x, tri.max.as_coord.x);
