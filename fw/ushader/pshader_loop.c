@@ -42,9 +42,9 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fi
 	// ARC APEX implementation
 	if (vry_interp->num_of_words_written > 0) {
 		
-		_core_write (w_reciprocal[0], CR_W_RCP0);
-		_core_write (w_reciprocal[1], CR_W_RCP1);
-		_core_write (w_reciprocal[2], CR_W_RCP2);
+		//~ _core_write (w_reciprocal[0], CR_W_RCP0);
+		//~ _core_write (w_reciprocal[1], CR_W_RCP1);
+		//~ _core_write (w_reciprocal[2], CR_W_RCP2);
 		//_core_write (bar->as_array[0], CR_BAR0);
 		//_core_write (bar->as_array[1], CR_BAR1);
 		//_core_write (bar->as_array[2], CR_BAR2);
@@ -299,33 +299,23 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	//bbox_uhfixpt_t bb = clip_bbox_to_tile (tile_num, get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c), cfg);
-	
 	bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
-	//bbox_uhfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
 	bbox_uhfixpt_t bb = clip_bbox_to_tile (tri_bb, *tile_bb, cfg);
 	
-	uint32_t bb_min_x = bb.min.as_coord.x >> XY_FRACT_BITS;
-	uint32_t bb_min_y = bb.min.as_coord.y >> XY_FRACT_BITS;
-	uint32_t bb_max_x = bb.max.as_coord.x >> XY_FRACT_BITS;
-	uint32_t bb_max_y = bb.max.as_coord.y >> XY_FRACT_BITS;
-
 	uint32_t tile_bb_min_x = tile_bb->min.as_coord.x >> XY_FRACT_BITS;
 	uint32_t tile_bb_min_y = tile_bb->min.as_coord.y >> XY_FRACT_BITS;
+	
+	uint32_t bb_min_x = (bb.min.as_coord.x >> XY_FRACT_BITS) - tile_bb_min_x;
+	uint32_t bb_min_y = (bb.min.as_coord.y >> XY_FRACT_BITS) - tile_bb_min_y;
+	uint32_t bb_max_x = (bb.max.as_coord.x >> XY_FRACT_BITS) - tile_bb_min_x;
+	uint32_t bb_max_y = (bb.max.as_coord.y >> XY_FRACT_BITS) - tile_bb_min_y;
+
+	
 
 	//FixPt3   bar;
 	//FixPt3   bar_row;
 	fixpt_t  sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
-	
-//~ #ifdef ARC_APEX
-	//~ _core_write (p.as_word, CR_BAR_INIT_PT);
-	//~ _core_write (edgefn (b.as_word, c.as_word), CR_BAR0); // not normalized
-	//~ _core_write (edgefn (c.as_word, a.as_word), CR_BAR1); // not normalized
-	//~ _core_write (edgefn (a.as_word, b.as_word), CR_BAR2); // not normalized
-	
-	//~ sum_of_bars = _core_read(CR_BAR0) + _core_read(CR_BAR1) + _core_read(CR_BAR2);
-//~ #else
-	
+		
 	//FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 
 	fixpt_t bar_initial0;
@@ -337,6 +327,11 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 	
 	
 #ifdef ARC_APEX
+	_core_write (local_tpd_ptr->w_reciprocal[0], CR_W_RCP0);
+	_core_write (local_tpd_ptr->w_reciprocal[1], CR_W_RCP1);
+	_core_write (local_tpd_ptr->w_reciprocal[2], CR_W_RCP2);
+		
+		
 	fixpt_t bar0 == CR_BAR0;
 	fixpt_t bar1 == CR_BAR1;
 	fixpt_t bar2 == CR_BAR2;
@@ -364,7 +359,6 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 	bar_row0 = bar_initial0;
 	bar_row1 = bar_initial1;
 	bar_row2 = bar_initial2;
-//~ #endif
 	
 	if (sum_of_bars == 0) return;
 		
@@ -386,11 +380,6 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 	bar_col_incr1 = (local_tpd_ptr->vtx_c.as_coord.y - local_tpd_ptr->vtx_a.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	bar_col_incr2 = (local_tpd_ptr->vtx_a.as_coord.y - local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
-	
-	
-	
-	//screenxy_t tile_x_offset = (tile_num % (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_WIDTH_LOG2;
-	//screenxy_t tile_y_offset = (tile_num / (cfg->screen_width >> GPU_TILE_WIDTH_LOG2)) << GPU_TILE_HEIGHT_LOG2;
 
 	// Left shift by 12: 4 bits to compensate for fractional width difference between Z (4 bits) and sum_of_bars (8 bits) plus
 	//  8 bits to compensate for division precision loss.
@@ -403,52 +392,27 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 	//for (p.as_coord.y = bb.min.as_coord.y; p.as_coord.y <= bb.max.as_coord.y; p.as_coord.y += (1 << XY_FRACT_BITS)) {	
 	for (py = bb_min_y; py <= bb_max_y; py++) {	
 		
-//~ #ifdef ARC_APEX
-		//~ _core_write (bar_row.as_array[0], CR_BAR0);
-		//~ _core_write (bar_row.as_array[1], CR_BAR1);
-		//~ _core_write (bar_row.as_array[2], CR_BAR2);
-//~ #else
 		//bar = bar_row;
 		bar0 = bar_row0;
 		bar1 = bar_row1;
 		bar2 = bar_row2;
-		
-//~ #endif
-	
+			
 		for (px = bb_min_x; px <= bb_max_x; px++) {
 					
 			// If p is on or inside all edges, render pixel.
 #ifdef ARC_APEX
-			//if ((_core_read(CR_BAR0) > 0) && (_core_read(CR_BAR1) > 0) && (_core_read(CR_BAR2) > 0)) { // left-top fill rule
 			if ((_core_read_bar0() > 0) && (_core_read_bar1() > 0) && (_core_read_bar2() > 0)) { // left-top fill rule
-			
 #else
 			if ((bar0 > 0) && (bar1 > 0) && (bar2 > 0)) { // left-top fill rule
 #endif
+			
+				uint32_t pix_num = px + (py << GPU_TILE_WIDTH_LOG2);
 				
-				//screenxy_t tile_x  = (p.as_coord.x >> XY_FRACT_BITS) - tile_x_offset;
-				//screenxy_t tile_y  = (p.as_coord.y >> XY_FRACT_BITS) - tile_y_offset;
-				//screenxy_t tile_x  = px - tile_bb_min_x;
-				//screenxy_t tile_y  = py - tile_bb_min_y;
-				uint32_t tile_x  = px - tile_bb_min_x;
-				uint32_t tile_y  = py - tile_bb_min_y;
-				uint32_t pix_num = tile_x + (tile_y << GPU_TILE_WIDTH_LOG2);
-				
-//~ #ifdef ARC_APEX
-		
-				//~ screenz_t zi = fixpt_to_screenz (
-					//~ local_tpd_ptr->screen_z[0] +
-					//~ ((z1z0 * _core_read (CR_BAR1)) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					//~ ((z2z0 * _core_read (CR_BAR2)) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
-				//~ ); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
-//~ #else
 				screenz_t zi = fixpt_to_screenz (
 					local_tpd_ptr->screen_z[0] +
 					((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
 					((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
 				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
-//~ #endif
-
 				
 				if (zi > local_zbuf[pix_num]) {
 						
