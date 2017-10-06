@@ -549,14 +549,14 @@ static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 //bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
-static inline bbox_uhfixpt_t clip_bbox_to_tile (bbox_uhfixpt_t tri, bbox_uhfixpt_t tile, gpu_cfg_t *cfg) {
+static inline bbox_uhfixpt_t clip_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uhfixpt_t *tile) {
 	
 	bbox_uhfixpt_t out;
 	
-	out.min.as_coord.x = max_of_two (tile.min.as_coord.x, tri.min.as_coord.x);
-    out.max.as_coord.x = min_of_two (tile.max.as_coord.x, tri.max.as_coord.x);
-    out.min.as_coord.y = max_of_two (tile.min.as_coord.y, tri.min.as_coord.y);
-    out.max.as_coord.y = min_of_two (tile.max.as_coord.y, tri.max.as_coord.y);
+	out.min.as_coord.x = max_of_two (tile->min.as_coord.x, tri->min.as_coord.x);
+    out.max.as_coord.x = min_of_two (tile->max.as_coord.x, tri->max.as_coord.x);
+    out.min.as_coord.y = max_of_two (tile->min.as_coord.y, tri->min.as_coord.y);
+    out.max.as_coord.y = min_of_two (tile->max.as_coord.y, tri->max.as_coord.y);
         
     return out;
 }
