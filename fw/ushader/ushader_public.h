@@ -29,7 +29,7 @@
 #define GPU_MAX_SCREEN_WIDTH  1024
 #define GPU_MAX_SCREEN_HEIGHT 1024
 #define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
-#define GPU_MAX_USHADERS 16
+#define GPU_MAX_USHADERS 4
 #define GPU_MAX_FRAMEBUFFERS	64
 
 #define GPU_CFG_ABS_ADDRESS      0xFFFE0000
@@ -346,10 +346,17 @@ typedef struct TrianglePShaderData {
 	xy_uhfixpt_pck_t vtx_a;
 	xy_uhfixpt_pck_t vtx_b;
 	xy_uhfixpt_pck_t vtx_c;
-	 fixpt_t screen_z[3];
+	fixpt_t screen_z[3];
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
 
+typedef struct TriangleTileData {
+	volatile TrianglePShaderData *volatile data;
+	volatile FixPt3 bar;
+	volatile fixpt_t z0;
+	volatile fixpt_t z1z0_over_sob;
+	volatile fixpt_t z2z0_over_sob;
+} TriangleTileData;
 
 
 typedef struct Light {
@@ -370,7 +377,8 @@ struct gpu_cfg_t {
 
 	ObjectListNode* volatile obj_list_ptr;
 	
-	TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_USHADERS];
+	//TrianglePShaderData *volatile *tri_ptr_list[GPU_MAX_USHADERS];
+	TriangleTileData *tri_ptr_list[GPU_MAX_USHADERS];
 	TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_USHADERS];
 	
 	pixel_color_t *volatile active_fbuffer;
@@ -524,10 +532,10 @@ static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t 
 	
 	bbox_uhfixpt_t bb;
     
-    bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
-    bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x) & 0xfff0;
-    bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
-    bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y) & 0xfff0;
+    bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
+    bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
+    bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
+    bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
     
     return bb;
 }
@@ -549,13 +557,13 @@ static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 //bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
-static inline bbox_uhfixpt_t clip_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uhfixpt_t *tile) {
+static inline bbox_uhfixpt_t clip_tri_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uhfixpt_t *tile) {
 	
 	bbox_uhfixpt_t out;
 	
-	out.min.as_coord.x = max_of_two (tile->min.as_coord.x, tri->min.as_coord.x);
+	out.min.as_coord.x = max_of_two (tile->min.as_coord.x, tri->min.as_coord.x) & 0xfff0;
     out.max.as_coord.x = min_of_two (tile->max.as_coord.x, tri->max.as_coord.x);
-    out.min.as_coord.y = max_of_two (tile->min.as_coord.y, tri->min.as_coord.y);
+    out.min.as_coord.y = max_of_two (tile->min.as_coord.y, tri->min.as_coord.y) & 0xfff0;
     out.max.as_coord.y = min_of_two (tile->max.as_coord.y, tri->max.as_coord.y);
         
     return out;

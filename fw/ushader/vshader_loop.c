@@ -5,17 +5,18 @@
 #include <stdlib.h>
 
 
-void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr);
+void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr);
 
 //~ void tiler_memcpy (volatile TrianglePShaderData *volatile ext_data_arr, uint32_t tri_num);
 
 //~ void tiler_memcpy () {
 //~ }
 
-void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr) {
+void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr) {
 	
 	hfixpt_t x[3];
 	hfixpt_t y[3];
+	// fixpt_t z[3];
 	
 	// re-pack X, Y coords of the three vertices, hopefully this will be optimized away by the compiler
 	//~ for (size_t i = 0; i < 3; i++) {
@@ -30,11 +31,16 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 	y[1] = local_data_ptr->vtx_b.as_coord.y;
 	y[2] = local_data_ptr->vtx_c.as_coord.y;
 	
+	//~ local_data_ptr->screen_z0   = screen_z[0];
+	//~ local_data_ptr->screen_z1z0 = screen_z[1] - screen_z[0];
+	//~ local_data_ptr->screen_z2z0 = screen_z[2] - screen_z[0];
+	
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
 	TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
 	ext_data_arr[tri_num] = *local_data_ptr;
 	
-	TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
+	//TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
+	TriangleTileData *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
 	
 	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
     bb.min.x &= ~(GPU_TILE_WIDTH-1);
@@ -71,10 +77,33 @@ void tiler (TrianglePShaderData *local_data_ptr, uint32_t vshader_idx, uint32_t 
 			}
 			
 			if (tri_inside_tile) {
-				size_t tile_num = (p.y >> GPU_TILE_HEIGHT_LOG2) * (get_screen_width(cfg_ptr) >> GPU_TILE_WIDTH_LOG2) + (p.x >> GPU_TILE_WIDTH_LOG2);
-				size_t idx = (tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + num_of_tris_in_tile_arr[tile_num];
-				ext_tri_ptr_arr[idx] = &(ext_data_arr[tri_num]); // TBD this ends up in data cache - need to be removed!
-				num_of_tris_in_tile_arr[tile_num]++;		
+							
+				fixpt_t sob = b0.as_array[0] + b0.as_array[1] + b0.as_array[2];
+
+				if (sob != 0) {
+
+					size_t tile_num = (p.y >> GPU_TILE_HEIGHT_LOG2) * (get_screen_width(cfg_ptr) >> GPU_TILE_WIDTH_LOG2) + (p.x >> GPU_TILE_WIDTH_LOG2);
+					size_t idx = (tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + num_of_tris_in_tile_arr[tile_num];
+					
+					ext_tri_ptr_arr[idx].data = &(ext_data_arr[tri_num]); // TBD this ends up in data cache - need to be removed!
+					ext_tri_ptr_arr[idx].z0            = local_data_ptr->screen_z[0];
+						
+					 // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
+					ext_tri_ptr_arr[idx].z1z0_over_sob = ((local_data_ptr->screen_z[1] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
+					ext_tri_ptr_arr[idx].z2z0_over_sob = ((local_data_ptr->screen_z[2] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
+					
+					ext_tri_ptr_arr[idx].bar = b0;
+					//printf ("@");
+					num_of_tris_in_tile_arr[tile_num]++;		
+				}
+				//~ else {
+					//~ continue;
+					//~ //printf ("!");
+					//~ //ext_tri_ptr_arr[idx].z1z0_over_sob = 0;
+					//~ //ext_tri_ptr_arr[idx].z2z0_over_sob = 0;
+					//~ //ext_tri_ptr_arr[idx].bar = b0;
+				//~ }
+				
 			}
 		}
 	}
@@ -114,9 +143,10 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	uint16_t num_of_tris_in_tile_arr[GPU_MAX_TILES];
 	
 	// Clean up data structures for each new frame:
-	TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
+	//TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
+	TriangleTileData *d = cfg->tri_ptr_list[vshader_idx];
 	for (int i = 0; i < (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2); i++) {
-		d[i] = NULL;
+		d[i].data = NULL;
 	}
 	for (int i = 0; i < cfg->num_of_tiles; i++) {
 		num_of_tris_in_tile_arr[i] = 0;
@@ -141,6 +171,8 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 			
 			TrianglePShaderData d;
 			d.obj = obj_list_node->obj;
+			
+			FixPt3 screen_z;
 			
 			bool is_clipped = false; // sticky bit
 			
@@ -194,6 +226,8 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 					}
 					
 					d.screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					//screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					
 					// We don't need W anymore, but we will need 1/W later:
 					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);
 					d.w_reciprocal [j]             =  fixpt_from_float (reciprocal_w, W_RECIPR_FRACT_BITS);
@@ -203,7 +237,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 			}
 			
 			if (!is_clipped) {
-				tiler (&d, vshader_idx, tri_num, num_of_tris_in_tile_arr, cfg);				
+				tiler (&d, &screen_z, vshader_idx, tri_num, num_of_tris_in_tile_arr, cfg);				
 				tri_num++;
 			}
 		}

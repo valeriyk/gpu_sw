@@ -62,16 +62,20 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 
 bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *color) {
 	
-	fixpt_t intensity = varying_fifo_pop_fixpt (vry);
-	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format
+	FixPt2  text;
+	fixpt_t intensity;
 	
-	//~ float intensity = varying_fifo_pop_float (vry);
-	//~ assert (intensity <=  1.0f);
-	//~ assert (intensity >= -1.0f);
-	//~ if ((intensity >  1.0f) || (intensity < -1.0f)) {
-		//~ return false;
-	//~ }
-	//~ float intensity_treshold = 0.2;
+#ifdef ARC_APEX
+//#if 0
+		
+		// In APEX implementation we read Varyings in reverse order (works as a true stack)
+		text.as_struct.v = vry_rd(0);
+		text.as_struct.u = vry_rd(0);			
+		intensity = vry_rd (0);
+#else
+		intensity = varying_fifo_pop_fixpt (vry);
+		text = varying_fifo_pop_FixPt2 (vry);
+#endif
 	
 	//
 	// If texture is not provided, use gray color
@@ -81,16 +85,7 @@ bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *
 		pix = set_color (128, 128, 128, 0);
 	}
 	else {	
-
-		//~ Float2 text   = varying_fifo_pop_Float2 (vry);
 		
-		//~ assert (text.as_struct.u >= 0);
-		//~ assert (text.as_struct.v >= 0);
-		
-		//~ size_t uu = (size_t) text.as_struct.u;
-		//~ size_t vv = (size_t) text.as_struct.v;
-		
-		FixPt2 text = varying_fifo_pop_FixPt2 (vry);
 		size_t uu = text.as_struct.u >> VARYING_FRACT_BITS;
 		size_t vv = text.as_struct.v >> VARYING_FRACT_BITS;
 		
@@ -101,19 +96,13 @@ bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *
 	}
 	
 	
+	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format
+		
+	
 	if (intensity < intensity_treshold) {
 		intensity = intensity_treshold;
 	}
 	
-	/*int r = pix.r * intensity + 5;
-	int g = pix.g * intensity + 5;
-	int b = pix.b * intensity + 5;
-		
-	if (r > 255) r = 255;
-	if (g > 255) g = 255;
-	if (b > 255) b = 255;*/
-	
-
 	*color = color_mult (pix, intensity);	
 	
 	//*color = set_color (r, g, b, 0);
