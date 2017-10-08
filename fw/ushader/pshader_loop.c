@@ -16,7 +16,7 @@
 //void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp);
 void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fixpt_t *bar1, fixpt_t *bar2, Varying *vry_interp);
 
-void draw_triangle (TrianglePShaderData* tri, TriangleTileData *local_ttd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
+void draw_triangle (TrianglePShaderData* tri, bbox_uhfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
 void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
@@ -296,7 +296,7 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //      ***(z2-z0)/sum_of_bar is constant for a triangle
 //      See https://fgiesen.wordpress.com/2013/02/11/depth-buffers-done-quick-part/
 //
-void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_ttd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
+void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
 	bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
 	bbox_uhfixpt_t bb = clip_tri_bbox_to_tile (&tri_bb, tile_bb);
@@ -396,8 +396,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 	
 	// Left shift by 12: 4 bits to compensate for fractional width difference between Z (4 bits) and sum_of_bars (8 bits)
 	//   plus 8 bits to compensate for division precision loss.
-	fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
-	fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars;
+	//fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
+	//fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars;
 				
 	//xy_uhfixpt_pck_t p;
 	uint32_t px;
@@ -421,16 +421,19 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 			
 				uint32_t pix_num = px + (py << GPU_TILE_WIDTH_LOG2);
 				
-				screenz_t zi = fixpt_to_screenz (
-					local_tpd_ptr->screen_z[0] +
-					((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
-				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
 				//~ screenz_t zi = fixpt_to_screenz (
-					//~ local_ttd_ptr->z0 +
-					//~ ((local_ttd_ptr->z1z0_over_sob * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					//~ ((local_ttd_ptr->z2z0_over_sob * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+					//~ local_tpd_ptr->screen_z[0] +
+					//~ ((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					//~ ((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
 				//~ ); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
+				
+				screenz_t zi = fixpt_to_screenz (
+					local_tpd_ptr->z0 +
+					((local_tpd_ptr->z1z0_over_sob * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					((local_tpd_ptr->z2z0_over_sob * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
+				
+				
 				
 				if (zi > local_zbuf[pix_num]) {
 						
@@ -489,7 +492,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	screenz_t           local_zbuf[2][elems_in_tile];
 	pixel_color_t       local_fbuf[2][elems_in_tile];
 	TrianglePShaderData local_tri_data[2];
-	TriangleTileData    local_tile_data;
+	//TriangleTileData    local_tile_data;
 	
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
 	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
@@ -541,9 +544,9 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 					ext_tri_data_nxt_ptr = NULL;
 				}
 				
-				volatile TriangleTileData *ext_tile_data_ptr = &(cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j]);
-				local_tile_data = *ext_tile_data_ptr;
-				draw_triangle (&local_tri_data[active_ltd], &local_tile_data, &tile_bb, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
+				//volatile TriangleTileData *ext_tile_data_ptr = &(cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j]);
+				//local_tile_data = *ext_tile_data_ptr;
+				draw_triangle (&local_tri_data[active_ltd], &tile_bb, local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], cfg);
 				
 				  active_ltd = (  active_ltd == 0) ? 1 : 0;
 				inactive_ltd = (inactive_ltd == 0) ? 1 : 0;

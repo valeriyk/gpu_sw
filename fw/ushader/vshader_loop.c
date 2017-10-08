@@ -31,9 +31,20 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 	y[1] = local_data_ptr->vtx_b.as_coord.y;
 	y[2] = local_data_ptr->vtx_c.as_coord.y;
 	
-	//~ local_data_ptr->screen_z0   = screen_z[0];
-	//~ local_data_ptr->screen_z1z0 = screen_z[1] - screen_z[0];
-	//~ local_data_ptr->screen_z2z0 = screen_z[2] - screen_z[0];
+	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
+    
+    FixPt3 bar_init = get_bar_coords (x, y, bb.min.x, bb.min.y);
+    
+    bb.min.x &= ~(GPU_TILE_WIDTH-1);
+    bb.min.y &= ~(GPU_TILE_HEIGHT-1);
+	
+	fixpt_t sob = bar_init.as_array[0] + bar_init.as_array[1] + bar_init.as_array[2];
+	
+	if (sob == 0) return;
+	
+	local_data_ptr->z0            =   screen_z->as_array[0];
+	local_data_ptr->z1z0_over_sob = ((screen_z->as_array[1] - screen_z->as_array[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
+	local_data_ptr->z2z0_over_sob = ((screen_z->as_array[2] - screen_z->as_array[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
 	
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
 	TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
@@ -41,10 +52,6 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 	
 	//TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
 	TriangleTileData *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
-	
-	BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
-    bb.min.x &= ~(GPU_TILE_WIDTH-1);
-    bb.min.y &= ~(GPU_TILE_HEIGHT-1);
     
     ScreenPt p;
     
@@ -225,8 +232,8 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 						case (2): d.vtx_c.as_coord.x = x; d.vtx_c.as_coord.y = y; break;
 					}
 					
-					d.screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
-					//screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					//d.screen_z[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
+					screen_z.as_array[j] =   fixpt_from_float        (screen.vtx[j].as_struct.z,        Z_FRACT_BITS);
 					
 					// We don't need W anymore, but we will need 1/W later:
 					//d.w_reciprocal [j]             =  fixpt_from_float_no_rnd (reciprocal_w, W_RECIPR_FRACT_BITS);

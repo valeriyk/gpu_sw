@@ -346,7 +346,7 @@ typedef struct TrianglePShaderData {
 	xy_uhfixpt_pck_t vtx_a;
 	xy_uhfixpt_pck_t vtx_b;
 	xy_uhfixpt_pck_t vtx_c;
-	fixpt_t screen_z[3];
+	//fixpt_t screen_z[3];
 	fixpt_t z0;
 	fixpt_t z1z0_over_sob;
 	fixpt_t z2z0_over_sob;
