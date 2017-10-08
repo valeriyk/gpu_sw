@@ -347,15 +347,18 @@ typedef struct TrianglePShaderData {
 	xy_uhfixpt_pck_t vtx_b;
 	xy_uhfixpt_pck_t vtx_c;
 	fixpt_t screen_z[3];
+	fixpt_t z0;
+	fixpt_t z1z0_over_sob;
+	fixpt_t z2z0_over_sob;
 } __attribute__ ((aligned (1024))) TrianglePShaderData;
 //#pragma align_to(1024,stack)
 
 typedef struct TriangleTileData {
 	volatile TrianglePShaderData *volatile data;
-	volatile FixPt3 bar;
-	volatile fixpt_t z0;
-	volatile fixpt_t z1z0_over_sob;
-	volatile fixpt_t z2z0_over_sob;
+	//volatile FixPt3 bar;
+	//volatile fixpt_t z0;
+	//volatile fixpt_t z1z0_over_sob;
+	//volatile fixpt_t z2z0_over_sob;
 } TriangleTileData;
 
 

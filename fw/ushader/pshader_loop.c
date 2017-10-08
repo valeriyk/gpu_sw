@@ -317,7 +317,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 
 	//FixPt3   bar;
 	//FixPt3   bar_row;
-	//fixpt_t  sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
+	fixpt_t  sum_of_bars = 0; // Q23.8 (1 sign + 23 integer + 8 fractional bits)
 		
 	//FixPt3 bar_initial = get_bar_coords2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min);
 
@@ -343,33 +343,33 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 	fixpt_t bar0 == CR_BAR0;
 	fixpt_t bar1 == CR_BAR1;
 	fixpt_t bar2 == CR_BAR2;
-	//~ _core_write (bb.min.as_word, CR_BAR_INIT_PT);
-	//~ bar_initial0t = edgefn (local_tpd_ptr->vtx_b.as_word, local_tpd_ptr->vtx_c.as_word); // not normalized
-	//~ bar_initial1t = edgefn (local_tpd_ptr->vtx_c.as_word, local_tpd_ptr->vtx_a.as_word); // not normalized
-	//~ bar_initial2t = edgefn (local_tpd_ptr->vtx_a.as_word, local_tpd_ptr->vtx_b.as_word); // not normalized
+	_core_write (bb.min.as_word, CR_BAR_INIT_PT);
+	bar_initial0 = edgefn (local_tpd_ptr->vtx_b.as_word, local_tpd_ptr->vtx_c.as_word); // not normalized
+	bar_initial1 = edgefn (local_tpd_ptr->vtx_c.as_word, local_tpd_ptr->vtx_a.as_word); // not normalized
+	bar_initial2 = edgefn (local_tpd_ptr->vtx_a.as_word, local_tpd_ptr->vtx_b.as_word); // not normalized
 	
 #else
     fixpt_t bar0;
 	fixpt_t bar1;
 	fixpt_t bar2;
-    //~ bar_initial0t = edge_func_fixpt2 (local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb->min); // not normalized
-	//~ bar_initial1t = edge_func_fixpt2 (local_tpd_ptr->vtx_c, local_tpd_ptr->vtx_a, tile_bb->min); // not normalized
-	//~ bar_initial2t = edge_func_fixpt2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, tile_bb->min); // not normalized
+    bar_initial0 = edge_func_fixpt2 (local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb->min); // not normalized
+	bar_initial1 = edge_func_fixpt2 (local_tpd_ptr->vtx_c, local_tpd_ptr->vtx_a, tile_bb->min); // not normalized
+	bar_initial2 = edge_func_fixpt2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, tile_bb->min); // not normalized
 	
 #endif
 
-	bar_initial0 = local_ttd_ptr->bar.as_array[0];
-	bar_initial1 = local_ttd_ptr->bar.as_array[1];
-	bar_initial2 = local_ttd_ptr->bar.as_array[2];
+	//~ bar_initial0 = local_ttd_ptr->bar.as_array[0];
+	//~ bar_initial1 = local_ttd_ptr->bar.as_array[1];
+	//~ bar_initial2 = local_ttd_ptr->bar.as_array[2];
 	
 	//printf ("vtx shdr bar: %x %x %x, pix shd bar: %x %x %x\n", bar_initial0, bar_initial1, bar_initial2, bar_initial0t, bar_initial1t, bar_initial2t);
 	//printf ("vtx shdr z: %x, pix shd z: %x\n", local_ttd_ptr->z0, local_tpd_ptr->screen_z[0]);
 	//~ for (int i = 0; i < 3; i++) {
 		//~ sum_of_bars += bar_initial.as_array[i];
 	//~ }
-	//sum_of_bars = bar_initial0 + bar_initial1 + bar_initial2;
+	sum_of_bars = bar_initial0 + bar_initial1 + bar_initial2;
 		
-	//if (sum_of_bars == 0) return;
+	if (sum_of_bars == 0) return;
 		
 	//FixPt3 bar_row_incr;
 	fixpt_t bar_row_incr0;
@@ -390,14 +390,14 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 	bar_col_incr2 = (local_tpd_ptr->vtx_a.as_coord.y - local_tpd_ptr->vtx_b.as_coord.y) << (BARC_FRACT_BITS - XY_FRACT_BITS);
 	
 	//bar_row = bar_initial;
-	bar_row0 = bar_initial0 + (bb_min_x * bar_col_incr0) + (bb_min_y * bar_row_incr0);
-	bar_row1 = bar_initial1 + (bb_min_x * bar_col_incr1) + (bb_min_y * bar_row_incr1);
-	bar_row2 = bar_initial2 + (bb_min_x * bar_col_incr2) + (bb_min_y * bar_row_incr2);
+	bar_row0 = bar_initial0;// + (bb_min_x * bar_col_incr0) + (bb_min_y * bar_row_incr0);
+	bar_row1 = bar_initial1;// + (bb_min_x * bar_col_incr1) + (bb_min_y * bar_row_incr1);
+	bar_row2 = bar_initial2;// + (bb_min_x * bar_col_incr2) + (bb_min_y * bar_row_incr2);
 	
 	// Left shift by 12: 4 bits to compensate for fractional width difference between Z (4 bits) and sum_of_bars (8 bits)
 	//   plus 8 bits to compensate for division precision loss.
-	//fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
-	//fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars;
+	fixpt_t z1z0 = ((local_tpd_ptr->screen_z[1] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars; // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
+	fixpt_t z2z0 = ((local_tpd_ptr->screen_z[2] - local_tpd_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sum_of_bars;
 				
 	//xy_uhfixpt_pck_t p;
 	uint32_t px;
@@ -421,16 +421,16 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, TriangleTileData *local_
 			
 				uint32_t pix_num = px + (py << GPU_TILE_WIDTH_LOG2);
 				
-				//~ screenz_t zi = fixpt_to_screenz (
-					//~ local_tpd_ptr->screen_z[0] +
-					//~ ((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					//~ ((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
-				//~ ); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
 				screenz_t zi = fixpt_to_screenz (
-					local_ttd_ptr->z0 +
-					((local_ttd_ptr->z1z0_over_sob * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
-					((local_ttd_ptr->z2z0_over_sob * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+					local_tpd_ptr->screen_z[0] +
+					((z1z0 * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					((z2z0 * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
 				); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
+				//~ screenz_t zi = fixpt_to_screenz (
+					//~ local_ttd_ptr->z0 +
+					//~ ((local_ttd_ptr->z1z0_over_sob * bar1) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) +
+					//~ ((local_ttd_ptr->z2z0_over_sob * bar2) >> (BARC_FRACT_BITS*2 - Z_FRACT_BITS))
+				//~ ); // 16.4 + (16.8 * 24.8 >> 12) + (16.8 * 24.8 >> 12) = 28.4
 				
 				if (zi > local_zbuf[pix_num]) {
 						

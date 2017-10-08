@@ -86,13 +86,13 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 					size_t idx = (tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + num_of_tris_in_tile_arr[tile_num];
 					
 					ext_tri_ptr_arr[idx].data = &(ext_data_arr[tri_num]); // TBD this ends up in data cache - need to be removed!
-					ext_tri_ptr_arr[idx].z0            = local_data_ptr->screen_z[0];
+					//~ ext_tri_ptr_arr[idx].z0            = local_data_ptr->screen_z[0];
 						
-					 // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
-					ext_tri_ptr_arr[idx].z1z0_over_sob = ((local_data_ptr->screen_z[1] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
-					ext_tri_ptr_arr[idx].z2z0_over_sob = ((local_data_ptr->screen_z[2] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
+					 //~ // ((16.4 - 16.4) << 12) / 24.8 = 16.16 / 24.8 = 16.8
+					//~ ext_tri_ptr_arr[idx].z1z0_over_sob = ((local_data_ptr->screen_z[1] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
+					//~ ext_tri_ptr_arr[idx].z2z0_over_sob = ((local_data_ptr->screen_z[2] - local_data_ptr->screen_z[0]) << (BARC_FRACT_BITS*2 - Z_FRACT_BITS)) / sob;
 					
-					ext_tri_ptr_arr[idx].bar = b0;
+					//~ ext_tri_ptr_arr[idx].bar = b0;
 					//printf ("@");
 					num_of_tris_in_tile_arr[tile_num]++;		
 				}
