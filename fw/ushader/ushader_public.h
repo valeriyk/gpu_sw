@@ -529,6 +529,46 @@ static hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
 	return max_of_two(a, max_of_two(b, c));
 }
 
+
+
+static inline uhfixpt_t min_of_two_uh (uhfixpt_t a, uhfixpt_t b) {
+	return (a < b) ? a : b;
+}
+
+static inline uhfixpt_t max_of_two_uh (uhfixpt_t a, uhfixpt_t b) {
+	return (a > b) ? a : b;
+}
+
+
+static inline xy_uhfixpt_pck_t get_min_xy (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b) {
+	
+	xy_uhfixpt_pck_t min;
+
+#ifdef ARC_APEX    
+	min.as_word = min_xy (a.as_word, b.as_word);
+#else
+    min.as_coord.x = min_of_two_uh (a.as_coord.x, b.as_coord.x) & 0xfff0;
+    min.as_coord.y = min_of_two_uh (a.as_coord.y, b.as_coord.y) & 0xfff0;
+#endif
+
+    return min;
+}
+
+static inline xy_uhfixpt_pck_t get_max_xy (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b) {
+	
+	xy_uhfixpt_pck_t max;
+
+#ifdef ARC_APEX 
+	max.as_word = max_xy (a.as_word, b.as_word);
+#else    
+    max.as_coord.x = max_of_two_uh (a.as_coord.x, b.as_coord.x);
+    max.as_coord.y = max_of_two_uh (a.as_coord.y, b.as_coord.y);
+#endif
+
+    return max;
+}
+
+
 BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
 //bbox_uhfixpt_t get_tri_bbox  (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);
 static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
@@ -542,6 +582,7 @@ static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t 
     
     return bb;
 }
+
 
 static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
 	
@@ -571,6 +612,25 @@ static inline bbox_uhfixpt_t clip_tri_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uh
         
     return out;
 }
+
+static inline bbox_uhfixpt_t clip_tri_to_tile2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c, bbox_uhfixpt_t *tile) {
+	
+	xy_uhfixpt_pck_t min_ab      = get_min_xy (a, b);
+	xy_uhfixpt_pck_t min_abc     = get_min_xy (min_ab, c);
+	xy_uhfixpt_pck_t min_clipped = get_max_xy (min_abc, tile->min);
+	
+	xy_uhfixpt_pck_t max_ab      = get_max_xy (a, b);
+	xy_uhfixpt_pck_t max_abc     = get_max_xy (max_ab, c);
+	xy_uhfixpt_pck_t max_clipped = get_min_xy (max_abc, tile->max);
+	
+	bbox_uhfixpt_t out;
+	
+	out.min = min_clipped;
+    out.max = max_clipped;
+        
+    return out;
+}
+
 
 FixPt3 get_bar_coords (hfixpt_t x[3], hfixpt_t y[3], hfixpt_t px, hfixpt_t py);
 fixpt_t edge_func_fixpt2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);

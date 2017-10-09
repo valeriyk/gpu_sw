@@ -298,8 +298,9 @@ void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf
 //
 void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb, screenz_t *local_zbuf, pixel_color_t *local_fbuf, gpu_cfg_t *cfg) {    
 	
-	bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
-	bbox_uhfixpt_t bb = clip_tri_bbox_to_tile (&tri_bb, tile_bb);
+	//bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
+	//bbox_uhfixpt_t bb = clip_tri_bbox_to_tile (&tri_bb, tile_bb);
+	bbox_uhfixpt_t bb = clip_tri_to_tile2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb);
 	
 	//~ uint32_t tile_bb_min_x = tile_bb->min.as_coord.x >> XY_FRACT_BITS;
 	//~ uint32_t tile_bb_min_y = tile_bb->min.as_coord.y >> XY_FRACT_BITS;
@@ -352,9 +353,9 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
     fixpt_t bar0;
 	fixpt_t bar1;
 	fixpt_t bar2;
-    bar_initial0 = edge_func_fixpt2 (local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb->min); // not normalized
-	bar_initial1 = edge_func_fixpt2 (local_tpd_ptr->vtx_c, local_tpd_ptr->vtx_a, tile_bb->min); // not normalized
-	bar_initial2 = edge_func_fixpt2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, tile_bb->min); // not normalized
+    bar_initial0 = edge_func_fixpt2 (local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, bb.min); // not normalized
+	bar_initial1 = edge_func_fixpt2 (local_tpd_ptr->vtx_c, local_tpd_ptr->vtx_a, bb.min); // not normalized
+	bar_initial2 = edge_func_fixpt2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, bb.min); // not normalized
 	
 #endif
 
