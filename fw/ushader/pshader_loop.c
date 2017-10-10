@@ -19,8 +19,9 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fi
 void draw_triangle (TrianglePShaderData* tri, bbox_uhfixpt_t *tile_bb, screenz_t *zbuffer, pixel_color_t *fbuffer, gpu_cfg_t *cfg);
  
 
-void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
-void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg);
+//void copy_tiles_to_extmem (volatile void* volatile dst, volatile void* volatile src, gpu_cfg_t *cfg, size_t tile_num, size_t elem_size);
+void preload_tiles (screenz_t *zbuf_dst_ptr, screenz_t *zbuf_src_ptr, pixel_color_t *fbuf_dst_ptr, pixel_color_t *fbuf_src_ptr, size_t elems_in_tile, dma_desc *mem_desc);
+void flush_tiles (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg);
 
 
 //void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, FixPt3 *bar, Varying *vry_interp) {
@@ -218,39 +219,71 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 		_sr (0x1, AUXR_DMACREQ);
 		while (_lr(AUXR_DMACSTAT0) & 0x1); // wait till completion    
 	}    
-	        
-    //~ bool sticky_error = false;
-    //~ for (int i = 0; i < BUF_SIZE / 4; i++) {
-        //~ if (*(iccm0_buf + i) != *(extmem_buf + i)) {
-            //~ printf ("Mismatch in word %d\n", i);
-            //~ sticky_error = true;
-        //~ }
-    //~ }
-    
-    //~ if (sticky_error == false) {
-        //~ printf ("SUCCESS!\n");
-    //~ }
 
 #endif
 
 }
 
 
-void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size) {
+void dma_init (void) {
 	
-#ifndef DMA
-	
-	for (size_t i = 0; i < byte_size / 4; i++) {
-		*((uint32_t *) dst_ptr + i) = *((uint32_t *) src_ptr + i);
-	}
-		
-#else
+#ifdef DMA
 
-	while (_lr(AUXR_DMACSTAT0) & 0x1); // wait till completion    
+	_sr (0x1, AUXR_DMACTRL); // enable DMA controller
+	_sr (0x3, AUXR_DMACENB); // enable channels 0 and 1
+	_sr (0x2, AUXR_DMACHPRI); // set channel 1 priority to high
+
 	
-	_sr (0x1, AUXR_DMACTRL);
-	_sr (0x1, AUXR_DMACENB);
-	_sr (DMACTRLX_OP_SINGLE |
+#endif
+
+}
+
+void dma_zero2mem_linkedlist (screenz_t *zbuf_dst_ptr, size_t zbuf_tile_byte_size, pixel_color_t *fbuf_dst_ptr, size_t fbuf_tile_byte_size, dma_ch channel_num, dma_desc *dd) {
+
+	uint32_t channel_mask = (1 << channel_num);
+	
+	while (_lr(AUXR_DMACSTAT0) & channel_mask); // wait till completion    
+	
+	_sr (  DMACTRLX_OP_LINKL_AUTO |
+	       DMACTRLX_RT_AUTO |
+	       DMACTRLX_DTT_MEM2MEM |
+	       DMACTRLX_DW_CLEAR |
+	       DMACTRLX_BLOCK_SIZE(zbuf_tile_byte_size) |
+	       DMACTRLX_ARB_AFTER (8) |
+	       DMACTRLX_IRQ_DISABLE |
+	       DMACTRLX_AM_INCR_DST_ONLY,
+	     AUXR_DMACTRLX(channel_num));
+	 
+	_sr ((uint32_t) zbuf_dst_ptr + ((zbuf_tile_byte_size - 1) & ~0x3) , AUXR_DMADARX(channel_num));
+	
+	dd->DMACTRL =   DMACTRLX_OP_SINGLE |
+	                DMACTRLX_RT_AUTO |
+	                DMACTRLX_DTT_MEM2MEM |
+	                DMACTRLX_DW_CLEAR |
+	                DMACTRLX_BLOCK_SIZE (fbuf_tile_byte_size) |
+	                DMACTRLX_ARB_AFTER (8) |
+	                DMACTRLX_IRQ_DISABLE |
+	                DMACTRLX_AM_INCR_DST_ONLY;
+	dd->DMASAR = 0;
+	dd->DMADAR = (uint32_t) fbuf_dst_ptr + ((fbuf_tile_byte_size - 1) & ~0x3);
+	dd->DMALLP = 0;
+	
+	dma_desc **local_dd = &dd;
+	_sr ((uint32_t) local_dd, AUXR_DMACBASE);
+	
+	_sr (channel_mask, AUXR_DMACREQ);
+	
+}
+
+void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size, dma_ch channel_num) {
+	
+#ifdef DMA
+	
+	uint32_t channel_mask = (1 << channel_num);
+	
+	while (_lr(AUXR_DMACSTAT0) & channel_mask); // wait till completion    
+
+	_sr (  DMACTRLX_OP_SINGLE |
 	       DMACTRLX_RT_AUTO |
 	       DMACTRLX_DTT_MEM2MEM |
 	       DMACTRLX_DW4_INCR4 |
@@ -258,17 +291,89 @@ void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatil
 	       DMACTRLX_ARB_DISABLE |
 	       DMACTRLX_IRQ_DISABLE |
 	       DMACTRLX_AM_INCR_ALL,
-	     AUXR_DMACTRL0);
+	     AUXR_DMACTRLX(channel_num));
 	 
-	_sr ((uint32_t) src_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMASAR0);
-	_sr ((uint32_t) dst_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMADAR0);
-	_sr (0x1, AUXR_DMACREQ);
+	_sr ((uint32_t) src_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMASARX(channel_num));
+	_sr ((uint32_t) dst_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMADARX(channel_num));
+	_sr (channel_mask, AUXR_DMACREQ);
+
+#else
 	
+	for (size_t i = 0; i < byte_size / 4; i++) {
+		*((uint32_t *) dst_ptr + i) = *((uint32_t *) src_ptr + i);
+	}
+		
 #endif
 
 }
 
-void copy_local_bufs_to_extmem (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg) {
+void dma_zero2mem_single (volatile void *volatile dst_ptr, size_t byte_size, dma_ch channel_num) {
+	
+#ifdef DMA
+	
+	uint32_t channel_mask = (1 << channel_num);
+	
+	while (_lr(AUXR_DMACSTAT0) & channel_mask); // wait till completion    
+	
+	_sr (  DMACTRLX_OP_SINGLE |
+	       DMACTRLX_RT_AUTO |
+	       DMACTRLX_DTT_MEM2MEM |
+	       DMACTRLX_DW_CLEAR |
+	       DMACTRLX_BLOCK_SIZE(byte_size) |
+	       DMACTRLX_ARB_AFTER (8) |
+	       DMACTRLX_IRQ_DISABLE |
+	       DMACTRLX_AM_INCR_DST_ONLY,
+	     AUXR_DMACTRLX(channel_num));
+	 
+	_sr ((uint32_t) dst_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMADARX(channel_num));
+	_sr (channel_mask, AUXR_DMACREQ);
+	
+#else
+	
+	for (size_t i = 0; i < byte_size / 4; i++) {
+		*((uint32_t *) dst_ptr + i) = 0;
+	}
+		
+#endif
+
+}
+
+
+void preload_tiles (screenz_t *zbuf_dst_ptr, screenz_t *zbuf_src_ptr, pixel_color_t *fbuf_dst_ptr, pixel_color_t *fbuf_src_ptr, size_t elems_in_tile, dma_desc *mem_desc) {
+	
+	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
+	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
+
+#ifdef DMA
+
+	// Always initialize local zbuf because it will always be used locally, even if we don't write it back
+	// to the global zbuf,
+	// but initialize local fbuf only if global fbuf is set; if it's not set then we don't write to fbuf
+	// and hence no need to pre-load it (this is the case, for example, when we generate a shadow map)
+	if ((zbuf_dst_ptr != NULL) && (fbuf_dst_ptr != NULL)) {
+		dma_zero2mem_linkedlist (zbuf_dst_ptr, zbuf_tile_byte_size, fbuf_dst_ptr, fbuf_tile_byte_size, DMA_CH0, mem_desc);
+	}
+	else if ((zbuf_dst_ptr != NULL) && (fbuf_dst_ptr == NULL)) {
+		dma_zero2mem_single     (zbuf_dst_ptr, zbuf_tile_byte_size, DMA_CH0);
+	}
+	else if ((zbuf_dst_ptr == NULL) && (fbuf_dst_ptr != NULL)) {
+		dma_zero2mem_single     (fbuf_dst_ptr, fbuf_tile_byte_size, DMA_CH0);
+	}
+
+#else
+
+	for (size_t i = 0; i < zbuf_tile_byte_size / sizeof (screenz_t); i++) {
+		*((screenz_t *) zbuf_dst_ptr + i) = 0;
+	}
+	for (size_t i = 0; i < fbuf_tile_byte_size / sizeof (pixel_color_t); i++) {
+		(*((pixel_color_t *) fbuf_dst_ptr + i)).as_word = 0;
+	}
+
+#endif
+
+}
+
+void flush_tiles (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg) {
 	
 	// flush local zbuffer tile
 	if (cfg->zbuffer_ptr != NULL) {
@@ -486,8 +591,19 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
     }
 }
 
+
+
+
 void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
+#ifdef DMA
+	dma_desc  dma_mem_desc;
+	dma_desc *dma_mem_desc_ptr = &dma_mem_desc;
+	dma_init();
+#else
+	void *dma_mem_desc_ptr = NULL;
+#endif
+
 	size_t elems_in_tile = GPU_TILE_WIDTH * GPU_TILE_HEIGHT;
 	
 	screenz_t           local_zbuf[2][elems_in_tile];
@@ -495,23 +611,33 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	TrianglePShaderData local_tri_data[2];
 	//TriangleTileData    local_tile_data;
 	
-	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
-	size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
+	//~ size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
+	//~ size_t fbuf_tile_byte_size = elems_in_tile * sizeof (pixel_color_t);
 	
 	size_t starting_tile  = shader_num % GPU_MAX_USHADERS;
 	size_t     incr_tile  =              GPU_MAX_USHADERS;
 	size_t   num_of_tiles =              cfg->num_of_tiles;
 	
-	size_t active_local_buf_idx = 0;
+	size_t   active_local_buf_idx = 0;
+	size_t inactive_local_buf_idx = 1;
+	
+	// no source, initialize with zero for now
+	screenz_t     *zbuf_src_ptr = NULL;
+	pixel_color_t *fbuf_src_ptr = NULL;
+	
+	// initialize local fbuf only if the active global fbuf is set, otherwise fbuf is not used
+	pixel_color_t *fbuf_dst_ptr = (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[active_local_buf_idx];
+	
+	preload_tiles (local_zbuf[active_local_buf_idx], zbuf_src_ptr, fbuf_dst_ptr, fbuf_src_ptr, elems_in_tile, dma_mem_desc_ptr);
+	
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
 		bbox_uhfixpt_t tile_bb = get_tile_bbox (tile_num, cfg);
 		
-		// initialize zbuffer tile in local memory
-		memset (&local_zbuf[active_local_buf_idx], 0, zbuf_tile_byte_size);
-		
-		// initialize fbuffer tile in local memory
-		memset (&local_fbuf[active_local_buf_idx], 0, fbuf_tile_byte_size);
+		// prefetch:
+		if (tile_num < num_of_tiles - 1) {
+			preload_tiles (local_zbuf[inactive_local_buf_idx], zbuf_src_ptr, (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[inactive_local_buf_idx], fbuf_src_ptr, elems_in_tile, dma_mem_desc_ptr);
+		}
 		
 		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 			//volatile TriangleTileData ext_tri_ptr = cfg->tri_ptr_list[i][tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2];
@@ -523,13 +649,13 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			//if (ext_tri_ptr == NULL) continue;
 			//if (ext_tri_ptr.data == NULL) continue;
 			
-			size_t active_ltd = 0;
+			size_t   active_ltd = 0;
 			size_t inactive_ltd = 1; // TBD
 			
 			//local_tile_data[active_ltd] = *ext_tri_ptr; // making a local copy
 			//local_tri_data [active_ltd] = *(ext_tri_ptr->data); // making a local copy
 			
-			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData));
+			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData), DMA_CH1);
 				
 			for (int j = 0; j < GPU_MAX_TRIANGLES_PER_TILE; j++) {
 				
@@ -538,7 +664,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 				if (j < GPU_MAX_TRIANGLES_PER_TILE - 1) {
 					ext_tri_data_nxt_ptr = cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j + 1].data;
 					if (ext_tri_data_nxt_ptr != NULL) {
-						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData));
+						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData), DMA_CH1);
 					}
 				}
 				else {
@@ -556,8 +682,9 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			}
 		}
 		
-		copy_local_bufs_to_extmem (local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], tile_num, cfg);
+		flush_tiles (local_zbuf[active_local_buf_idx], local_fbuf[active_local_buf_idx], tile_num, cfg);
 		
-		active_local_buf_idx = (active_local_buf_idx == 0) ? 1 : 0;
+		  active_local_buf_idx = (  active_local_buf_idx == 0) ? 1 : 0;
+		inactive_local_buf_idx = (inactive_local_buf_idx == 0) ? 1 : 0;
 	}
 }
