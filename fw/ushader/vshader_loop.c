@@ -7,11 +7,6 @@
 
 void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr);
 
-//~ void tiler_memcpy (volatile TrianglePShaderData *volatile ext_data_arr, uint32_t tri_num);
-
-//~ void tiler_memcpy () {
-//~ }
-
 void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vshader_idx, uint32_t tri_num, uint16_t *num_of_tris_in_tile_arr, gpu_cfg_t *cfg_ptr) {
 	
 	//~ hfixpt_t x[3];
@@ -301,6 +296,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 		uint32_t num_of_faces = obj_list_node->obj->wfobj->num_of_faces;
 		uint32_t face_num_init = vshader_idx;
 		uint32_t face_num_incr = GPU_MAX_USHADERS;
+		
 		for (size_t i = face_num_init; i < num_of_faces; i += face_num_incr) {
 			
 			
@@ -321,7 +317,9 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				//tri_data_array[tri_num].varying[j].num_of_words = 0;
 				d.varying[j].num_of_words_written = 0;
 				d.varying[j].num_of_words_read    = 0;
-				clip.vtx[j] = vshader_fptr (d.obj, i, j, &(d.varying[j]), cfg); // CALL VERTEX SHADER
+				VtxAttr attribs;
+				wfobj_get_attribs (d.obj->wfobj, i, j, &attribs);
+				clip.vtx[j] = vshader_fptr (d.obj, &attribs, &(d.varying[j]), cfg); // CALL VERTEX SHADER
 												
 				// Clip & normalize (clip -> NDC):
 				// Clip.w contains Eye.z, so first check that it is greater than zero

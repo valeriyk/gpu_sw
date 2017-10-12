@@ -372,7 +372,7 @@ typedef struct Light {
 } Light;
 
 
-typedef Float4 (*vertex_shader_fptr) (Object *obj, size_t face_idx, size_t vtx_idx, Varying *var, gpu_cfg_t *cfg);
+typedef Float4 (*vertex_shader_fptr) (Object *obj, VtxAttr *attribs, Varying *var, gpu_cfg_t *cfg);
 typedef bool   (*pixel_shader_fptr)  (Object *obj, Varying *var, gpu_cfg_t *cfg, pixel_color_t *color);
 
 
@@ -692,3 +692,5 @@ FixPt3 get_bar_coords2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t
 	}
 	
 #endif
+
+void    wfobj_get_attribs              (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx, VtxAttr *attribs);

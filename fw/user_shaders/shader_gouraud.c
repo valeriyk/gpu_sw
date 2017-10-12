@@ -21,17 +21,19 @@
 // 2   texture.v
 // ....
 
-Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *vry, gpu_cfg_t *cfg) {
+Float4 vshader_gouraud (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *cfg) {
 	
 	// transform 3d coords of the vertex to homogenous clip coords
-	Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
-	Float4 model4d = Float3_Float4_conv (&model, 1);
-	Float4 clip    = fmat4_Float4_mult (&(obj->mvp), &model4d); // model -> world -> eye -> clip
+	//Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
+	//Float4 model4d = Float3_Float4_conv (&model, 1);
+	Float4 model4d = Float3_Float4_conv (&attribs->vtx_coords, 1);
+	Float4 clip    = fmat4_Float4_mult (&obj->mvp, &model4d); // model -> world -> eye -> clip
 	
 	// transform the normal vector to the vertex
-	Float3 norm       = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
-	Float4 norm4d     = Float3_Float4_conv  (&norm, 0);
-	Float4 norm4d_eye = fmat4_Float4_mult (&(obj->mvit), &norm4d);
+	//Float3 norm       = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
+	//Float4 norm4d     = Float3_Float4_conv  (&norm, 0);
+	Float4 norm4d     = Float3_Float4_conv  (&attribs->norm_coords, 0);
+	Float4 norm4d_eye = fmat4_Float4_mult (&obj->mvit, &norm4d);
 	Float3 norm_eye   = Float4_Float3_vect_conv (&norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
 	Float3_normalize (&norm_eye);
 	float diff_intensity = -Float3_Float3_smult (&norm_eye, &(cfg->lights_arr[0].eye));// TBD, why [0]?
@@ -44,7 +46,8 @@ Float4 vshader_gouraud (Object *obj, size_t face_idx, size_t vtx_idx, Varying *v
 	
 	// extract the texture UV coordinates of the vertex
 	if (obj->texture != NULL) {
-		Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		//Float2 texture = wfobj_get_texture_coords (obj->wfobj, face_idx, vtx_idx);
+		Float2 texture = attribs->text_coords;
 		
 		assert (texture.as_struct.u >= 0.0f);
 		assert (texture.as_struct.v >= 0.0f);
@@ -66,15 +69,14 @@ bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *
 	fixpt_t intensity;
 	
 #ifdef ARC_APEX
-//#if 0
 		
 		// In APEX implementation we read Varyings in reverse order (works as a true stack)
-		text.as_struct.v = vry_rd(0);
-		text.as_struct.u = vry_rd(0);			
-		intensity = vry_rd (0);
+		text.as_struct.v = vry_rd(0); // argument is meaningless here
+		text.as_struct.u = vry_rd(0); // argument is meaningless here
+		intensity        = vry_rd(0); // argument is meaningless here
 #else
-		intensity = varying_fifo_pop_fixpt (vry);
-		text = varying_fifo_pop_FixPt2 (vry);
+		intensity = varying_fifo_pop_fixpt  (vry);
+		text      = varying_fifo_pop_FixPt2 (vry);
 #endif
 	
 	//

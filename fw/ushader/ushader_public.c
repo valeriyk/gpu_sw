@@ -507,3 +507,7 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) 
     }
 }
 */
+
+void wfobj_get_attribs  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx, VtxAttr *attribs) {
+	*attribs = wfobj->vtx_attribs[face_idx*3 + vtx_idx];
+}

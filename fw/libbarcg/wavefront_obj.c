@@ -45,21 +45,21 @@ void wfobj_free (WaveFrontObj *wfobj) {
 	free (wfobj);
 }
 
-VtxAttr wfobj_get_attribs  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx) {
-	return wfobj->vtx_attribs[face_idx*3 + vtx_idx];
-}
+//~ void wfobj_get_attribs  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx, VtxAttr *attribs) {
+	//~ *attribs = wfobj->vtx_attribs[face_idx*3 + vtx_idx];
+//~ }
 
-Float3 wfobj_get_vtx_coords  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx) {
-	return wfobj->vtx_attribs[face_idx*3 + vtx_idx].vtx_coords;
-}
+//~ Float3 wfobj_get_vtx_coords  (const WaveFrontObj *wfobj, const int face_idx,  const int vtx_idx) {
+	//~ return wfobj->vtx_attribs[face_idx*3 + vtx_idx].vtx_coords;
+//~ }
 
-Float3 wfobj_get_norm_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
-	return wfobj->vtx_attribs[face_idx*3 + vtx_idx].norm_coords;
-}
+//~ Float3 wfobj_get_norm_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
+	//~ return wfobj->vtx_attribs[face_idx*3 + vtx_idx].norm_coords;
+//~ }
 
-Float2 wfobj_get_texture_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
-	return wfobj->vtx_attribs[face_idx*3 + vtx_idx].text_coords;
-}
+//~ Float2 wfobj_get_texture_coords (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx) {
+	//~ return wfobj->vtx_attribs[face_idx*3 + vtx_idx].text_coords;
+//~ }
 
 
 void store_vdata3 (Float3 *arr_ptr, wfobj_line_field line_field, char *alpha_num, uint32_t idx) {
