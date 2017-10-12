@@ -233,7 +233,6 @@ void dma_init (void) {
 	_sr (0x1,  AUXR_DMACTRL); // enable DMA controller
 	_sr (0xff, AUXR_DMACENB); // enable all channels
 	_sr (0x1,  AUXR_DMACHPRI); // set channel 0 priority to high
-
 	
 #endif
 
@@ -598,6 +597,8 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 
 void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
+	enum {CH0=0, CH1, CH2};
+	
 #ifdef DMA
 	dma_init();
 	
@@ -639,8 +640,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	pixel_color_t *fbuf_dst_ptr     = (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[  active_local_buf_idx];
 	
 	//preload_tiles (local_zbuf[active_local_buf_idx], zbuf_src_ptr, fbuf_dst_ptr, fbuf_src_ptr, elems_in_tile);
-	dma_mem2mem_single (zbuf_dst_ptr, zbuf_src_ptr, zbuf_tile_byte_size, 1);
-	dma_mem2mem_single (fbuf_dst_ptr, fbuf_src_ptr, fbuf_tile_byte_size, 2);
+	dma_mem2mem_single (zbuf_dst_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
+	dma_mem2mem_single (fbuf_dst_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
 	
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
@@ -652,8 +653,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			screenz_t     *zbuf_dst_nxt_ptr = local_zbuf[inactive_local_buf_idx];
 			pixel_color_t *fbuf_dst_nxt_ptr = (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[inactive_local_buf_idx];
 			
-			dma_mem2mem_single (zbuf_dst_nxt_ptr, zbuf_src_ptr, zbuf_tile_byte_size, 1);
-			dma_mem2mem_single (fbuf_dst_nxt_ptr, fbuf_src_ptr, fbuf_tile_byte_size, 2);
+			dma_mem2mem_single (zbuf_dst_nxt_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
+			dma_mem2mem_single (fbuf_dst_nxt_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
 		}
 		
 		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
@@ -672,7 +673,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			//local_tile_data[active_ltd] = *ext_tri_ptr; // making a local copy
 			//local_tri_data [active_ltd] = *(ext_tri_ptr->data); // making a local copy
 			
-			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData), 0);
+			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData), CH0);
 				
 			for (int j = 0; j < GPU_MAX_TRIANGLES_PER_TILE; j++) {
 				
@@ -681,7 +682,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 				if (j < GPU_MAX_TRIANGLES_PER_TILE - 1) {
 					ext_tri_data_nxt_ptr = cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j + 1].data;
 					if (ext_tri_data_nxt_ptr != NULL) {
-						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData), 0);
+						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData), CH0);
 					}
 				}
 				else {

@@ -54,7 +54,9 @@ fixpt_t edge_func_fixpt2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck
     dfixpt_t mul_0 = bx_ax * cy_ay;
     dfixpt_t mul_1 = by_ay * cx_ax;
     dfixpt_t diff  = mul_0 - mul_1;
-    fixpt_t res = (fixpt_t) (diff >> (2*XY_FRACT_BITS - BARC_FRACT_BITS));
+    fixpt_t  res = (fixpt_t) (diff >> (2*XY_FRACT_BITS - BARC_FRACT_BITS));
+    //~ if ((diff > 0) && (res < 0)) res = 0xeffffffe;
+    //~ if ((diff < 0) && (res > 0)) res = 0x80000001;
     
     // left-top fill rule:
     bool downwards  = (by_ay  < 0);
@@ -222,17 +224,17 @@ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
     //~ return tile;
 //~ }
 
-BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
+//~ BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg) {
 	
-	BoundBox out;
+	//~ BoundBox out;
 	
-	out.min.x = max_of_two (in.min.x, 0);
-    out.max.x = min_of_two (in.max.x, get_screen_width(cfg) - 1);
-    out.min.y = max_of_two (in.min.y, 0);
-    out.max.y = min_of_two (in.max.y, get_screen_height(cfg) - 1);
+	//~ out.min.x = max_of_two (in.min.x, 0);
+    //~ out.max.x = min_of_two (in.max.x, get_screen_width(cfg) - 1);
+    //~ out.min.y = max_of_two (in.min.y, 0);
+    //~ out.max.y = min_of_two (in.max.y, get_screen_height(cfg) - 1);
 
-	return out;
-}
+	//~ return out;
+//~ }
 /*
 BoundBox clip_boundbox_to_tile (size_t tile_num, BoundBox in, gpu_cfg_t *cfg) {
 	

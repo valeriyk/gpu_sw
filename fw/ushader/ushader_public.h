@@ -598,6 +598,18 @@ static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
     return tile;
 }
 
+static inline bbox_uhfixpt_t get_screen_bbox (gpu_cfg_t *cfg) {
+	
+	bbox_uhfixpt_t screen;
+	
+	screen.min.as_coord.x = 0;
+    screen.min.as_coord.y = 0;
+    screen.max.as_coord.x = (get_screen_width (cfg) - 1) << XY_FRACT_BITS;
+    screen.max.as_coord.y = (get_screen_height(cfg) - 1) << XY_FRACT_BITS;
+    
+    return screen;
+}
+
 BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
 //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
 //bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
