@@ -319,7 +319,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				d.varying[j].num_of_words_read    = 0;
 				VtxAttr attribs;
 				wfobj_get_attribs (d.obj->wfobj, i, j, &attribs);
-				clip.vtx[j] = vshader_fptr (d.obj, &attribs, &(d.varying[j]), cfg); // CALL VERTEX SHADER
+				clip.vtx[j] = vshader_fptr (d.obj, &attribs, &d.varying[j], cfg); // CALL VERTEX SHADER
 												
 				// Clip & normalize (clip -> NDC):
 				// Clip.w contains Eye.z, so first check that it is greater than zero
@@ -339,6 +339,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				for (int k = 0; k < 3; k++) {
 					
 					ndc.vtx[j].as_array[k] = clip.vtx[j].as_array[k] * reciprocal_w; // normalize
+					
 					if ((ndc.vtx[j].as_array[k] >= 1.0f) || (ndc.vtx[j].as_array[k] < -1.0f)) {
 						is_clipped = true;
 						break;
@@ -374,7 +375,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 			}
 			
 			if (!is_clipped) {
-				tiler (&d, &screen_z, vshader_idx, tri_num, num_of_tris_in_tile_arr, cfg);				
+				tiler (&d, &screen_z, vshader_idx, tri_num, num_of_tris_in_tile_arr, cfg);
 				tri_num++;
 			}
 		}

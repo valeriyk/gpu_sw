@@ -1,6 +1,6 @@
 #include "geometry.h"
 
-#include <math.h>
+
 #include <stdarg.h>
 
 
@@ -131,6 +131,15 @@ Float4 fmat4_Float4_mult (fmat4 *a, Float4 *b) {
 		}
 	}
 	return f4;
+}
+
+void fmat4_Float4_mult_v2 (Float4 *out, fmat4 *a, Float4 *b) {
+	for (int i = 0; i < 4; i++) {
+		out->as_array[i] = 0;
+		for (int j = 0; j < 4; j++) {
+			out->as_array[i] += (*a)[i][j] * b->as_array[j];
+		}
+	}
 }
 
 Float3 Float3_Float3_add (Float3 *a, Float3 *b) {

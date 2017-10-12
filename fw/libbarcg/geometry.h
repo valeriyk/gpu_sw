@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <math.h>
 
 #define FMAT4_IDENTITY	{{1.f, 0.f, 0.f, 0.f}, {0.f, 1.f, 0.f, 0.f}, {0.f, 0.f, 1.f, 0.f}, {0.f, 0.f, 0.f, 1.f}}
 
@@ -87,7 +88,16 @@ void  fmat4_copy       (fmat4 *in, fmat4 *out);
 
 //void  fmat4_fmat4_fmat4_mult (fmat4 *a, fmat4 *b, fmat4 *c, fmat4 *d);
 void   fmat4_fmat4_mult  (fmat4 *a, fmat4 *b,  fmat4 *c);
-Float4 fmat4_Float4_mult (fmat4 *a, Float4 *b);
+
+Float4             fmat4_Float4_mult      (             fmat4 *a, Float4 *b);
+static inline void fmat4_Float4_mult_fast (Float4 *out, fmat4 *a, Float4 *b) {
+	for (int i = 0; i < 4; i++) {
+		out->as_array[i] = 0;
+		for (int j = 0; j < 4; j++) {
+			out->as_array[i] += (*a)[i][j] * b->as_array[j];
+		}
+	}
+}
 
 Float3 Float3_Float3_add       (Float3 *a, Float3 *b);
 Float3 Float3_Float3_sub       (Float3 *a, Float3 *b);
@@ -100,4 +110,31 @@ Float4 Float3_Float4_conv      (Float3 *in, float w);
 Float3 Float4_Float3_pt_conv   (Float4 *in);
 Float3 Float4_Float3_vect_conv (Float4 *in);
 
+static inline void Float3_Float4_conv_fast (Float4 *out, Float3 *in, float w) {
+	for (int k = 0; k < 3; k++) {
+		out->as_array[k] = in->as_array[k];
+	}
+	out->as_struct.w = w;
+}
+
+//~ Float3 Float4_Float3_pt_conv (Float4 *in) {
+	//~ Float3 f3;
+	//~ for (int k = 0; k < 3; k++)
+		//~ f3.as_array[k] = in->as_array[k] / in->as_struct.w;
+	//~ return f3;
+//~ }
+
+static inline void Float4_Float3_vect_conv_fast (Float3 *out, Float4 *in) {
+	for (int k = 0; k < 3; k++) {
+		out->as_array[k] = in->as_array[k];
+	}
+}
+
 void   Float3_normalize (Float3 *v);
+static inline void Float3_normalize_fast (Float3 *v) {
+	float length = (float) sqrtf(v->as_struct.x * v->as_struct.x + v->as_struct.y * v->as_struct.y + v->as_struct.z * v->as_struct.z);
+	float length_inv = 1.0f / length;
+	for (int i = 0; i < 3; i++) {
+		v->as_array[i] = v->as_array[i] * length_inv;
+	}
+}

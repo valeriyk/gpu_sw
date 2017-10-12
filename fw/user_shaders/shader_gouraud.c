@@ -26,16 +26,27 @@ Float4 vshader_gouraud (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *
 	// transform 3d coords of the vertex to homogenous clip coords
 	//Float3 model   = wfobj_get_vtx_coords (obj->wfobj, face_idx, vtx_idx);
 	//Float4 model4d = Float3_Float4_conv (&model, 1);
-	Float4 model4d = Float3_Float4_conv (&attribs->vtx_coords, 1);
-	Float4 clip    = fmat4_Float4_mult (&obj->mvp, &model4d); // model -> world -> eye -> clip
+	//Float4 model4d = Float3_Float4_conv (&attribs->vtx_coords, 1);
+	Float4 model4d;
+	Float3_Float4_conv_fast (&model4d, &attribs->vtx_coords, 1);
+	//Float4 clip    = fmat4_Float4_mult_v3 (&obj->mvp, &model4d); // model -> world -> eye -> clip
+	Float4 clip;
+	fmat4_Float4_mult_fast (&clip, &obj->mvp, &model4d); // model -> world -> eye -> clip
 	
 	// transform the normal vector to the vertex
 	//Float3 norm       = wfobj_get_norm_coords    (obj->wfobj, face_idx, vtx_idx);
 	//Float4 norm4d     = Float3_Float4_conv  (&norm, 0);
-	Float4 norm4d     = Float3_Float4_conv  (&attribs->norm_coords, 0);
-	Float4 norm4d_eye = fmat4_Float4_mult (&obj->mvit, &norm4d);
-	Float3 norm_eye   = Float4_Float3_vect_conv (&norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
-	Float3_normalize (&norm_eye);
+	//Float4 norm4d     = Float3_Float4_conv  (&attribs->norm_coords, 0);
+	Float4 norm4d;
+	Float3_Float4_conv_fast  (&norm4d, &attribs->norm_coords, 0);
+	//Float4 norm4d_eye = fmat4_Float4_mult_v3 (&obj->mvit, &norm4d);
+	Float4 norm4d_eye;
+	fmat4_Float4_mult_fast (&norm4d_eye, &obj->mvit, &norm4d);
+	
+	//Float3 norm_eye   = Float4_Float3_vect_conv (&norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
+	Float3 norm_eye;
+	Float4_Float3_vect_conv_fast (&norm_eye, &norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
+	Float3_normalize_fast (&norm_eye);
 	float diff_intensity = -Float3_Float3_smult (&norm_eye, &(cfg->lights_arr[0].eye));// TBD, why [0]?
 	
 	assert (diff_intensity <=  1.0f);
