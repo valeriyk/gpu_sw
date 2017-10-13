@@ -6,6 +6,11 @@
 
 //#include <gpu_cfg.h>
 
+#ifdef DMA
+	#include <arcem_microdma.h>
+#endif
+
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -29,7 +34,7 @@
 #define GPU_MAX_SCREEN_WIDTH  1024
 #define GPU_MAX_SCREEN_HEIGHT 1024
 #define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
-#define GPU_MAX_USHADERS 4
+#define GPU_MAX_USHADERS 24
 #define GPU_MAX_FRAMEBUFFERS	64
 
 #define GPU_CFG_ABS_ADDRESS      0xFFFE0000
@@ -129,6 +134,12 @@ static inline fixpt_t fixpt_from_float (float a, uint8_t fract_bits) {
 	//~ //fixpt_t c = (fixpt_t) roundf (a * (1 << fract_bits));
 	//~ fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits)); // TBD - this is too slow
 	fixpt_t c = (fixpt_t) (a * (1 << fract_bits)); // TBD
+	return c;
+}
+static inline fixpt_t fixpt_from_float_fast (float *a, uint8_t fract_bits) {
+	//~ //fixpt_t c = (fixpt_t) roundf (a * (1 << fract_bits));
+	//~ fixpt_t c = (fixpt_t) (roundf (a) * (1 << fract_bits)); // TBD - this is too slow
+	fixpt_t c = (fixpt_t) (*a * (1 << fract_bits)); // TBD
 	return c;
 }
 
@@ -441,6 +452,36 @@ extern void varying_fifo_push_Float2 (Varying *vry, Float2 *data);
 extern void varying_fifo_push_Float3 (Varying *vry, Float3 *data);
 extern void varying_fifo_push_Float4 (Varying *vry, Float4 *data);
 
+static inline void varying_fifo_push_float_fast  (Varying *vry, float *data) {
+	size_t idx = vry->num_of_words_written;
+
+	vry->data[idx].as_fixpt_t = fixpt_from_float_fast (data, VARYING_FRACT_BITS); // no rounding
+	if (DEBUG_FIXPT_VARYING) {
+		vry->data[idx].as_float = *data;
+	}
+
+
+	vry->num_of_words_written++;
+}
+
+static inline void varying_fifo_push_Float2_fast (Varying *vry, Float2 *data) {
+	for (int i = 0; i < 2; i++) {
+		varying_fifo_push_float_fast (vry, &data->as_array[i]);
+	}
+}
+
+static inline void varying_fifo_push_Float3_fast (Varying *vry, Float3 *data) {
+	for (int i = 0; i < 3; i++) {
+		varying_fifo_push_float_fast (vry, &data->as_array[i]);
+	}
+}
+
+static inline void varying_fifo_push_Float4_fast (Varying *vry, Float4 *data) {
+	for (int i = 0; i < 4; i++) {
+		varying_fifo_push_float_fast (vry, &data->as_array[i]);
+	}
+}
+
 extern fixpt_t varying_fifo_pop_fixpt  (Varying *vry);
 extern FixPt2  varying_fifo_pop_FixPt2 (Varying *vry);
 extern FixPt3  varying_fifo_pop_FixPt3 (Varying *vry);
@@ -513,21 +554,21 @@ static inline screenz_t fixpt_to_screenz (fixpt_t a) {
 }
 
 
-static inline hfixpt_t min_of_two (hfixpt_t a, hfixpt_t b) {
-	return (a < b) ? a : b;
-}
+//~ static inline hfixpt_t min_of_two (hfixpt_t a, hfixpt_t b) {
+	//~ return (a < b) ? a : b;
+//~ }
 
-static inline hfixpt_t max_of_two (hfixpt_t a, hfixpt_t b) {
-	return (a > b) ? a : b;
-}
+//~ static inline hfixpt_t max_of_two (hfixpt_t a, hfixpt_t b) {
+	//~ return (a > b) ? a : b;
+//~ }
 
-static inline hfixpt_t min_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
-	return min_of_two(a, min_of_two(b, c));
-}
+//~ static inline hfixpt_t min_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
+	//~ return min_of_two(a, min_of_two(b, c));
+//~ }
 
-static hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
-	return max_of_two(a, max_of_two(b, c));
-}
+//~ static hfixpt_t max_of_three (hfixpt_t a, hfixpt_t b, hfixpt_t c) {
+	//~ return max_of_two(a, max_of_two(b, c));
+//~ }
 
 
 
@@ -569,19 +610,19 @@ static inline xy_uhfixpt_pck_t get_max_xy (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t 
 }
 
 
-BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
-//bbox_uhfixpt_t get_tri_bbox  (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);
-static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
+//~ BoundBox get_tri_boundbox        (hfixpt_t x[3], hfixpt_t y[3]);
+//~ //bbox_uhfixpt_t get_tri_bbox  (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c);
+//~ static inline bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
 	
-	bbox_uhfixpt_t bb;
+	//~ bbox_uhfixpt_t bb;
     
-    bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
-    bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
-    bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
-    bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
+    //~ bb.min.as_coord.x = min_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
+    //~ bb.max.as_coord.x = max_of_three (a.as_coord.x, b.as_coord.x, c.as_coord.x);// & 0xfff0;
+    //~ bb.min.as_coord.y = min_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
+    //~ bb.max.as_coord.y = max_of_three (a.as_coord.y, b.as_coord.y, c.as_coord.y);// & 0xfff0;
     
-    return bb;
-}
+    //~ return bb;
+//~ }
 
 
 static inline bbox_uhfixpt_t get_tile_bbox (size_t tile_num, gpu_cfg_t *cfg) {
@@ -610,22 +651,22 @@ static inline bbox_uhfixpt_t get_screen_bbox (gpu_cfg_t *cfg) {
     return screen;
 }
 
-BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
-//BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
-//bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
-static inline bbox_uhfixpt_t clip_tri_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uhfixpt_t *tile) {
+//~ BoundBox clip_boundbox_to_screen (BoundBox in, gpu_cfg_t *cfg);
+//~ //BoundBox clip_boundbox_to_tile   (size_t tile_num, BoundBox in, gpu_cfg_t *cfg);
+//~ //bbox_uhfixpt_t clip_bbox_to_tile   (size_t tile_num, bbox_uhfixpt_t in, gpu_cfg_t *cfg);
+//~ static inline bbox_uhfixpt_t clip_tri_bbox_to_tile (bbox_uhfixpt_t *tri, bbox_uhfixpt_t *tile) {
 	
-	bbox_uhfixpt_t out;
+	//~ bbox_uhfixpt_t out;
 	
-	out.min.as_coord.x = max_of_two (tile->min.as_coord.x, tri->min.as_coord.x) & 0xfff0;
-    out.max.as_coord.x = min_of_two (tile->max.as_coord.x, tri->max.as_coord.x);
-    out.min.as_coord.y = max_of_two (tile->min.as_coord.y, tri->min.as_coord.y) & 0xfff0;
-    out.max.as_coord.y = min_of_two (tile->max.as_coord.y, tri->max.as_coord.y);
+	//~ out.min.as_coord.x = max_of_two (tile->min.as_coord.x, tri->min.as_coord.x) & 0xfff0;
+    //~ out.max.as_coord.x = min_of_two (tile->max.as_coord.x, tri->max.as_coord.x);
+    //~ out.min.as_coord.y = max_of_two (tile->min.as_coord.y, tri->min.as_coord.y) & 0xfff0;
+    //~ out.max.as_coord.y = min_of_two (tile->max.as_coord.y, tri->max.as_coord.y);
         
-    return out;
-}
+    //~ return out;
+//~ }
 
-static inline bbox_uhfixpt_t clip_tri_to_tile2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c, bbox_uhfixpt_t *tile) {
+static inline bbox_uhfixpt_t clip_tri_to_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c, bbox_uhfixpt_t *tile) {
 	
 	xy_uhfixpt_pck_t min_ab      = get_min_xy (a, b);
 	xy_uhfixpt_pck_t min_abc     = get_min_xy (min_ab, c);
@@ -694,3 +735,33 @@ FixPt3 get_bar_coords2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t
 #endif
 
 void    wfobj_get_attribs              (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx, VtxAttr *attribs);
+
+
+static inline void memcpy_dma (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size, size_t channel_num) {
+
+	if (dst_ptr == NULL) return;
+	
+#ifdef DMA
+	
+	dma_mem2mem_single (dst_ptr, src_ptr, byte_size, channel_num);
+	
+#else
+	
+	for (size_t i = 0; i < byte_size / 4; i++) {
+		*((uint32_t *) dst_ptr + i) = (src_ptr == NULL) ? 0 : *((uint32_t *) src_ptr + i);
+	}
+	
+	//~ void *dptr = dst_ptr;
+	//~ void *sptr = src_ptr;
+	
+	//~ if (src_ptr == NULL) {
+		
+		//~ memset (dptr, 0, byte_size);
+	//~ }
+	//~ else {
+		//~ memcpy (dptr, sptr, byte_size);
+	//~ }
+
+#endif
+
+}

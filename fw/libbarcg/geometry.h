@@ -102,6 +102,13 @@ static inline void fmat4_Float4_mult_fast (Float4 *out, fmat4 *a, Float4 *b) {
 Float3 Float3_Float3_add       (Float3 *a, Float3 *b);
 Float3 Float3_Float3_sub       (Float3 *a, Float3 *b);
 float  Float3_Float3_smult     (Float3 *a, Float3 *b);
+static inline float Float3_Float3_smult_fast (Float3 *a, Float3 *b) {
+	float smult = 0;
+	for (int i = 0; i < 3; i++ ) {
+		smult += a->as_array[i] * b->as_array[i];
+	}
+	return smult;
+}
 Float3 Float3_Float3_crossprod (Float3 *a, Float3 *b);
 
 Float3 Float3_float_mult (Float3 *a, float b);

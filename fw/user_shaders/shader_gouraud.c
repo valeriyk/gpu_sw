@@ -47,12 +47,12 @@ Float4 vshader_gouraud (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *
 	Float3 norm_eye;
 	Float4_Float3_vect_conv_fast (&norm_eye, &norm4d_eye); // normal is a vector, hence W = 0 and I don't care about it
 	Float3_normalize_fast (&norm_eye);
-	float diff_intensity = -Float3_Float3_smult (&norm_eye, &(cfg->lights_arr[0].eye));// TBD, why [0]?
+	float diff_intensity = -Float3_Float3_smult_fast (&norm_eye, &(cfg->lights_arr[0].eye));// TBD, why [0]?
 	
 	assert (diff_intensity <=  1.0f);
 	assert (diff_intensity >= -1.0f);
 	
-	varying_fifo_push_float (vry, diff_intensity);
+	varying_fifo_push_float_fast (vry, &diff_intensity);
 	
 	
 	// extract the texture UV coordinates of the vertex
@@ -68,7 +68,7 @@ Float4 vshader_gouraud (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *
 		texture.as_struct.u *= (float) obj->texture->w;
 		texture.as_struct.v *= (float) obj->texture->h;
 	
-		varying_fifo_push_Float2 (vry, &texture);
+		varying_fifo_push_Float2_fast (vry, &texture);
 	}
 			
 	return clip;		

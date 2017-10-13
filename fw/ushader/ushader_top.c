@@ -40,6 +40,16 @@
 	
 	gpu_cfg_t local_cfg;
 	
+
+#ifdef DMA
+
+	_sr (0x1,  AUXR_DMACTRL); // enable DMA controller
+	_sr (0xff, AUXR_DMACENB); // enable all channels
+	_sr (0x1,  AUXR_DMACHPRI); // set channel 0 priority to high
+	
+#endif
+
+	
 	while (!(run_halt->vshaders_stop_req || run_halt->pshaders_stop_req)) {	
 				
 		if (PTHREAD_DEBUG) { printf("vshader%d: vshader_done=false\n", shader_num); }

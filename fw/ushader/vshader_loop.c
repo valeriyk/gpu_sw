@@ -28,7 +28,7 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 	
 	//BoundBox bb = clip_boundbox_to_screen (get_tri_boundbox (x, y), cfg_ptr);
 	bbox_uhfixpt_t screen_bb = get_screen_bbox (cfg_ptr);
-	bbox_uhfixpt_t bb = clip_tri_to_tile2 (local_data_ptr->vtx_a, local_data_ptr->vtx_b, local_data_ptr->vtx_c, &screen_bb);
+	bbox_uhfixpt_t bb = clip_tri_to_bbox (local_data_ptr->vtx_a, local_data_ptr->vtx_b, local_data_ptr->vtx_c, &screen_bb);
     
     //FixPt3 bar_init = get_bar_coords (x, y, bb.min.x, bb.min.y);
     fixpt_t bar_init0;
@@ -66,7 +66,8 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 
 	// save local data to memory now, because I need its address later for storing it in tri_ptr_list 
 	TrianglePShaderData *volatile ext_data_arr = cfg_ptr->tri_for_pshader[vshader_idx];
-	ext_data_arr[tri_num] = *local_data_ptr;
+	//ext_data_arr[tri_num] = *local_data_ptr;
+	memcpy_dma (&ext_data_arr[tri_num], local_data_ptr, sizeof (TrianglePShaderData), 0); // CH0 - high priority
 	
 	//TrianglePShaderData *volatile *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
 	TriangleTileData *ext_tri_ptr_arr = cfg_ptr->tri_ptr_list[vshader_idx];
@@ -279,7 +280,7 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	// Clean up data structures for each new frame:
 	//TrianglePShaderData *volatile *d = cfg->tri_ptr_list[vshader_idx];
 	TriangleTileData *d = cfg->tri_ptr_list[vshader_idx];
-	for (int i = 0; i < (cfg->num_of_tiles << GPU_MAX_TRIANGLES_PER_TILE_LOG2); i++) {
+	for (int i = 0; i < (cfg->num_of_tiles * GPU_MAX_TRIANGLES_PER_TILE); i++) {
 		d[i].data = NULL;
 	}
 	for (int i = 0; i < cfg->num_of_tiles; i++) {
@@ -290,13 +291,15 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 	obj_list_node = obj_list_head;
 	
 	int tri_num = 0;
-		
+	
+	// for each object:	
 	while (obj_list_node != NULL) {
 		
 		uint32_t num_of_faces = obj_list_node->obj->wfobj->num_of_faces;
 		uint32_t face_num_init = vshader_idx;
 		uint32_t face_num_incr = GPU_MAX_USHADERS;
 		
+		// For each k-th triangle of an object (k = number of vertex shader units)
 		for (size_t i = face_num_init; i < num_of_faces; i += face_num_incr) {
 			
 			
@@ -351,7 +354,8 @@ void vshader_loop (gpu_cfg_t *cfg, const int vshader_idx) {
 				ndc.vtx[j].as_struct.w = 1.0f;
 
 				if (!is_clipped) {
-					screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
+					//screen.vtx[j] = fmat4_Float4_mult (&(cfg->viewport), &(ndc.vtx[j]));
+					fmat4_Float4_mult_fast (&screen.vtx[j], &cfg->viewport, &ndc.vtx[j]);
 					
 					// Replace clip coords with screen coords within the Varying struct
 					// before passing it on to Tiler

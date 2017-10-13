@@ -186,17 +186,17 @@ size_t get_screen_depth  (gpu_cfg_t *cfg) {
 }
 
 
-BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
+//~ BoundBox get_tri_boundbox (hfixpt_t x[3], hfixpt_t y[3]) {
 	
-	BoundBox bb;
+	//~ BoundBox bb;
     
-    bb.min.x = hfixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
-    bb.max.x = hfixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
-    bb.min.y = hfixpt_to_screenxy (min_of_three (y[0], y[1], y[2]));
-    bb.max.y = hfixpt_to_screenxy (max_of_three (y[0], y[1], y[2]));
+    //~ bb.min.x = hfixpt_to_screenxy (min_of_three (x[0], x[1], x[2]));
+    //~ bb.max.x = hfixpt_to_screenxy (max_of_three (x[0], x[1], x[2]));
+    //~ bb.min.y = hfixpt_to_screenxy (min_of_three (y[0], y[1], y[2]));
+    //~ bb.max.y = hfixpt_to_screenxy (max_of_three (y[0], y[1], y[2]));
     
-    return bb;
-}
+    //~ return bb;
+//~ }
 
 //~ bbox_uhfixpt_t get_tri_bbox (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t c) {
 	

@@ -5,10 +5,6 @@
 
 #include <math.h>
 
-#ifdef DMA
-	#include <arcem_microdma.h>
-#endif
-
 #ifdef ARC_APEX
 	#include <apexextensions.h>
 #endif
@@ -226,17 +222,6 @@ void copy_tile_to_extmem (volatile void *volatile dst, volatile void *volatile s
 }
 
 
-void dma_init (void) {
-	
-#ifdef DMA
-
-	_sr (0x1,  AUXR_DMACTRL); // enable DMA controller
-	_sr (0xff, AUXR_DMACENB); // enable all channels
-	_sr (0x1,  AUXR_DMACHPRI); // set channel 0 priority to high
-	
-#endif
-
-}
 
 //~ void __attribute__ ((noinline)) dma_zero2mem_linkedlist (screenz_t *zbuf_dst_ptr, size_t zbuf_tile_byte_size, pixel_color_t *fbuf_dst_ptr, size_t fbuf_tile_byte_size, dma_ch channel_num, dma_desc *dd) {
 
@@ -276,43 +261,8 @@ void dma_init (void) {
 	//~ _sr (channel_mask, AUXR_DMACREQ);
 //~ }
 
-void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size, size_t channel_num) {
-	
-	if (dst_ptr == NULL) return;
-	
-	bool fill_zeros = (src_ptr == NULL);
-	
-#ifdef DMA
-	
-	uint32_t channel_mask = (1 << channel_num);
-	
-	
-	
-	while (_lr(AUXR_DMACSTAT0) & channel_mask); // wait till completion    
 
-	_sr (  DMACTRLX_OP_SINGLE |
-	       DMACTRLX_RT_AUTO |
-	       DMACTRLX_DTT_MEM2MEM |
-	       (fill_zeros ? DMACTRLX_DW_CLEAR : DMACTRLX_DW4_INCR4) |
-	       DMACTRLX_BLOCK_SIZE(byte_size) |
-	       DMACTRLX_ARB_DISABLE |
-	       DMACTRLX_IRQ_DISABLE |
-	       DMACTRLX_AM_INCR_ALL,
-	     AUXR_DMACTRLX(channel_num));
-	 
-	_sr ((uint32_t) src_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMASARX(channel_num));
-	_sr ((uint32_t) dst_ptr + ((byte_size - 1) & ~0x3) , AUXR_DMADARX(channel_num));
-	_sr (channel_mask, AUXR_DMACREQ);
 
-#else
-	
-	for (size_t i = 0; i < byte_size / 4; i++) {
-		*((uint32_t *) dst_ptr + i) = fill_zeros ? 0 : (*((uint32_t *) src_ptr + i));
-	}
-		
-#endif
-
-}
 
 //~ void dma_zero2mem_single (volatile void *volatile dst_ptr, size_t byte_size, dma_ch channel_num) {
 	
@@ -345,7 +295,7 @@ void dma_mem2mem_single (volatile void *volatile dst_ptr, volatile void *volatil
 
 //~ }
 
-
+/*
 void preload_tiles (screenz_t *zbuf_dst_ptr, screenz_t *zbuf_src_ptr, pixel_color_t *fbuf_dst_ptr, pixel_color_t *fbuf_src_ptr, size_t elems_in_tile) {
 	
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
@@ -373,6 +323,7 @@ void preload_tiles (screenz_t *zbuf_dst_ptr, screenz_t *zbuf_src_ptr, pixel_colo
 		dma_mem2mem_single (fbuf_dst_ptr, fbuf_src_ptr, fbuf_tile_byte_size, 2); // src_ptr allowed to be zero
 	}
 }
+*/
 
 void flush_tiles (screenz_t *local_zbuf, pixel_color_t *local_fbuf, size_t tile_num, gpu_cfg_t *cfg) {
 	
@@ -406,7 +357,7 @@ void draw_triangle (TrianglePShaderData *local_tpd_ptr, bbox_uhfixpt_t *tile_bb,
 	
 	//bbox_uhfixpt_t tri_bb = get_tri_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c);
 	//bbox_uhfixpt_t bb = clip_tri_bbox_to_tile (&tri_bb, tile_bb);
-	bbox_uhfixpt_t bb = clip_tri_to_tile2 (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb);
+	bbox_uhfixpt_t bb = clip_tri_to_bbox (local_tpd_ptr->vtx_a, local_tpd_ptr->vtx_b, local_tpd_ptr->vtx_c, tile_bb);
 	
 	//~ uint32_t tile_bb_min_x = tile_bb->min.as_coord.x >> XY_FRACT_BITS;
 	//~ uint32_t tile_bb_min_y = tile_bb->min.as_coord.y >> XY_FRACT_BITS;
@@ -599,16 +550,6 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	
 	enum {CH0=0, CH1, CH2};
 	
-#ifdef DMA
-	dma_init();
-	
-	//~ dma_desc  dma_mem_desc;
-	//~ dma_desc *dma_mem_desc_ptr = &dma_mem_desc;
-	
-//~ #else
-	//~ void *dma_mem_desc_ptr = NULL;
-#endif
-
 	
 	size_t elems_in_tile = GPU_TILE_WIDTH * GPU_TILE_HEIGHT;
 	size_t zbuf_tile_byte_size = elems_in_tile * sizeof (screenz_t);
@@ -640,8 +581,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 	pixel_color_t *fbuf_dst_ptr     = (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[  active_local_buf_idx];
 	
 	//preload_tiles (local_zbuf[active_local_buf_idx], zbuf_src_ptr, fbuf_dst_ptr, fbuf_src_ptr, elems_in_tile);
-	dma_mem2mem_single (zbuf_dst_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
-	dma_mem2mem_single (fbuf_dst_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
+	memcpy_dma (zbuf_dst_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
+	memcpy_dma (fbuf_dst_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
 	
 	for (size_t tile_num = starting_tile; tile_num < num_of_tiles; tile_num += incr_tile) {
 		
@@ -653,8 +594,8 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			screenz_t     *zbuf_dst_nxt_ptr = local_zbuf[inactive_local_buf_idx];
 			pixel_color_t *fbuf_dst_nxt_ptr = (cfg->active_fbuffer == NULL) ? NULL : local_fbuf[inactive_local_buf_idx];
 			
-			dma_mem2mem_single (zbuf_dst_nxt_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
-			dma_mem2mem_single (fbuf_dst_nxt_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
+			memcpy_dma (zbuf_dst_nxt_ptr, zbuf_src_ptr, zbuf_tile_byte_size, CH1);
+			memcpy_dma (fbuf_dst_nxt_ptr, fbuf_src_ptr, fbuf_tile_byte_size, CH2);
 		}
 		
 		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
@@ -673,7 +614,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 			//local_tile_data[active_ltd] = *ext_tri_ptr; // making a local copy
 			//local_tri_data [active_ltd] = *(ext_tri_ptr->data); // making a local copy
 			
-			dma_mem2mem_single (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData), CH0);
+			memcpy_dma (&local_tri_data[active_ltd], ext_tri_data_ptr, sizeof(TrianglePShaderData), CH0);
 				
 			for (int j = 0; j < GPU_MAX_TRIANGLES_PER_TILE; j++) {
 				
@@ -682,7 +623,7 @@ void pshader_loop (gpu_cfg_t *cfg, const uint32_t shader_num) {
 				if (j < GPU_MAX_TRIANGLES_PER_TILE - 1) {
 					ext_tri_data_nxt_ptr = cfg->tri_ptr_list[i][(tile_num << GPU_MAX_TRIANGLES_PER_TILE_LOG2) + j + 1].data;
 					if (ext_tri_data_nxt_ptr != NULL) {
-						dma_mem2mem_single (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData), CH0);
+						memcpy_dma (&local_tri_data[inactive_ltd], ext_tri_data_nxt_ptr, sizeof(TrianglePShaderData), CH0);
 					}
 				}
 				else {
