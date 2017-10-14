@@ -4,10 +4,10 @@ TCF_HOST    ?= tcf/host.tcf
 TCF_USHADER ?= tcf/ushader.tcf
 
 
-CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0 -DNDEBUG
+CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0
 CFLAGS_X86         = $(CFLAGS_COMMON) -DSINGLEPROC_MULTITHREAD -Itop -Ilibbarcg -Ilibtga-1.0.1/src -Ihost -Iushader -Iuser_shaders -pthread 
 #CFLAGS_MIPS        = $(CFLAGS_COMMON) -DSINGLEPROC_SINGLETHREAD
-CFLAGS_ARC_COMMON  = $(CFLAGS_COMMON) -DMULTIPROC -Hnocopyr -Hpurge -Hccm -Iushader -Ilibbarcg -Idma
+CFLAGS_ARC_COMMON  = $(CFLAGS_COMMON)  -DNDEBUG -DMULTIPROC -Hnocopyr -Hpurge -Hccm -Iushader -Ilibbarcg -Idma
 CFLAGS_ARC_HOST    = -tcf=$(TCF_HOST) $(CFLAGS_ARC_COMMON) -Ihost -Ilibtga-1.0.1/src -Iuser_shaders
 CFLAGS_ARC_COMPACTLIB =  -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset 
 #-Hcrt_reginit

@@ -24,6 +24,8 @@
 
 int count_shadows (Varying *vry, gpu_cfg_t *cfg);
 
+int count_shadows2 (Varying *vry, gpu_cfg_t *cfg);
+
 
 // Layout of Varying words for this pass:
 //     
@@ -76,7 +78,7 @@ Float4 vshader_depth (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *cf
 	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 		if (cfg->lights_arr[i].enabled) {
 			Float4 shadow_clip = fmat4_Float4_mult (&(obj->shadow_mvp[i]), &model4d); // model -> world -> eye -> clip
-			
+			//printf("VS shadow clip: %f %f %f %f\n", shadow_clip.as_struct.x, shadow_clip.as_struct.y, shadow_clip.as_struct.z, shadow_clip.as_struct.w);
 			//Perspective divide is only needed when perspective projection is used for shadows
 			// By default I use orthographic projection, so commenting out the section below
 			// // Compute XYZ in NDC by dividing XYZ in clip space by W (i.e. multiplying by 1/W)
@@ -87,8 +89,10 @@ Float4 vshader_depth (Object *obj, VtxAttr *attribs, Varying *vry, gpu_cfg_t *cf
 			// }			
 			
 			Float4 shadow_screen = fmat4_Float4_mult (&(cfg->viewport), &shadow_clip);
+			//printf("\tshadow screen: %f %f %f %f\n", shadow_screen.as_struct.x, shadow_screen.as_struct.y, shadow_screen.as_struct.z, shadow_screen.as_struct.w);
 			Float3 shadow_screen3 = Float4_Float3_vect_conv (&shadow_screen); // don't need W for ortho projection
 			varying_fifo_push_Float3 (vry, &shadow_screen3);
+			//printf("\t\tshadow screen3: %f %f %f\n", shadow_screen3.as_struct.x, shadow_screen3.as_struct.y, shadow_screen3.as_struct.z);
 		}
 	}
 		
@@ -153,10 +157,10 @@ bool pshader_depth (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *co
 		intensity = intensity_treshold;
 	}
 	
-	/*	
-	int r = pix.r * intensity + 5;
-	int g = pix.g * intensity + 5;
-	int b = pix.b * intensity + 5;
+		
+	int r = pix.as_byte.r * intensity + 5;
+	int g = pix.as_byte.g * intensity + 5;
+	int b = pix.as_byte.b * intensity + 5;
 		
 	if (r > 255) r = 255;
 	if (g > 255) g = 255;
@@ -164,9 +168,9 @@ bool pshader_depth (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *co
 	
 	*color = set_color (r, g, b, 0);
 	// *color = set_color (255, 0, 255, 0);
-	*/
 	
-	*color = color_mult (pix, intensity);
+	
+	//*color = color_mult (pix, intensity);
 	
 	return true;
 }
@@ -194,6 +198,8 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 		*/
 		
 		Float3 screen = varying_fifo_pop_Float3 (vry);
+		
+		//printf("CntShdw: %f %f %f\n", screen.as_struct.x, screen.as_struct.y, screen.as_struct.z);
 			
 		assert (screen.as_struct.x >= 0);
 		assert (screen.as_struct.x < cfg->screen_width);
@@ -202,6 +208,73 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 		assert (screen.as_struct.y >= 0);
 		//if (screen.as_struct.y >= get_screen_height()) printf ("screen.as_struct.y=%f, get_screen_height()=%zu\n", screen.as_struct.y, get_screen_height());	
 		assert (screen.as_struct.y < cfg->screen_height);	
+		//if (screen.as_struct.y >= get_screen_height()) screen.as_struct.y = get_screen_height() - 1; // TBD
+		y = (screenxy_t) screen.as_struct.y;
+		
+		//assert (screen.as_struct.z >= 0);
+		//assert (screen.as_struct.z < (1 << 16)); // TBD
+		z = (screenz_t) screen.as_struct.z;
+		
+		/*
+		{
+			FixPt4 screen4 = vry->data.as_FixPt4[2+i];
+			
+			assert (screen.as_struct.x >= 0);
+			assert (screen.as_struct.x < fixpt_from_int32 (get_screen_width()));
+			x = fixpt_to_screenxy (screen4.as_struct.x);
+			
+			assert (screen.as_struct.y >= 0);
+			assert (screen.as_struct.y < fixpt_from_int32 (get_screen_height()));
+			y = fixpt_to_screenxy (screen4.as_struct.y);
+			
+			assert (screen.as_struct.z >= 0);
+			assert (screen.as_struct.z < (1 << (16 + FRACT_BITS))); // TBD
+			z = fixpt_to_screenz  (screen4.as_struct.z);
+		}
+		*/
+		assert (cfg->lights_arr[i].shadow_buf != NULL);
+		
+		screenz_t shadow_buf_z = cfg->lights_arr[i].shadow_buf[y * cfg->screen_width + x];
+		
+		if (shadow_buf_z > z + z_fighting) shadows++;
+	}
+	return shadows;
+	//return 1;
+}
+
+int count_shadows2 (Varying *vry, gpu_cfg_t *cfg) {
+	int    shadows = 0;
+	float  z_fighting = 123; // [almost] arbitrary value
+	
+	Light *l = cfg->lights_arr;
+	
+	for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
+		
+		if (!l[i].enabled) continue;
+		
+		
+		screenxy_t x;
+		screenxy_t y;
+		screenz_t  z;
+		
+		
+		/*
+		FixPt3 screen = varying_fifo_pop_FixPt3 (vry);
+		
+		x = fixpt_to_screenxy (screen.as_struct.x);
+		y = fixpt_to_screenxy (screen.as_struct.y);
+		z = fixpt_to_screenz  (screen.as_struct.z);
+		*/
+		
+		Float3 screen = varying_fifo_pop_Float3 (vry);
+			
+		assert (screen.as_struct.x >= 0);
+		//assert (screen.as_struct.x < get_screen_width (cfg));
+		x = (screenxy_t) screen.as_struct.x;
+		
+		assert (screen.as_struct.y >= 0);
+		//if (screen.as_struct.y >= get_screen_height()) printf ("screen.as_struct.y=%f, get_screen_height()=%zu\n", screen.as_struct.y, get_screen_height());	
+		assert (screen.as_struct.y < get_screen_height(cfg));	
 		//if (screen.as_struct.y >= get_screen_height()) screen.as_struct.y = get_screen_height() - 1; // TBD
 		y = (screenxy_t) screen.as_struct.y;
 		
@@ -226,9 +299,9 @@ int count_shadows (Varying *vry, gpu_cfg_t *cfg) {
 			z = fixpt_to_screenz  (screen4.as_struct.z);
 		}
 		*/
-		assert (cfg->lights_arr[i].shadow_buf != NULL);
+		assert (l[i].shadow_buf != NULL);
 		
-		screenz_t shadow_buf_z = cfg->lights_arr[i].shadow_buf[y * cfg->screen_width + x];
+		screenz_t shadow_buf_z = l[i].shadow_buf[y * get_screen_width(cfg) + x];
 		
 		if (shadow_buf_z > z + z_fighting) shadows++;
 	}

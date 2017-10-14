@@ -109,7 +109,7 @@ bool pshader_gouraud (Object *obj, Varying *vry, gpu_cfg_t *cfg, pixel_color_t *
 	}
 	
 	
-	fixpt_t intensity_treshold = 1 << 14; // 0.25 in SQ16.16 format
+	fixpt_t intensity_treshold = 1 << (VARYING_FRACT_BITS - 2); // 0.25 in Varying fixpt format
 		
 	
 	if (intensity < intensity_treshold) {

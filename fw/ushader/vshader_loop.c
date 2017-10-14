@@ -229,7 +229,9 @@ void tiler (TrianglePShaderData *local_data_ptr, FixPt3 *screen_z, uint32_t vsha
 					
 					//~ ext_tri_ptr_arr[idx].bar = b0;
 					//printf ("@");
-					num_of_tris_in_tile_arr[tile_num]++;		
+					if (num_of_tris_in_tile_arr[tile_num] < GPU_MAX_TRIANGLES_PER_TILE-1) {
+						num_of_tris_in_tile_arr[tile_num]++;		
+					}
 				//}
 				//~ else {
 					//~ continue;

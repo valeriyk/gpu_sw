@@ -121,16 +121,16 @@ void interpolate_varying (Varying *vry, fixpt_t *w_reciprocal, fixpt_t *bar0, fi
 			// BF = BARC_FRACT_BITS
 			// BM = 32-BF
 			// OF = OOWI_FRACT_BITS
-			vbw0 = (((dfixpt_t) vry[0].data[i].as_fixpt_t) >> 9) * (bw0 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
-			vbw1 = (((dfixpt_t) vry[1].data[i].as_fixpt_t) >> 9) * (bw1 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
-			vbw2 = (((dfixpt_t) vry[2].data[i].as_fixpt_t) >> 9) * (bw2 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			vbw0 = (((dfixpt_t) vry[0].data[i].as_fixpt_t) >> 7) * (bw0 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
+			vbw1 = (((dfixpt_t) vry[1].data[i].as_fixpt_t) >> 7) * (bw1 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF) 
+			vbw2 = (((dfixpt_t) vry[2].data[i].as_fixpt_t) >> 7) * (bw2 >> 13);  // VM.VF * WM.WF = (VM+WM).(VF+WF)
 			vbw_acc = vbw0 + vbw1 + vbw2; // = (VM+WM+BM+1).(VF+WF+BF-NNN)
 
 			// ((VM+WM+BM+1).(VF+WF+BF-NNN) * ((1).(OF))) >> (WF+BF+OF-NNN) = ((VM+WM+BM+1+1-OF).(VF+WF+BF+OF-NNN) >> (WF+BF+OF-NNN)) = (VM+WM+BM+2-OF).VF
 			//vry_interp->data[i].as_fixpt_t = (fixpt_t) ((acc_fixpt * one_over_wi) >> (W_RECIPR_FRACT_BITS + BARC_FRACT_BITS + OOWI_FRACT_BITS - NNN)); // = (VM+WM+BM+65-OF).VF
 			
 			// .31 / .37 = .14
-			vry_interp->data[i].as_fixpt_t = (fixpt_t) (vbw_acc / (bw_acc >> 22)); // = (VM+WM+BM+65-OF).VF
+			vry_interp->data[i].as_fixpt_t = (fixpt_t) (vbw_acc / (bw_acc >> 20)); // = (VM+WM+BM+65-OF).VF
 
 			if (DEBUG_FIXPT_VARYING) {
 				fixpt_t vry_interp_fixpt_tmp = vry_interp->data[i].as_fixpt_t;

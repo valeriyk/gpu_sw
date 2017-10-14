@@ -34,7 +34,7 @@
 #define GPU_MAX_SCREEN_WIDTH  1024
 #define GPU_MAX_SCREEN_HEIGHT 1024
 #define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
-#define GPU_MAX_USHADERS 24
+#define GPU_MAX_USHADERS 1
 #define GPU_MAX_FRAMEBUFFERS	64
 
 #define GPU_CFG_ABS_ADDRESS      0xFFFE0000
@@ -62,7 +62,7 @@ typedef   int64_t  dfixpt_t;
 #define     BARC_FRACT_BITS (XY_FRACT_BITS*2)
 #define W_RECIPR_FRACT_BITS 29
 #define     OOWI_FRACT_BITS 16
-#define  VARYING_FRACT_BITS 16
+#define  VARYING_FRACT_BITS 14
 
 
 
@@ -311,8 +311,9 @@ typedef struct Triangle {
 typedef struct VaryingWord {
 #ifdef DEBUG_FIXPT_VARYING
 	float    as_float;
-//#else
-//typedef union VaryingWord {
+#else
+typedef union VaryingWord {
+	float    as_float;
 #endif
 	fixpt_t  as_fixpt_t;
 } VaryingWord;

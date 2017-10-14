@@ -22,7 +22,7 @@
 #else
 
  void * ushader_top (void *ushader_cfg) {
-	assert (cfg != NULL);
+	assert (ushader_cfg != NULL);
 	
 	//~ shader_cfg_t *shader_cfg = cfg;
 	//~ uint32_t shader_num = shader_cfg->shader_num;

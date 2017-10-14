@@ -126,7 +126,7 @@ ObjectListNode* init_objects (void) {
     int draw_planes = 0;
     int draw_head = 1;
     int draw_second_head = 1;
-    int draw_all_cubes = 1;
+    int draw_all_cubes = 0;
     
     if (draw_planes) {
 		floor_diff = new_bitmap_from_tga("../../models/floor_diffuse.tga");
@@ -160,7 +160,7 @@ ObjectListNode* init_objects (void) {
 	else if (draw_head) {
 	
 		african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
-		//african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
+		african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
 		//african_head_spec = new_bitmap_from_tga ("../../models/african_head_spec.tga");
 		african_head = wfobj_new ("../../models/african_head.obj");
 
@@ -425,7 +425,8 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	
 	fmat4 view;	
 	
-    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
+    cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), true, cfg);
+    //cfg->lights_arr[0] = light_turn_on (Float3_set ( 0.f,  -2.f, -10.f), false, cfg);
     for (int i = 1; i < GPU_MAX_LIGHTS; i++) {
 		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
@@ -546,8 +547,8 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
-		launch_shaders (cfg, run_halt, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		//launch_shaders (cfg, run_halt, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		//launch_shaders (cfg, run_halt, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		launch_shaders (cfg, run_halt, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, run_halt, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		
 		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
