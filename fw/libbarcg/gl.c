@@ -1,11 +1,16 @@
 #include "gl.h"
 #include "wavefront_obj.h"
 
-#include <tga.h>
+//#include <tga.h>
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+//#define STBI_TGA_ONLY
+#include <stb_image.h>
+
 
 
 // POSITIVE Z TOWARDS ME
@@ -156,8 +161,8 @@ void rotate_coords (fmat4 *in, fmat4 *out, float alpha_deg, axis a) {
 	fmat4_fmat4_mult (in, &r, out);
 }
 
-Object* obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
-	Object *obj = (Object*) malloc (sizeof(Object));
+Object *obj_new (WaveFrontObj *wfobj, Bitmap *texture, Bitmap *normalmap, Bitmap *specularmap) {
+	Object *obj = (Object *) malloc (sizeof(Object));
 	obj->wfobj = wfobj;
 	for (int i = 0; i < 3; i++) {
 		obj->scale[i]  = 1.f;
@@ -222,12 +227,33 @@ void obj_init_model (Object *obj) {
 }
 
 
-Bitmap * bitmap_new () {
-	Bitmap *bmp = (Bitmap*) malloc (sizeof(Bitmap));
-	return bmp;
-}
+//~ Bitmap * bitmap_new () {
+	//~ Bitmap *bmp = (Bitmap*) malloc (sizeof(Bitmap));
+	//~ return bmp;
+//~ }
 
 void bitmap_free (Bitmap *bmp) {
 	if (bmp->data != NULL) free (bmp->data);
 	if (bmp       != NULL) free (bmp);
+}
+
+Bitmap *new_bitmap_from_file (const char *filename, const int bytespp) {
+    
+    //Bitmap *bmp = bitmap_new ();
+    Bitmap *bmp = (Bitmap*) malloc (sizeof(Bitmap));
+    if (bmp == NULL) return NULL;
+    
+    int w = 0;
+    int h = 0;
+    int ch_num = 0;
+    bmp->data = (uint8_t *) stbi_load(filename, &w, &h, &ch_num, bytespp);
+    if (bmp->data == NULL) {
+		printf ("Error: could not load TGA\n");
+		return NULL;
+	}
+	bmp->w       = (uint32_t) w;
+	bmp->h       = (uint32_t) h;
+	bmp->bytespp = bytespp;
+	
+	return bmp;
 }

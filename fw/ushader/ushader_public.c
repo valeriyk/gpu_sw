@@ -429,7 +429,7 @@ pixel_color_t get_pixel_color_from_bitmap (const Bitmap *bmp, const int u, const
 		//~ pix.r = *(bmp->data + offset + 0);
 		//~ pix.g = *(bmp->data + offset + 1);
 		//~ pix.b = *(bmp->data + offset + 2);
-		pix = p[u + bmp->w * v];
+		pix = p[u + bmp->w * (bmp->h - v - 1)];
 	}
 	else {
 		pix.as_word = 0;

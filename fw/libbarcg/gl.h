@@ -15,7 +15,6 @@
 
 
 
-
 Light light_turn_on  (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg);
 void  light_turn_off (Light *l);
 
@@ -46,5 +45,6 @@ void obj_init_model      (Object *obj);
 //void obj_transform       (Object *obj, fmat4 *vpv, fmat4 *projview, float3 *light_dir);
 
 
-Bitmap * bitmap_new  ();
+//Bitmap * bitmap_new  ();
+Bitmap *new_bitmap_from_file (const char *filename, const int bytespp);
 void     bitmap_free (Bitmap *bmp);

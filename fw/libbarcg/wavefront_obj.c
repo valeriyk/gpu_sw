@@ -36,7 +36,7 @@ WaveFrontObj * wfobj_new (const char *wfobj_file) {
 	if (wfobj == NULL) return NULL;
 	    
     read_wfobj_file (wfobj_file, wfobj);	        
-
+	
     return wfobj;
 }
 
@@ -122,7 +122,6 @@ int read_wfobj_file (const char *filename, WaveFrontObj *wfobj) {
     
     wfobj_line_type     line_type  = EMPTY;
     wfobj_line_type     next_line_type = line_type;
-    
     while ((ch = fgetc(fp)) != EOF) {
     	char c = (char) ch;
 		
@@ -205,11 +204,11 @@ int read_wfobj_file (const char *filename, WaveFrontObj *wfobj) {
     // Second pass - parse the OBJ file and fill the arrays
     rewind (fp);
     
-    size_t face_idx = 0;
-    size_t vtx_idx = 0;
-    size_t coord_idx  = 0;
-    size_t norm_idx = 0;
-    size_t text_idx = 0;
+    size_t  face_idx = 0;
+    size_t   vtx_idx = 0;
+    size_t coord_idx = 0;
+    size_t  norm_idx = 0;
+    size_t  text_idx = 0;
     
     line_type         = EMPTY;
     next_line_type    = line_type;

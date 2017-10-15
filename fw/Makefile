@@ -5,7 +5,7 @@ TCF_USHADER ?= tcf/ushader.tcf
 
 
 CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0
-CFLAGS_X86         = $(CFLAGS_COMMON) -DSINGLEPROC_MULTITHREAD -Itop -Ilibbarcg -Ilibtga-1.0.1/src -Ihost -Iushader -Iuser_shaders -pthread 
+CFLAGS_X86         = $(CFLAGS_COMMON) -DSINGLEPROC_MULTITHREAD -Itop -Ilibbarcg -I3rdparty/stb -Ilibtga-1.0.1/src -Ihost -Iushader -Iuser_shaders -pthread 
 #CFLAGS_MIPS        = $(CFLAGS_COMMON) -DSINGLEPROC_SINGLETHREAD
 CFLAGS_ARC_COMMON  = $(CFLAGS_COMMON)  -DNDEBUG -DMULTIPROC -Hnocopyr -Hpurge -Hccm -Iushader -Ilibbarcg -Idma
 CFLAGS_ARC_HOST    = -tcf=$(TCF_HOST) $(CFLAGS_ARC_COMMON) -Ihost -Ilibtga-1.0.1/src -Iuser_shaders
@@ -35,7 +35,7 @@ TARGET_ARC_HOST     = arc_host.elf
 TARGET_ARC_USHADER  = arc_ushader.elf
 
 OBJECTS_x86  := $(patsubst %.c, %_x86.o,  $(wildcard top/*.c) $(wildcard host/*.c) $(wildcard ushader/*.c) $(wildcard user_shaders/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
-INCLUDES_x86 =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard user_shaders/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h)
+INCLUDES_x86 =                            $(wildcard top/*.h) $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard user_shaders/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h) $(wildcard 3rdparty/stb/*.h)
 
 OBJECTS_ARC_HOST  := $(patsubst %.c, %_host_arc.o,  $(wildcard host/*.c) $(wildcard libbarcg/*.c) $(wildcard libtga-1.0.1/src/*.c))
 INCLUDES_ARC_HOST =                                 $(wildcard host/*.h) $(wildcard libbarcg/*.h) $(wildcard libtga-1.0.1/src/*.h) $(wildcard ushader/*.h) $(wildcard user_shaders/*.h)
@@ -90,13 +90,15 @@ $(OBJECTS_ARC_USHADER): %_ushader_arc.o: %.c $(INCLUDES_ARC_USHADER)
 
 
 clean:
-	-rm -f top/*.o
+	-rm -f dma/*.o
 	-rm -f host/*.o
-	-rm -f ushader/*.o
-	-rm -f user_shaders/*.o
 	-rm -f libbarcg/*.o
 	-rm -f libtga-1.0.1/src/*.o
+	-rm -f top/*.o
+	-rm -f user_shaders/*.o	
+	-rm -f ushader/*.o
 	-rm -f *.elf
 	-rm -f *.a
 	-rm -f *.tga
 	-rm -f *.y4m
+	-rm -f *.dump

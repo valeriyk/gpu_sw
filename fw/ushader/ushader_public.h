@@ -292,6 +292,8 @@ typedef struct rgb32_t {
 
 typedef struct rgba8888 {
 	uint8_t r, g, b, a;
+	//uint8_t a, r, g, b;
+	//uint8_t a, b, g, r;
 } rgba8888;
 
 typedef union pixel_color_t {

@@ -14,7 +14,7 @@
 #include <shader_depth.h>
 #include <shader_fill_shadow_buf.h>
 //#include "bitmap.h"
-#include <tga_addon.h>
+//#include <tga_addon.h>
 
 
 #include "profiling.h"
@@ -30,6 +30,13 @@
 #include <math.h>
 
 #include <time.h>
+
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+#define JPEG_QUALITY 100
+
+enum {GRAY=1, GRAYA=2, RGB=3, RGBA=4};
 
 // POSITIVE Z TOWARDS ME
 
@@ -129,7 +136,7 @@ ObjectListNode* init_objects (void) {
     int draw_all_cubes = 0;
     
     if (draw_planes) {
-		floor_diff = new_bitmap_from_tga("../../models/floor_diffuse.tga");
+		floor_diff = new_bitmap_from_file("../../models/floor_diffuse.tga", RGBA);
 		my_floor = wfobj_new ("../../models/floor.obj");
 	
 		if ((node = calloc (1, sizeof (ObjectListNode))) == NULL) {
@@ -159,18 +166,19 @@ ObjectListNode* init_objects (void) {
 	}
 	else if (draw_head) {
 	
-		african_head_diff = new_bitmap_from_tga ("../../models/african_head_diffuse.tga");
-		african_head_nmap = new_bitmap_from_tga ("../../models/african_head_nm.tga");
-		//african_head_spec = new_bitmap_from_tga ("../../models/african_head_spec.tga");
+		//african_head_diff = new_bitmap_from_file ("../../models/african_head_diffuse.tga", RGBA);
+		african_head_diff = new_bitmap_from_file ("../../models/ladybug.jpg", RGBA);
+		//african_head_nmap = new_bitmap_from_file ("../../models/african_head_nm.tga", RGBA);
+		//african_head_spec = new_bitmap_from_file ("../../models/african_head_spec.tga", GRAY);
 		african_head = wfobj_new ("../../models/african_head.obj");
-
-	
+		
 		if ((node = calloc (1, sizeof (ObjectListNode))) == NULL) {
 			if (DEBUG_MALLOC) printf ("obj list node calloc failed\n");
 			return NULL;
 		}
 		head = node;
 		node->obj = obj_new (african_head, african_head_diff, african_head_nmap, african_head_spec);
+		
 		//node->obj = obj_new (african_head, african_head_diff, NULL, NULL);
 		//node->obj = obj_new (african_head, NULL, NULL, NULL);
 		node->next = NULL;
@@ -195,8 +203,8 @@ ObjectListNode* init_objects (void) {
 		}
 	}
 	else {
-		cube_diff = new_bitmap_from_tga ("../../models/floor_diffuse.tga");
-		cube_nmap = new_bitmap_from_tga ("../../models/floor_nm_tangent.tga");
+		cube_diff = new_bitmap_from_file ("../../models/floor_diffuse.tga", RGBA);
+		cube_nmap = new_bitmap_from_file ("../../models/floor_nm_tangent.tga", RGBA);
 		my_cube = wfobj_new ("../../models/cube.obj");
 
 
@@ -466,20 +474,20 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	
 		
 		// Clean up active framebuffer, zbuffer and all shadowbuffers
-		for (int i = 0; i < screen_size; i++) {
-			active_fbuffer[i] = set_color (1, 0, 0, 0);
+		//~ for (int i = 0; i < screen_size; i++) {
+			//~ active_fbuffer[i] = set_color (1, 0, 0, 0);
 			
-			if (cfg->zbuffer_ptr != NULL) {
-				screenz_t *zb = cfg->zbuffer_ptr;
-				zb[i] = 0;
-			}
+			//~ if (cfg->zbuffer_ptr != NULL) {
+				//~ screenz_t *zb = cfg->zbuffer_ptr;
+				//~ zb[i] = 0;
+			//~ }
 			
-			for (int j = 0; j < GPU_MAX_LIGHTS; j++) {
-				if (cfg->lights_arr[j].enabled && cfg->lights_arr[j].has_shadow_buf) {
-					cfg->lights_arr[j].shadow_buf[i] = 0;
-				}
-			}
-		}
+			//~ for (int j = 0; j < GPU_MAX_LIGHTS; j++) {
+				//~ if (cfg->lights_arr[j].enabled && cfg->lights_arr[j].has_shadow_buf) {
+					//~ cfg->lights_arr[j].shadow_buf[i] = 0;
+				//~ }
+			//~ }
+		//~ }
 		
 		
 		// Number of faces may change from frame to frame if objects are getting added or removed,
@@ -560,37 +568,38 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 			printf ("recording frame number %d\n", m);
 			if (ENABLE_PERF) stop_counters();
 			
-			char tga_file[32];
+			char filename[32];
 			char frame_num[32];
 			char shadow_num[32];
 			
 			
 			sprintf(frame_num, "%d", m);
-			strcpy (tga_file, "frame_buffer_");
-			strcat (tga_file, frame_num);
-			strcat (tga_file, ".tga");
+			strcpy (filename, "frame_buffer_");
+			strcat (filename, frame_num);
+			strcat (filename, ".jpg");
 			
 			
-			tbyte *rgb24 = calloc (screen_size * 3, sizeof (tbyte));
-			if (rgb24 == NULL) goto error;
+			//~ tbyte *rgb24 = calloc (screen_size * 3, sizeof (tbyte));
+			//~ if (rgb24 == NULL) goto error;
 			
-			for (int i = 0; i < HEIGHT; i++) {
-				for (int j = 0; j < WIDTH; j++) {
-					size_t word_offset = (j + WIDTH * i);	
-					size_t byte_offset = word_offset * 3;
-					pixel_color_t *p = cfg->fbuffer_ptr[m];
-					//pixel_color32_t pix;
-					*(rgb24 + byte_offset + 0) = p[word_offset].as_byte.r;
-					*(rgb24 + byte_offset + 1) = p[word_offset].as_byte.g;
-					*(rgb24 + byte_offset + 2) = p[word_offset].as_byte.b;
-				}
-			}			
-			//write_tga_file (tga_file, (tbyte *) cfg->fbuffer_ptr[m], WIDTH, HEIGHT, 24, 1);
-			write_tga_file (tga_file, rgb24, WIDTH, HEIGHT, 24, 1);
-			free (rgb24);
+			//~ for (int i = 0; i < HEIGHT; i++) {
+				//~ for (int j = 0; j < WIDTH; j++) {
+					//~ size_t word_offset = (j + WIDTH * i);	
+					//~ size_t byte_offset = word_offset * 3;
+					//~ pixel_color_t *p = cfg->fbuffer_ptr[m];
+					//~ //pixel_color32_t pix;
+					//~ *(rgb24 + byte_offset + 0) = p[word_offset].as_byte.r;
+					//~ *(rgb24 + byte_offset + 1) = p[word_offset].as_byte.g;
+					//~ *(rgb24 + byte_offset + 2) = p[word_offset].as_byte.b;
+				//~ }
+			//~ }			
+			//write_jpg_file (filename, (tbyte *) cfg->fbuffer_ptr[m], WIDTH, HEIGHT, 4, 1);
+			stbi_write_jpg (filename, WIDTH, HEIGHT, RGBA, (void *) cfg->fbuffer_ptr[m], JPEG_QUALITY);
+			//write_tga_file (tga_file, rgb24, WIDTH, HEIGHT, 3, 1);
+			////free (rgb24);
 			
-			tbyte *tmp;
-			if ((tmp = (tbyte*) calloc (screen_size, sizeof(tbyte))) == NULL) {
+			uint8_t *tmp;
+			if ((tmp = (uint8_t *) calloc (screen_size, sizeof(uint8_t))) == NULL) {
 				if (DEBUG_MALLOC) printf ("tga frame calloc failed\n");
 				goto error;
 			}
@@ -599,21 +608,23 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 					screenz_t *zb = cfg->zbuffer_ptr;
 					tmp[i] = zb[i] >> 4;// >> (8 * (sizeof(screenz_t) - 1) );
 				}
-				write_tga_file ("zbuffer.tga", tmp, WIDTH, HEIGHT, 8, 1);
+				//write_jpg_file ("zbuffer.jpg", tmp, WIDTH, HEIGHT, 1, 1);
+				stbi_write_jpg ("zbuffer.jpg", WIDTH, HEIGHT, GRAY, (void *) tmp, JPEG_QUALITY);
 			}
 			for (int i = 0; i < GPU_MAX_LIGHTS; i++) {
 				if (cfg->lights_arr[i].enabled && cfg->lights_arr[i].has_shadow_buf) {
 					sprintf(shadow_num, "%d", i);
-					strcpy (tga_file, "shadow_buffer_");
-					strcat (tga_file, frame_num);
-					strcat (tga_file, "_");
-					strcat (tga_file, shadow_num);
-					strcat (tga_file, ".tga");
+					strcpy (filename, "shadow_buffer_");
+					strcat (filename, frame_num);
+					strcat (filename, "_");
+					strcat (filename, shadow_num);
+					strcat (filename, ".jpg");
 					
 					for (int j = 0; j < screen_size; j++) {
 						tmp[j] = cfg->lights_arr[i].shadow_buf[j] >> (8 * (sizeof(screenz_t) - 1) );
 					}
-					write_tga_file (tga_file, tmp, WIDTH, HEIGHT, 8, 1);		
+					//write_jpg_file (filename, tmp, WIDTH, HEIGHT, 1, 1);		
+					stbi_write_jpg (filename, WIDTH, HEIGHT, GRAY, (void *) tmp, JPEG_QUALITY);
 				}
 			}		
 			
@@ -659,6 +670,7 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	}
 	
 	if (cfg->zbuffer_ptr != NULL) {
+		printf ("Freeing Zbuf\n");
 		free ((void *) cfg->zbuffer_ptr);
 	}
 	
