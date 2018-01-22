@@ -34,8 +34,7 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-#define JPEG_QUALITY 100
-
+const int JPEG_QUALITY = 100; 
 enum {GRAY=1, GRAYA=2, RGB=3, RGBA=4};
 
 // POSITIVE Z TOWARDS ME
@@ -166,10 +165,10 @@ ObjectListNode* init_objects (void) {
 	}
 	else if (draw_head) {
 	
-		//african_head_diff = new_bitmap_from_file ("../../models/african_head_diffuse.tga", RGBA);
-		african_head_diff = new_bitmap_from_file ("../../models/ladybug.jpg", RGBA);
-		//african_head_nmap = new_bitmap_from_file ("../../models/african_head_nm.tga", RGBA);
-		//african_head_spec = new_bitmap_from_file ("../../models/african_head_spec.tga", GRAY);
+		african_head_diff = new_bitmap_from_file ("../../models/african_head_diffuse.tga", RGBA);
+		//african_head_diff = new_bitmap_from_file ("../../models/ladybug.jpg", RGBA);
+		african_head_nmap = new_bitmap_from_file ("../../models/african_head_nm.tga", RGBA);
+		african_head_spec = new_bitmap_from_file ("../../models/african_head_spec.tga", GRAY);
 		african_head = wfobj_new ("../../models/african_head.obj");
 		
 		if ((node = calloc (1, sizeof (ObjectListNode))) == NULL) {
@@ -388,10 +387,10 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
     size_t screen_size = WIDTH * HEIGHT;
     
     
-    if ((cfg->zbuffer_ptr = (screenz_t *) calloc (screen_size, sizeof(screenz_t))) == NULL) {
-		if (DEBUG_MALLOC) printf ("zbuffer calloc failed\n");
-		goto error;
-	}
+    //~ if ((cfg->zbuffer_ptr = (screenz_t *) calloc (screen_size, sizeof(screenz_t))) == NULL) {
+		//~ if (DEBUG_MALLOC) printf ("zbuffer calloc failed\n");
+		//~ goto error;
+	//~ }
     
     
     for (int i = 0; i < cfg->num_of_fbuffers; i++) {
@@ -670,7 +669,6 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	}
 	
 	if (cfg->zbuffer_ptr != NULL) {
-		printf ("Freeing Zbuf\n");
 		free ((void *) cfg->zbuffer_ptr);
 	}
 	

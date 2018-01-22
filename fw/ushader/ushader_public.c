@@ -155,10 +155,10 @@ pixel_color_t color_mult (pixel_color_t pix, fixpt_t intensity) {
 		uint8_t b = (uint8_t) ((pix.as_word & 0x0000ff00) >>  8);
 		uint8_t a = (uint8_t) ((pix.as_word & 0x000000ff) >>  0);
 		
-		uint64_t tmp_r = (((uint64_t) intensity) * ((uint64_t) r)) >> 16;
-		uint64_t tmp_g = (((uint64_t) intensity) * ((uint64_t) g)) >> 16;
-		uint64_t tmp_b = (((uint64_t) intensity) * ((uint64_t) b)) >> 16;
-		uint64_t tmp_a = (((uint64_t) intensity) * ((uint64_t) a)) >> 16;
+		uint64_t tmp_r = (((uint64_t) intensity) * ((uint64_t) r)) >> VARYING_FRACT_BITS;
+		uint64_t tmp_g = (((uint64_t) intensity) * ((uint64_t) g)) >> VARYING_FRACT_BITS;
+		uint64_t tmp_b = (((uint64_t) intensity) * ((uint64_t) b)) >> VARYING_FRACT_BITS;
+		uint64_t tmp_a = (((uint64_t) intensity) * ((uint64_t) a)) >> VARYING_FRACT_BITS;
 		
 		if (tmp_r > 255) tmp_r = 255;
 		if (tmp_g > 255) tmp_g = 255;

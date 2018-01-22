@@ -34,7 +34,7 @@
 #define GPU_MAX_SCREEN_WIDTH  1024
 #define GPU_MAX_SCREEN_HEIGHT 1024
 #define GPU_MAX_TILES ((GPU_MAX_SCREEN_WIDTH / GPU_TILE_WIDTH) * (GPU_MAX_SCREEN_HEIGHT / GPU_TILE_HEIGHT))
-#define GPU_MAX_USHADERS 1
+#define GPU_MAX_USHADERS 4
 #define GPU_MAX_FRAMEBUFFERS	64
 
 #define GPU_CFG_ABS_ADDRESS      0xFFFE0000
@@ -398,7 +398,8 @@ struct gpu_cfg_t {
 	TriangleTileData *tri_ptr_list[GPU_MAX_USHADERS];
 	TrianglePShaderData *volatile tri_for_pshader[GPU_MAX_USHADERS];
 	
-	pixel_color_t *volatile active_fbuffer;
+	pixel_color_t *volatile   active_fbuffer;
+	pixel_color_t *volatile inactive_fbuffer;
 	
 	pixel_color_t *fbuffer_ptr[GPU_MAX_FRAMEBUFFERS];
 	screenz_t     *zbuffer_ptr;

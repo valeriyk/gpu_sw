@@ -137,6 +137,21 @@ static inline void Float4_Float3_vect_conv_fast (Float3 *out, Float4 *in) {
 	}
 }
 
+static inline float fast_inv_sqrt (float x)
+{
+	float xhalf = 0.5f*x;
+	union
+	{
+		float x;
+		int i;
+	} u;
+	u.x = x;
+	u.i = 0x5f375a86 - (u.i >> 1);
+	/* The next line can be repeated any number of times to increase accuracy */
+	u.x = u.x * (1.5f - xhalf * u.x * u.x);
+	return u.x;
+}
+
 void   Float3_normalize (Float3 *v);
 static inline void Float3_normalize_fast (Float3 *v) {
 	float length = (float) sqrtf(v->as_struct.x * v->as_struct.x + v->as_struct.y * v->as_struct.y + v->as_struct.z * v->as_struct.z);
@@ -145,3 +160,29 @@ static inline void Float3_normalize_fast (Float3 *v) {
 		v->as_array[i] = v->as_array[i] * length_inv;
 	}
 }
+static inline void Float3_normalize_superfast (Float3 *v) {
+	float length_inv = fast_inv_sqrt (Float3_Float3_smult_fast (v, v));
+	for (int i = 0; i < 3; i++) {
+		v->as_array[i] = v->as_array[i] * length_inv;
+	}
+}
+
+//~ static inline fixpt_t FixPt3_FixPt3_smult_fast (FixPt3 *a, FixPt3 *b) {
+	//~ dfixpt_t smult = 0;
+	//~ for (int i = 0; i < 3; i++ ) {
+		//~ smult += (((dfixpt_t) a->as_array[i]) * ((dfixpt_t) b->as_array[i])) >> VARYING_FRACT_BITS;
+	//~ }
+	//~ return (fixpt_t) smult;
+//~ }
+
+//~ static inline void FixPt3_normalize_fast (FixPt3 *v) {
+	
+	//~ //float length = (float) sqrtf(v->as_struct.x * v->as_struct.x + v->as_struct.y * v->as_struct.y + v->as_struct.z * v->as_struct.z);
+	//~ //float length_inv = 1.0f / length;
+	
+	//~ float length_inv = fast_inv_sqrt (fixpt_to_float (FixPt3_FixPt3_smult_fast (v, v), VARYING_FRACT_BITS));
+	//~ dfixpt_t length_inv_fx = fixpt_from_float (length_inv, VARYING_FRACT_BITS);
+	//~ for (int i = 0; i < 3; i++) {
+		//~ v->as_array[i] = (fixpt_t) ((((dfixpt_t) v->as_array[i]) * length_inv_fx) >> VARYING_FRACT_BITS);
+	//~ }
+//~ }
