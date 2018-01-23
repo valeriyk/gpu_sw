@@ -759,31 +759,3 @@ FixPt3 get_bar_coords2 (xy_uhfixpt_pck_t a, xy_uhfixpt_pck_t b, xy_uhfixpt_pck_t
 void    wfobj_get_attribs              (const WaveFrontObj *wfobj, const int face_idx, const int vtx_idx, VtxAttr *attribs);
 
 
-static inline void memcpy_dma (volatile void *volatile dst_ptr, volatile void *volatile src_ptr, size_t byte_size, size_t channel_num) {
-
-	if (dst_ptr == NULL) return;
-	
-#ifdef DMA
-	
-	dma_mem2mem_single (dst_ptr, src_ptr, byte_size, channel_num);
-	
-#else
-	
-	for (size_t i = 0; i < byte_size / 4; i++) {
-		*((uint32_t *) dst_ptr + i) = (src_ptr == NULL) ? 0 : *((uint32_t *) src_ptr + i);
-	}
-	
-	//~ void *dptr = dst_ptr;
-	//~ void *sptr = src_ptr;
-	
-	//~ if (src_ptr == NULL) {
-		
-		//~ memset (dptr, 0, byte_size);
-	//~ }
-	//~ else {
-		//~ memcpy (dptr, sptr, byte_size);
-	//~ }
-
-#endif
-
-}
