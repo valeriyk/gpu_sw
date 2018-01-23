@@ -1,18 +1,13 @@
 #pragma once
 
-#include <ushader_public.h>
-
 //#include "bitmap.h"
 //#include "geometry.h"
 //#include "geometry_fixpt.h"
-//#include "wavefront_obj.h"
-
-//#include <gpu_cfg.h>
-
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
-
+#include <ushader_public.h>
+//#include "wavefront_obj.h"
 
 
 Light light_turn_on  (Float3 dir, bool add_shadow_buf, gpu_cfg_t *cfg);

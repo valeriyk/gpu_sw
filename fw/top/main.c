@@ -1,12 +1,9 @@
-//#include "gpu_cfg.h"
 #include <hasha.h>
 #include "main.h"
-//#include <math.h>
 #include <host_top.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <time.h>
 #include <ushader_top.h>
 #include <videoctrl_top.h>
 

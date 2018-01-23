@@ -1,39 +1,18 @@
 #include "host_top.h"
-
-//#include <wavefront_obj.h>
-//#include <geometry.h>
-
-//~ #ifdef SINGLEPROC_SINGLETHREAD
-	//~ #include <vshader_loop.h>
-	//~ #include <pshader_loop.h>
-//~ #endif
-
-#include <shader_normalmap.h>
-#include <shader_phong.h>
-#include <shader_gouraud.h>
+#include <math.h>
+#include "profiling.h"
 #include <shader_depth.h>
 #include <shader_fill_shadow_buf.h>
-//#include "bitmap.h"
-//#include <tga_addon.h>
-
-
-#include "profiling.h"
-
-
-//#include <platform.h>
-
-
-
+#include <shader_gouraud.h>
+#include <shader_normalmap.h>
+#include <shader_phong.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 #include <stdint.h>
-//#include <limits.h>
 #include <stdlib.h>
-#include <math.h>
-
 #include <time.h>
 
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
 const int JPEG_QUALITY = 100; 
 enum {GRAY=1, GRAYA=2, RGB=3, RGBA=4};
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifdef DMA
+	#include <arcem_microdma.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 

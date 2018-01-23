@@ -1,15 +1,10 @@
 #pragma once
 
-#ifdef DMA
-	#include <arcem_microdma.h>
-#endif
 #ifdef ARC_APEX
 	#include <apexextensions.h>
 #endif
 #include <assert.h>
-//#include "bitmap.h"
 #include <geometry.h>
-//#include <gpu_cfg.h>
 #include <hasha.h>
 #include <stdbool.h>
 #include <stdint.h>

@@ -1,10 +1,8 @@
 #include "gl.h"
-#include "wavefront_obj.h"
-
 #include <math.h>
-#include <stdlib.h>
 #include <stdint.h>
-
+#include <stdlib.h>
+#include "wavefront_obj.h"
 
 
 

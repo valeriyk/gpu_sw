@@ -1,17 +1,12 @@
 #include "gl.h"
-#include "wavefront_obj.h"
-
-//#include <tga.h>
-
 #include <math.h>
-#include <stdlib.h>
-#include <stdint.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 //#define STBI_ONLY_JPEG
 //#define STBI_ONLY_TGA
 #include <stb_image.h>
-
+#include <stdint.h>
+#include <stdlib.h>
+#include "wavefront_obj.h"
 
 
 // POSITIVE Z TOWARDS ME

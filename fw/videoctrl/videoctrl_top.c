@@ -1,32 +1,12 @@
 #include "host_top.h"
-
-//#include <wavefront_obj.h>
-//#include <geometry.h>
-
-//#include "bitmap.h"
-//#include <tga_addon.h>
-
-
-#include "profiling.h"
-
-
-//#include <platform.h>
-
-
-
-#include <stdint.h>
-//#include <limits.h>
-#include <stdlib.h>
 #include <math.h>
-
+#include "profiling.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
 
-/*
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-const int JPEG_QUALITY = 100; 
-enum {GRAY=1, GRAYA=2, RGB=3, RGBA=4};
 
+/*
 // POSITIVE Z TOWARDS ME
 
 
