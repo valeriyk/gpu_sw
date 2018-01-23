@@ -1,25 +1,21 @@
 #pragma once
 
-//#include "bitmap.h"
-#include <geometry.h>
-#include <wavefront_obj.h>
-
-//#include <gpu_cfg.h>
-
 #ifdef DMA
 	#include <arcem_microdma.h>
 #endif
-
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <assert.h>
-
-
 #ifdef ARC_APEX
 	#include <apexextensions.h>
 #endif
+#include <assert.h>
+//#include "bitmap.h"
+#include <geometry.h>
+//#include <gpu_cfg.h>
+#include <hasha.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <wavefront_obj.h>
 
 
 
@@ -44,6 +40,27 @@
 
 #define DEBUG_FIXPT_VARYING 0
 #define DEBUG_FIXPT_W       0
+
+enum {
+	HASHA_HOST_TO_USHADER_MST = 0,
+	HASHA_HOST_TO_VIDEOCTRL_MST
+};
+enum {
+	HASHA_HOST_TO_USHADER_SLV,
+};
+enum {
+	HASHA_USHADER_UPSTREAM_MST = 0,
+	HASHA_USHADER_DOWNSTREAM_MST
+};
+enum {
+	HASHA_USHADER_UPSTREAM_SLV = 0,
+	HASHA_USHADER_DOWNSTREAM_SLV
+};
+
+enum {
+	HASHA_VIDEOCTRL_SLV = 0
+};
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -441,6 +458,7 @@ typedef struct gpu_run_halt_t {
 typedef struct pthread_cfg_t {
 	gpu_cfg_t      *common_cfg;
 	gpu_run_halt_t *gpu_run_halt;
+	hasha_block_t  *hasha_block_ptr;
 	uint32_t        core_num;
 } pthread_cfg_t;
 

@@ -301,62 +301,6 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	cfg->zbuffer_ptr = zbuffer;
 	cfg->active_fbuffer = fbuffer;
 			
-#ifndef SINGLEPROC_SINGLETHREAD
-
-	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are false\n");
-	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		while (run_halt->vshader_done[i]);
-	}
-	if (PTHREAD_DEBUG) printf("host: all vshader_done signals are false\n");
-	
-	if (PTHREAD_DEBUG) {
-		printf("host: vshaders_run_req=true\n");
-	}
-	run_halt->vshaders_run_req = true;
-	
-		
-	if (PTHREAD_DEBUG) printf("host: wait till all vshader_done signals are true\n");
-	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		while (!run_halt->vshader_done[i]);
-	}
-	
-	if (PTHREAD_DEBUG) printf("host: all vshader_done signals are true\n");
-	
-	if (PTHREAD_DEBUG) printf("host: vshaders_run_req=false\n");
-	run_halt->vshaders_run_req = false;
-	
-	////////////////////
-	
-	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are false\n");
-	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		while (run_halt->pshader_done[i]);
-	}		
-	if (PTHREAD_DEBUG) printf("host: all pshader_done signals are false\n");
-	
-	if (PTHREAD_DEBUG) {
-		printf("host: pshaders_run_req=true\n");
-	}
-	run_halt->pshaders_run_req = true;
-	
-	if (PTHREAD_DEBUG) printf("host: wait till all pshader_done signals are true\n");
-	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		while (!run_halt->pshader_done[i]);
-	}
-	
-	if (PTHREAD_DEBUG) printf("host: all pshader_done signals are true\n");
-	
-	if (PTHREAD_DEBUG) printf("host: pshaders_run_req=false\n");
-	run_halt->pshaders_run_req = false;
-
-#else
-
-	vshader_loop (cfg, cfg->vshader_ptr, cfg->pshader_ptr, cfg->zbuffer_ptr, cfg->active_fbuffer);
-	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
-		pshader_loop (cfg, i);
-	}	
-	
-#endif
-
 }
 
 #ifdef MULTIPROC
@@ -372,7 +316,8 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	pthread_cfg_t  *pthread_cfg = host_cfg;
     gpu_cfg_t      *cfg      = pthread_cfg->common_cfg;
     gpu_run_halt_t *run_halt = pthread_cfg->gpu_run_halt;
-     
+    
+    hasha_block_t *this_ptr = pthread_cfg->hasha_block_ptr; 
 #endif
 
     
@@ -464,8 +409,8 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	
 
 		
-    run_halt->vshaders_stop_req = false;
-    run_halt->pshaders_stop_req = false;
+    ///run_halt->vshaders_stop_req = false;
+    ///run_halt->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		printf ("host: FRAME %d\n", m);
@@ -527,7 +472,11 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 				
 				init_view             (&view, &(cfg->lights_arr[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				launch_shaders (cfg, run_halt, vshader_fill_shadow_buf, pshader_fill_shadow_buf, cfg->lights_arr[i].shadow_buf, NULL);	
+				launch_shaders (cfg, run_halt, vshader_fill_shadow_buf, pshader_fill_shadow_buf, cfg->lights_arr[i].shadow_buf, NULL);
+				hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
+				hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);						
+				hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
+				hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);
 			}
 		}			
 		
@@ -557,7 +506,11 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		//launch_shaders (cfg, run_halt, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
 		launch_shaders (cfg, run_halt, vshader_depth, pshader_depth, NULL, active_fbuffer);
 		//launch_shaders (cfg, run_halt, vshader_phong, pshader_phong, NULL, active_fbuffer);
-		
+		hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
+		hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);						
+		hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
+		hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);
+
 		for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 			free ((void*) cfg->tri_for_pshader[i]);
 		}
@@ -633,8 +586,8 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		}
 		
 	}
-	run_halt->vshaders_stop_req = true;
-	run_halt->pshaders_stop_req = true;
+	//run_halt->vshaders_stop_req = true;
+	//run_halt->pshaders_stop_req = true;
 	
 	if (ENABLE_PERF) {
 		stop_counters();

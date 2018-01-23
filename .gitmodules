@@ -1,3 +1,3 @@
-[submodule "fw/3rdparty/libhasha"]
-	path = fw/3rdparty/libhasha
+[submodule "fw/3rdparty/hasha"]
+	path = fw/3rdparty/hasha
 	url = https://github.com/valeriyk/hasha.git
