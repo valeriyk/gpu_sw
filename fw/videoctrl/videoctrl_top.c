@@ -47,25 +47,13 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 }
 */
 
-
-#ifdef MULTIPROC
-
- int main (void) {
-	gpu_cfg_t      *cfg      = (gpu_cfg_t *)      GPU_CFG_ABS_ADDRESS;
-	gpu_run_halt_t *run_halt = (gpu_run_halt_t *) GPU_RUN_HALT_ABS_ADDRESS;
-
-#else
-
- void * videoctrl_top (void *videoctrl_cfg) { 	
+void * videoctrl_top (void *videoctrl_cfg) { 	
 	
 	pthread_cfg_t  *pthread_cfg = videoctrl_cfg;
     gpu_cfg_t      *cfg      = pthread_cfg->common_cfg;
-    gpu_run_halt_t *run_halt = pthread_cfg->gpu_run_halt;
     
     hasha_block_t *this_ptr = pthread_cfg->hasha_block_ptr; 
-#endif
-
-    
+   
     
     
 	printf ("Video Controller is up and running...\n"); 
@@ -105,18 +93,7 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 	}
 	*/
 		
-#ifndef MULTIPROC
-    return NULL;
-#else
-	return 0;
-#endif
 
-error:
-
-#ifndef MULTIPROC
     return NULL;
-#else
-	return 1;
-#endif
 	
 }

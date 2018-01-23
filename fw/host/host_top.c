@@ -63,7 +63,7 @@ void obj_set_transform (ObjectListNode *obj_list_head, fmat4 *proj, fmat4 *view)
 }
 */
 
-void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
+void launch_shaders (volatile gpu_cfg_t *cfg, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer);
 
 
 
@@ -294,7 +294,7 @@ uint8_t rgb_to_cr (pixel_color_t rgb) {
 }
 
 
-void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
+void launch_shaders (volatile gpu_cfg_t *cfg, vertex_shader_fptr vshader, pixel_shader_fptr pshader, screenz_t *zbuffer, pixel_color_t *fbuffer) {
 	
 	cfg->vshader_fptr = vshader;
 	cfg->pshader_fptr = pshader;
@@ -303,27 +303,13 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 			
 }
 
-#ifdef MULTIPROC
-
- int main (void) {
-	gpu_cfg_t      *cfg      = (gpu_cfg_t *)      GPU_CFG_ABS_ADDRESS;
-	gpu_run_halt_t *run_halt = (gpu_run_halt_t *) GPU_RUN_HALT_ABS_ADDRESS;
-
-#else
-
- void * host_top (void *host_cfg) { 	
+void * host_top (void *host_cfg) { 	
 	
 	pthread_cfg_t  *pthread_cfg = host_cfg;
-    gpu_cfg_t      *cfg      = pthread_cfg->common_cfg;
-    gpu_run_halt_t *run_halt = pthread_cfg->gpu_run_halt;
     
+    gpu_cfg_t     *cfg      = pthread_cfg->common_cfg;
     hasha_block_t *this_ptr = pthread_cfg->hasha_block_ptr; 
-#endif
-
-    
-    
-    
-    
+  
 	cfg->num_of_ushaders = GPU_MAX_USHADERS;	
 	cfg->num_of_tiles    = 0;
 	cfg->num_of_fbuffers = GPU_MAX_FRAMEBUFFERS;
@@ -409,8 +395,6 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 	
 
 		
-    ///run_halt->vshaders_stop_req = false;
-    ///run_halt->pshaders_stop_req = false;
     for (int m = 0; m < NUM_OF_FRAMES; m++) {
 		
 		printf ("host: FRAME %d\n", m);
@@ -472,7 +456,7 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 				
 				init_view             (&view, &(cfg->lights_arr[i].src), &center, &up);
 				setup_light_transform (cfg->obj_list_ptr, &ortho_proj, &view, i);
-				launch_shaders (cfg, run_halt, vshader_fill_shadow_buf, pshader_fill_shadow_buf, cfg->lights_arr[i].shadow_buf, NULL);
+				launch_shaders (cfg, vshader_fill_shadow_buf, pshader_fill_shadow_buf, cfg->lights_arr[i].shadow_buf, NULL);
 				hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
 				hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);						
 				hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
@@ -503,9 +487,9 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		setup_transformation (cfg->obj_list_ptr, &persp_proj, &view);
 		
 		
-		//launch_shaders (cfg, run_halt, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
-		launch_shaders (cfg, run_halt, vshader_depth, pshader_depth, NULL, active_fbuffer);
-		//launch_shaders (cfg, run_halt, vshader_phong, pshader_phong, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_gouraud, pshader_gouraud, NULL, active_fbuffer);
+		launch_shaders (cfg, vshader_depth, pshader_depth, NULL, active_fbuffer);
+		//launch_shaders (cfg, vshader_phong, pshader_phong, NULL, active_fbuffer);
 		hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
 		hasha_wait_for_mst (this_ptr, HASHA_HOST_TO_USHADER_SLV);						
 		hasha_notify_slv   (this_ptr, HASHA_HOST_TO_USHADER_MST);
@@ -586,9 +570,7 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		}
 		
 	}
-	//run_halt->vshaders_stop_req = true;
-	//run_halt->pshaders_stop_req = true;
-	
+		
 	if (ENABLE_PERF) {
 		stop_counters();
 		read_counters();
@@ -641,18 +623,10 @@ void launch_shaders (volatile gpu_cfg_t *cfg, volatile gpu_run_halt_t *run_halt,
 		light_turn_off ((Light *) &(cfg->lights_arr[i]));
 	}
 	
-#ifndef MULTIPROC
     return NULL;
-#else
-	return 0;
-#endif
 
 error:
 
-#ifndef MULTIPROC
     return NULL;
-#else
-	return 1;
-#endif
-	
+
 }

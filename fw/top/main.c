@@ -11,9 +11,6 @@
 #include <videoctrl_top.h>
 
 
-
-//gpu_cfg_t USHDR_CFG;
-
 int main(int argc, char** argv) {
        
    	printf ("Constructing the system...\n");
@@ -41,15 +38,10 @@ int main(int argc, char** argv) {
 	
 	
 	gpu_cfg_t      gpu_cfg;
-   	gpu_run_halt_t gpu_run_halt; 
 	
-	//gpu_cfg.tile_idx_table_ptr = NULL;
 	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		gpu_cfg.tri_ptr_list[i] = NULL;
 		gpu_cfg.tri_for_pshader[i] = NULL;
-		
-		gpu_run_halt.vshader_done[i] = false;
-		gpu_run_halt.pshader_done[i] = false;
 	}
 	
 	for (int i = 0; i < GPU_MAX_FRAMEBUFFERS; i++) {
@@ -64,13 +56,7 @@ int main(int argc, char** argv) {
 	
 	gpu_cfg.vshader_fptr = NULL;
 	gpu_cfg.pshader_fptr = NULL;
-		
-	gpu_run_halt.vshaders_run_req  = false;
-	gpu_run_halt.vshaders_stop_req = false;
-	
-	gpu_run_halt.pshaders_run_req  = false;
-	gpu_run_halt.pshaders_stop_req = false;
-			
+				
 	gpu_cfg.num_of_ushaders = GPU_MAX_USHADERS;	
 	gpu_cfg.num_of_tiles    = 0;
 	gpu_cfg.num_of_fbuffers = GPU_MAX_FRAMEBUFFERS;
@@ -78,14 +64,12 @@ int main(int argc, char** argv) {
 		
 	pthread_cfg_t host_cfg;
 	host_cfg.common_cfg       = &gpu_cfg;
-	host_cfg.gpu_run_halt     = &gpu_run_halt;
 	host_cfg.core_num         = 255;
 	host_cfg.hasha_block_ptr  = &host_cpu;
 	
 	pthread_cfg_t ushader_cfg[GPU_MAX_USHADERS];
 	for (int i = 0; i < GPU_MAX_USHADERS; i++) {
 		ushader_cfg[i].common_cfg       = &gpu_cfg;
-		ushader_cfg[i].gpu_run_halt     = &gpu_run_halt;
 		ushader_cfg[i].core_num         = i;
 		ushader_cfg[i].hasha_block_ptr  = &ushader[i];
 	}
@@ -93,7 +77,6 @@ int main(int argc, char** argv) {
 		
 	pthread_cfg_t videoctrl_cfg;
 	videoctrl_cfg.common_cfg       = &gpu_cfg;
-	videoctrl_cfg.gpu_run_halt     = &gpu_run_halt;
 	videoctrl_cfg.core_num         = 0;
 	videoctrl_cfg.hasha_block_ptr  = &videoctrl;
 	

@@ -34,8 +34,6 @@
 #define GPU_MAX_FRAMEBUFFERS	64
 
 #define GPU_CFG_ABS_ADDRESS      0xFFFE0000
-#define GPU_RUN_HALT_ABS_ADDRESS 0xFFFF0000
-
 
 
 #define DEBUG_FIXPT_VARYING 0
@@ -443,21 +441,8 @@ struct gpu_cfg_t {
 	
 };
 
-typedef struct gpu_run_halt_t {
-
-	volatile bool vshaders_run_req;
-	volatile bool vshaders_stop_req;
-	volatile bool vshader_done[GPU_MAX_USHADERS];
-	
-	volatile bool pshaders_run_req;
-	volatile bool pshaders_stop_req;
-	volatile bool pshader_done[GPU_MAX_USHADERS];
-	
-} gpu_run_halt_t;
-
 typedef struct pthread_cfg_t {
 	gpu_cfg_t      *common_cfg;
-	gpu_run_halt_t *gpu_run_halt;
 	hasha_block_t  *hasha_block_ptr;
 	uint32_t        core_num;
 } pthread_cfg_t;
