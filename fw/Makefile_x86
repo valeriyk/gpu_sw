@@ -1,0 +1,81 @@
+
+CFLAGS_COMMON      = -std=c99 -g -O3 -Wall -DPSHADER_DEBUG=0 -DPTHREAD_DEBUG=0 -DPTHREAD_DEBUG0=0 -DDEBUG_MALLOC=0
+CFLAGS_JOINT       = $(CFLAGS_COMMON) -Itop -Ilibbarcg -I3rdparty/stb -I3rdparty/hasha -Ihost -Iushader -Iuser_shaders -Ivideoctrl -pthread 
+
+#-DNDEBUG
+
+CFLAGS_SEPARATE       = $(CFLAGS_COMMON) -Itop -Iushader -Ilibbarcg
+CFLAGS_HOST           = $(CFLAGS_SEPARATE) -Ihost -I3rdparty/stb -I3rdparty/hasha -Ihost -Iuser_shaders
+CFLAGS_USHADER_COMMON = $(CFLAGS_SEPARATE) -I3rdparty/hasha
+CFLAGS_USER_SHADERS   = $(CFLAGS_USHADER_COMMON) -Iuser_shaders
+CFLAGS_USHADER        = $(CFLAGS_USHADER_COMMON)
+
+LDFLAGS          = -lm -pthread
+
+DESTDIR = .
+TARGET_JOINT     = main.elf
+TARGET_HOST      = main_host.elf
+TARGET_USHADER   = main_ushader.elf
+TARGET_VIDEOCTRL = main_videoctrl.elf
+
+OBJECTS_JOINT  := $(patsubst %.c, %_joint.o,  top/main.c $(wildcard host/*.c) $(wildcard ushader/*.c) $(wildcard user_shaders/*.c) $(wildcard libbarcg/*.c) $(wildcard videoctrl/*.c) 3rdparty/hasha/hasha.c)
+INCLUDES_JOINT =                              top/main.h $(wildcard host/*.h) $(wildcard ushader/*.h) $(wildcard user_shaders/*.h) $(wildcard libbarcg/*.h) $(wildcard videoctrl/*.h) 3rdparty/hasha/hasha.h $(wildcard 3rdparty/stb/*.h)
+
+OBJECTS_HOST   := $(patsubst %.c, %_host.o,   top/main_host.c $(wildcard host/*.c) $(wildcard libbarcg/*.c) 3rdparty/hasha/hasha.c)
+INCLUDES_HOST =                               top/main_host.h $(wildcard host/*.h) $(wildcard libbarcg/*.h) 3rdparty/hasha/hasha.h $(wildcard ushader/*.h) $(wildcard user_shaders/*.h) $(wildcard 3rdparty/stb/*.h)
+
+OBJECTS_USER_SHADERS  := $(patsubst %.c, %_user_shaders.o,  ushader/ushader_public.c $(wildcard user_shaders/*.c))
+INCLUDES_USER_SHADERS =                                     ushader/ushader_public.h $(wildcard user_shaders/*.h)
+
+OBJECTS_USHADER  := $(patsubst %.c, %_ushader.o,  top/main_ushader.c $(wildcard ushader/*.c) $(wildcard dma/*.c) libbarcg/geometry.c 3rdparty/hasha/hasha.c)
+INCLUDES_USHADER =                                top/main_ushader.h $(wildcard ushader/*.h) $(wildcard dma/*.h) libbarcg/geometry.h 3rdparty/hasha/hasha.h
+
+OBJECTS_VIDEOCTRL  := $(patsubst %.c, %_videoctrl.o,  top/main_videoctrl.c $(wildcard videoctrl/*.c) 3rdparty/hasha/hasha.c)
+INCLUDES_VIDEOCTRL =                                  top/main_videoctrl.h $(wildcard videoctrl/*.h) 3rdparty/hasha/hasha.h
+
+all:        joint separate
+joint:      $(DESTDIR)/$(TARGET_JOINT)
+separate:   host ushader videoctrl
+host:       $(DESTDIR)/$(TARGET_HOST)
+ushader:    $(DESTDIR)/$(TARGET_USHADER)
+videoctrlr: $(DESTDIR)/$(TARGET_VIDEOCTRL)
+
+
+
+
+$(DESTDIR)/$(TARGET_JOINT): $(OBJECTS_JOINT)
+	gcc -o $(DESTDIR)/$(TARGET_JOINT) $(OBJECTS_JOINT) $(LIBS) $(LDFLAGS)
+
+$(DESTDIR)/$(TARGET_HOST): $(OBJECTS_HOST) $(OBJECTS_USER_SHADERS)
+	gcc -o $(DESTDIR)/$(TARGET_HOST) $(OBJECTS_HOST) $(OBJECTS_USER_SHADERS) $(LDFLAGS) $(LIBS)
+
+$(DESTDIR)/$(TARGET_USHADER): $(OBJECTS_USHADER)
+	gcc -o $(DESTDIR)/$(TARGET_USHADER) $(OBJECTS_USHADER) $(LDFLAGS) $(LIBS)
+
+
+$(OBJECTS_JOINT): %_joint.o: %.c $(INCLUDES_JOINT)
+	gcc -c $(CFLAGS_JOINT) $< -o $@
+
+$(OBJECTS_HOST): %_host.o: %.c $(INCLUDES_HOST)
+	gcc -c $(CFLAGS_HOST) $< -o $@
+
+$(OBJECTS_USER_SHADERS): %_user_shaders.o: %.c $(INCLUDES_USER_SHADERS)
+	gcc -c $(CFLAGS_USER_SHADERS) $< -o $@
+	
+$(OBJECTS_USHADER): %_ushader.o: %.c $(INCLUDES_USHADER)
+	gcc -c $(CFLAGS_USHADER) $< -o $@
+	
+clean:
+	-rm -f dma/*.o
+	-rm -f host/*.o
+	-rm -f libbarcg/*.o
+	-rm -f top/*.o
+	-rm -f user_shaders/*.o	
+	-rm -f ushader/*.o
+	-rm -f 3rdparty/hasha/*.o
+	-rm -f *.elf
+	-rm -f *.a
+	-rm -f *.tga
+	-rm -f *.jpg
+	-rm -f *.y4m
+	-rm -f *.dump
